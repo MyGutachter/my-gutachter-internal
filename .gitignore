@@ -1,0 +1,21 @@
+# Frontend
+/frontend/node_modules
+/frontend/dist
+/frontend/.env
+
+# Backend
+/backend/target
+/backend/.mvn
+/backend/.env
+/backend/uploads
+
+# Root env for docker-compose (secrets — never commit)
+/.env
+
+# IDE
+.idea
+*.iml
+.vscode
+.DS_Store
+/uploads
+backend/uploads

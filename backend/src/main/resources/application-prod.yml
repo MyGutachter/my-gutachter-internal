@@ -1,0 +1,18 @@
+# ---------------------------------------------------------------------------
+# PROD profile — points at the OMT production server.
+# All secrets and connection strings come from environment variables.
+# ---------------------------------------------------------------------------
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}
+      database: ${MONGODB_DATABASE:my_gutachter_internal}
+
+# OMT prod backend
+omt:
+  dev-backend-url: https://backend.dev.omt-mygutachter.com
+  prod-backend-url: https://backend.omt-mygutachter.com
+
+# Legacy external.* keys kept for the current VehicleReport code paths.
+external.api.url: https://backend.omt-mygutachter.com/api/services/app/Order/GetReportData
+external.admin-auth.url: https://backend.omt-mygutachter.com/api/TokenAuth/Authenticate

@@ -1,0 +1,2000 @@
+{
+  "_id": {
+    "$oid": "6a4ba17156e584003c138b44"
+  },
+  "omtOrderId": "3d8cca4e-6932-41a2-2bde-08dec7abe9a1",
+  "caseNumber": "3d8cca4e-6932-41a2-2bde-08dec7abe9a1",
+  "claimType": "Hagelschaden",
+  "clientAddress": "Siemensring 16",
+  "clientCity": "Mutlangen",
+  "clientName": "PDR-Team GmbH",
+  "clientZip": "73557",
+  "concernCompany": "PDR-Team GmbH",
+  "concernType": "PDR",
+  "contactPersonEmail": "olessia86@gmail.com",
+  "contactPersonMobile": "01783455630",
+  "contactPersonName": "Yilmaz Olessia",
+  "createdAt": "2026-07-06T18:07:05.069356488",
+  "damages": [],
+  "dispatchOrOrderNo": "OMT_DEV_1258",
+  "identificationImages": [
+    "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vin_number_1783407449668",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vin_number_1783407449668"
+  ],
+  "inspectionDate": "2026-07-06",
+  "inspectionLocation": "Gottfried-Keller-Str. 21, Wesseling, 50389",
+  "inspectionTime": "16:15",
+  "inspectorName": "SV super_ad7777min@order_management_tool.com",
+  "lastVehicleInspectionDate": "2026-06-11",
+  "licensePlate": "K-IT 1113",
+  "licensePlateNumber": "K-IT 1113",
+  "mileage": 0,
+  "mileageImages": [
+    "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Meter_reading_1783407453018",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Meter_reading_1783407453018"
+  ],
+  "minderwertRows": [
+    {
+      "id": "bumper_front",
+      "bodyPart": "bumper_front",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "hood",
+      "bodyPart": "hood",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "windshield",
+      "bodyPart": "windshield",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "fender_front_left",
+      "bodyPart": "fender_front_left",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "door_front_left",
+      "bodyPart": "door_front_left",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "door_rear_left",
+      "bodyPart": "door_rear_left",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "quarter_panel_left",
+      "bodyPart": "quarter_panel_left",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "sill_left",
+      "bodyPart": "sill_left",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "roof_frame_left",
+      "bodyPart": "roof_frame_left",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "fender_front_right",
+      "bodyPart": "fender_front_right",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "door_front_right",
+      "bodyPart": "door_front_right",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "door_rear_right",
+      "bodyPart": "door_rear_right",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "quarter_panel_right",
+      "bodyPart": "quarter_panel_right",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "sill_right",
+      "bodyPart": "sill_right",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "roof_frame_right",
+      "bodyPart": "roof_frame_right",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "roof",
+      "bodyPart": "roof",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "tailgate",
+      "bodyPart": "tailgate",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "bumper_rear",
+      "bodyPart": "bumper_rear",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "headlight_left",
+      "bodyPart": "headlight_left",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "headlight_right",
+      "bodyPart": "headlight_right",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "rear_light_left",
+      "bodyPart": "rear_light_left",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    },
+    {
+      "id": "rear_light_right",
+      "bodyPart": "rear_light_right",
+      "damage": "",
+      "repairMethod": "",
+      "repairCost": 0,
+      "presetType": 1,
+      "repairCodeIndex": 0,
+      "images": [],
+      "anrechnung": "kein",
+      "minderwertBrutto": 0,
+      "minderwertNetto": 0,
+      "spareParts": 0,
+      "reparaturweg": "Karosserie",
+      "estimateRepairCodeId": null,
+      "repairType": "",
+      "repairCostBrutto": 0,
+      "sparePartsBrutto": 0,
+      "custom": false
+    }
+  ],
+  "modes": [
+    "VIDEO_EXPERT",
+    "VEHICLE_REPORT"
+  ],
+  "orderDate": "2026-06-11",
+  "orderStatus": "PENDING",
+  "photos": [
+    {
+      "id": "vx_vehicle_view_front_1783407139930",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_view_front_1783407139930",
+      "label": "vehicle view front",
+      "fileName": "vehicle_view_front_1783407139930.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Overview_diagonal_front_left_1783407183157",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_left_1783407183157",
+      "label": "Übersicht diagonal vorne links",
+      "fileName": "Overview_diagonal_front_left_1783407183157.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": "diag_fl",
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Overview_diagonal_front_right_1783407195172",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_right_1783407195172",
+      "label": "Übersicht diagonal vorne rechts",
+      "fileName": "Overview_diagonal_front_right_1783407195172.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": "diag_fr",
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_vehicle_photo_left_side_1783407316298",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_left_side_1783407316298",
+      "label": "vehicle photo left side",
+      "fileName": "vehicle_photo_left_side_1783407316298.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_vehicle_photo_right_side_1783407325458",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_right_side_1783407325458",
+      "label": "vehicle photo right side",
+      "fileName": "vehicle_photo_right_side_1783407325458.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_right_door_1783407338840",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_1783407338840",
+      "label": "Front right door",
+      "fileName": "Front_right_door_1783407338840.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Rear_right_door_1783407351197",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_right_door_1783407351197",
+      "label": "Rear right door",
+      "fileName": "Rear_right_door_1783407351197.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_left_door_1783407364217",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_1783407364217",
+      "label": "Front left door",
+      "fileName": "Front_left_door_1783407364217.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Rear_left_door_1783407376128",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_1783407376128",
+      "label": "Rear left door",
+      "fileName": "Rear_left_door_1783407376128.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Left_side_wall_1783407389098",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_side_wall_1783407389098",
+      "label": "Left side wall",
+      "fileName": "Left_side_wall_1783407389098.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Tailgate_1783407389852",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Tailgate_1783407389852",
+      "label": "Tailgate",
+      "fileName": "Tailgate_1783407389852.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Right_side_wall_1783407390238",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_side_wall_1783407390238",
+      "label": "Right side wall",
+      "fileName": "Right_side_wall_1783407390238.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Left_rear_light_1783407396057",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_rear_light_1783407396057",
+      "label": "Left rear light",
+      "fileName": "Left_rear_light_1783407396057.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_rear_bumper_1783407399058",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_bumper_1783407399058",
+      "label": "rear bumper",
+      "fileName": "rear_bumper_1783407399058.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Vehicle_view_from_the_rear_1783407403760",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Vehicle_view_from_the_rear_1783407403760",
+      "label": "Vehicle view from the rear",
+      "fileName": "Vehicle_view_from_the_rear_1783407403760.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Heck_1783407404156",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Heck_1783407404156",
+      "label": "Heck",
+      "fileName": "Heck_1783407404156.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Overview_diagonal_rear_right_1783407408853",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_rear_right_1783407408853",
+      "label": "Übersicht diagonal hinten rechts",
+      "fileName": "Overview_diagonal_rear_right_1783407408853.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": "diag_rr",
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Overview_diagonal_rear_left_1783407411583",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_rear_left_1783407411583",
+      "label": "Übersicht diagonal hinten links",
+      "fileName": "Overview_diagonal_rear_left_1783407411583.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": "diag_rl",
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Roof_1783407414428",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Roof_1783407414428",
+      "label": "Roof",
+      "fileName": "Roof_1783407414428.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_left_fender_1783407421562",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_fender_1783407421562",
+      "label": "Front left fender",
+      "fileName": "Front_left_fender_1783407421562.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Headlight_on_the_left_1783407423420",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_left_1783407423420",
+      "label": "Headlight on the left",
+      "fileName": "Headlight_on_the_left_1783407423420.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Headlight_on_the_right_1783407428834",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_right_1783407428834",
+      "label": "Headlight on the right",
+      "fileName": "Headlight_on_the_right_1783407428834.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_1783407429761",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_1783407429761",
+      "label": "Front",
+      "fileName": "Front_1783407429761.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_front_bumper_1783407432029",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_bumper_1783407432029",
+      "label": "front bumper",
+      "fileName": "front_bumper_1783407432029.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_front_right_fender_1783407432084",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407432084",
+      "label": "front right fender",
+      "fileName": "front_right_fender_1783407432084.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_bonnet_1783407432071",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/bonnet_1783407432071",
+      "label": "bonnet",
+      "fileName": "bonnet_1783407432071.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_left_sill_1783407437386",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/left_sill_1783407437386",
+      "label": "Schweller links",
+      "fileName": "left_sill_1783407437386.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": "sill_left",
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_vin_number_1783407449668",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vin_number_1783407449668",
+      "label": "Fahrzeug-Ident.-Nr. / Typschild",
+      "fileName": "vin_number_1783407449668.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": "vin_photo",
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_front_right_fender_1783407450100",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407450100",
+      "label": "front right fender",
+      "fileName": "front_right_fender_1783407450100.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Meter_reading_1783407453018",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Meter_reading_1783407453018",
+      "label": "Kilometerstand / Tacho",
+      "fileName": "Meter_reading_1783407453018.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": "mileage_photo",
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Left_wing_mirror_1783407455696",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_wing_mirror_1783407455696",
+      "label": "Left wing mirror",
+      "fileName": "Left_wing_mirror_1783407455696.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Fuel_cap_1783407456969",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Fuel_cap_1783407456969",
+      "label": "Fuel cap",
+      "fileName": "Fuel_cap_1783407456969.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Taillights_right_1783407465572",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Taillights_right_1783407465572",
+      "label": "Taillights right",
+      "fileName": "Taillights_right_1783407465572.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Right_sill_1783407467577",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_sill_1783407467577",
+      "label": "Schweller rechts",
+      "fileName": "Right_sill_1783407467577.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": "sill_right",
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_left_door_window_1783407473053",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_window_1783407473053",
+      "label": "Front left door window",
+      "fileName": "Front_left_door_window_1783407473053.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Rear_left_door_window_1783407473968",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_window_1783407473968",
+      "label": "Rear left door window",
+      "fileName": "Rear_left_door_window_1783407473968.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_rear_right_door_window_1783407481988",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_door_window_1783407481988",
+      "label": "rear right door window",
+      "fileName": "rear_right_door_window_1783407481988.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_right_door_window_1783407482353",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_window_1783407482353",
+      "label": "Front right door window",
+      "fileName": "Front_right_door_window_1783407482353.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_rear_window_1783407484123",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_window_1783407484123",
+      "label": "rear window",
+      "fileName": "rear_window_1783407484123.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_windshield_1783407489268",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/windshield_1783407489268",
+      "label": "windshield",
+      "fileName": "windshield_1783407489268.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Right-hand_exterior_mirror_1783407494227",
+      "data": "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right-hand_exterior_mirror_1783407494227",
+      "label": "Right-hand exterior mirror",
+      "fileName": "Right-hand_exterior_mirror_1783407494227.png",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_vehicle_view_front_1783407139930",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_view_front_1783407139930",
+      "label": "vehicle view front",
+      "fileName": "vehicle_view_front_1783407139930",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_vehicle_photo_left_side_1783407316298",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_left_side_1783407316298",
+      "label": "vehicle photo left side",
+      "fileName": "vehicle_photo_left_side_1783407316298",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_vehicle_photo_right_side_1783407325458",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_right_side_1783407325458",
+      "label": "vehicle photo right side",
+      "fileName": "vehicle_photo_right_side_1783407325458",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_right_door_1783407338840",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_1783407338840",
+      "label": "Front right door",
+      "fileName": "Front_right_door_1783407338840",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Rear_right_door_1783407351197",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_right_door_1783407351197",
+      "label": "Rear right door",
+      "fileName": "Rear_right_door_1783407351197",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_left_door_1783407364217",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_1783407364217",
+      "label": "Front left door",
+      "fileName": "Front_left_door_1783407364217",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Rear_left_door_1783407376128",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_1783407376128",
+      "label": "Rear left door",
+      "fileName": "Rear_left_door_1783407376128",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Left_side_wall_1783407389098",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_side_wall_1783407389098",
+      "label": "Left side wall",
+      "fileName": "Left_side_wall_1783407389098",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Tailgate_1783407389852",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Tailgate_1783407389852",
+      "label": "Tailgate",
+      "fileName": "Tailgate_1783407389852",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Right_side_wall_1783407390238",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_side_wall_1783407390238",
+      "label": "Right side wall",
+      "fileName": "Right_side_wall_1783407390238",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Left_rear_light_1783407396057",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_rear_light_1783407396057",
+      "label": "Left rear light",
+      "fileName": "Left_rear_light_1783407396057",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_rear_bumper_1783407399058",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_bumper_1783407399058",
+      "label": "rear bumper",
+      "fileName": "rear_bumper_1783407399058",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Vehicle_view_from_the_rear_1783407403760",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Vehicle_view_from_the_rear_1783407403760",
+      "label": "Vehicle view from the rear",
+      "fileName": "Vehicle_view_from_the_rear_1783407403760",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Heck_1783407404156",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Heck_1783407404156",
+      "label": "Heck",
+      "fileName": "Heck_1783407404156",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Roof_1783407414428",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Roof_1783407414428",
+      "label": "Roof",
+      "fileName": "Roof_1783407414428",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_left_fender_1783407421562",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_fender_1783407421562",
+      "label": "Front left fender",
+      "fileName": "Front_left_fender_1783407421562",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Headlight_on_the_left_1783407423420",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_left_1783407423420",
+      "label": "Headlight on the left",
+      "fileName": "Headlight_on_the_left_1783407423420",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Headlight_on_the_right_1783407428834",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_right_1783407428834",
+      "label": "Headlight on the right",
+      "fileName": "Headlight_on_the_right_1783407428834",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_1783407429761",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_1783407429761",
+      "label": "Front",
+      "fileName": "Front_1783407429761",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_front_bumper_1783407432029",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_bumper_1783407432029",
+      "label": "front bumper",
+      "fileName": "front_bumper_1783407432029",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_front_right_fender_1783407432084",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407432084",
+      "label": "front right fender",
+      "fileName": "front_right_fender_1783407432084",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_bonnet_1783407432071",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/bonnet_1783407432071",
+      "label": "bonnet",
+      "fileName": "bonnet_1783407432071",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_front_right_fender_1783407450100",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407450100",
+      "label": "front right fender",
+      "fileName": "front_right_fender_1783407450100",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Left_wing_mirror_1783407455696",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_wing_mirror_1783407455696",
+      "label": "Left wing mirror",
+      "fileName": "Left_wing_mirror_1783407455696",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Fuel_cap_1783407456969",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Fuel_cap_1783407456969",
+      "label": "Fuel cap",
+      "fileName": "Fuel_cap_1783407456969",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Taillights_right_1783407465572",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Taillights_right_1783407465572",
+      "label": "Taillights right",
+      "fileName": "Taillights_right_1783407465572",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_left_door_window_1783407473053",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_window_1783407473053",
+      "label": "Front left door window",
+      "fileName": "Front_left_door_window_1783407473053",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Rear_left_door_window_1783407473968",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_window_1783407473968",
+      "label": "Rear left door window",
+      "fileName": "Rear_left_door_window_1783407473968",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_rear_right_door_window_1783407481988",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_door_window_1783407481988",
+      "label": "rear right door window",
+      "fileName": "rear_right_door_window_1783407481988",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Front_right_door_window_1783407482353",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_window_1783407482353",
+      "label": "Front right door window",
+      "fileName": "Front_right_door_window_1783407482353",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_rear_window_1783407484123",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_window_1783407484123",
+      "label": "rear window",
+      "fileName": "rear_window_1783407484123",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_windshield_1783407489268",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/windshield_1783407489268",
+      "label": "windshield",
+      "fileName": "windshield_1783407489268",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    },
+    {
+      "id": "vx_Right-hand_exterior_mirror_1783407494227",
+      "data": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right-hand_exterior_mirror_1783407494227",
+      "label": "Right-hand exterior mirror",
+      "fileName": "Right-hand_exterior_mirror_1783407494227",
+      "filePath": null,
+      "damageId": null,
+      "mandatoryPhotoId": null,
+      "isExternal": true,
+      "caption": null
+    }
+  ],
+  "repairerName": "PDR-Team GmbH",
+  "source": "MANUAL",
+  "updatedAt": "2026-07-06T18:07:05.069356488",
+  "userEmail": "super_admin@order_management_tool.com",
+  "valuationDate": "2026-07-06",
+  "vehicleExpertName": "SV super_ad7777min@order_management_tool.com",
+  "vehicleMake": "PEUGEOT (F)",
+  "vehicleModel": "207",
+  "vinNumber": "VF3WCKFVC9T010299",
+  "clientHouseNumber": "16",
+  "clientStreet": "Siemensring",
+  "contractNumber": "",
+  "customerNumber": "",
+  "systemMinderwertRows": [],
+  "actualKeysCount": 0,
+  "baseModel": "",
+  "bodyType": "",
+  "colorDescription": "",
+  "datECode": "",
+  "displacement": 0,
+  "driveType": "",
+  "emissionClass": "",
+  "firstRegistration": "",
+  "fuelType": "",
+  "kbaNumbers": "",
+  "keyNumber": "",
+  "keysPresent": 0,
+  "lastRegistration": "",
+  "lastRegistrationImages": [],
+  "manufacturer": "",
+  "nextHU": "",
+  "nextHUImages": [],
+  "optionalEquipment": [],
+  "powerKw": 0,
+  "remoteControlsCount": 0,
+  "standardEquipment": [],
+  "subModel": "",
+  "targetKeysCount": 2,
+  "transmission": "",
+  "upholsteryDescription": "",
+  "vin": "",
+  "wheels": "",
+  "workshopKeysCount": 0,
+  "additionalNotes": "",
+  "audatexHaupttyp": "",
+  "authorizedPersonName": "",
+  "authorizedPersonPhoto": "",
+  "bodyPartDamages": {},
+  "bordliteraturImages": [],
+  "breakdownKit": {
+    "status": "",
+    "expirationDate": null,
+    "images": [],
+    "price": null
+  },
+  "chargingCable": "",
+  "chargingCableImages": [
+    "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/EV_charging_cover_1783407432575",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/EV_charging_cover_1783407432575"
+  ],
+  "customerPresent": false,
+  "deliveryConfirmationAvailableImages": [],
+  "documentsPresent": [],
+  "environmentalBadgeImages": [],
+  "environmentalBadgeStatus": "",
+  "environmentalBadgeSubmittedLater": false,
+  "equipmentListAvailableImages": [],
+  "errorMemoryReadImages": [],
+  "firstAidKit": {
+    "status": "",
+    "expirationDate": null,
+    "images": [],
+    "price": null
+  },
+  "fzScheinImages": [],
+  "hybridBatteryCheckedImages": [],
+  "inspectionFromAboveImages": [],
+  "inspectionFromBelowImages": [],
+  "isAuthorizedPerson": false,
+  "keysImages": [],
+  "liftingPlatformStatus": "",
+  "maintenanceImages": [],
+  "maintenancePrice": 0,
+  "maintenanceStatus": "",
+  "nextMaintenanceDate": "",
+  "nextMaintenanceMileage": 0,
+  "nextMaintenanceType": "",
+  "noPaintIssuesDetected": false,
+  "operatingManualStatus": "",
+  "operatingManualSubmittedLater": false,
+  "paintMeasurements": [],
+  "registrationCertificateStatus": "",
+  "registrationCertificateSubmittedLater": false,
+  "safetyVest": {
+    "status": "",
+    "expirationDate": null,
+    "images": [],
+    "price": null
+  },
+  "serviceBookletStatus": "",
+  "serviceBookletSubmittedLater": false,
+  "serviceheftImages": [],
+  "signatureNames": {
+    "driver": "",
+    "inspector": "",
+    "receiver": ""
+  },
+  "signatures": {
+    "driver": "",
+    "inspector": "",
+    "receiver": ""
+  },
+  "spareTire": {
+    "present": false,
+    "designation": "",
+    "manufacturer": "",
+    "tireModel": "",
+    "type": "A",
+    "treadDepth": "",
+    "dotNumber": "",
+    "depreciationValue": 0,
+    "rimType": "",
+    "rimDamage": [],
+    "rimDamageDescription": null,
+    "hubCapDepreciation": null,
+    "images": [],
+    "damaged": false
+  },
+  "testDriveDone": "",
+  "tireConfiguration": "2-axle",
+  "tires": [
+    {
+      "axle": 1,
+      "side": "links",
+      "designation": "",
+      "manufacturer": "",
+      "tireModel": "",
+      "type": "A",
+      "treadDepth": "",
+      "dotNumber": "",
+      "depreciationValue": 0,
+      "rimType": "",
+      "rimDamage": [],
+      "rimDamageDescription": null,
+      "hubCapDepreciation": null,
+      "images": [
+        "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_left_wheel_1783407435601",
+        "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_left_wheel_1783407435601"
+      ],
+      "damaged": false
+    },
+    {
+      "axle": 1,
+      "side": "rechts",
+      "designation": "",
+      "manufacturer": "",
+      "tireModel": "",
+      "type": "A",
+      "treadDepth": "",
+      "dotNumber": "",
+      "depreciationValue": 0,
+      "rimType": "",
+      "rimDamage": [],
+      "rimDamageDescription": null,
+      "hubCapDepreciation": null,
+      "images": [
+        "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_wheel_1783407432575",
+        "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_wheel_1783407432575"
+      ],
+      "damaged": false
+    },
+    {
+      "axle": 2,
+      "side": "rechts",
+      "designation": "",
+      "manufacturer": "",
+      "tireModel": "",
+      "type": "A",
+      "treadDepth": "",
+      "dotNumber": "",
+      "depreciationValue": 0,
+      "rimType": "",
+      "rimDamage": [],
+      "rimDamageDescription": null,
+      "hubCapDepreciation": null,
+      "images": [
+        "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_wheel_1783407395398",
+        "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_wheel_1783407395398"
+      ],
+      "damaged": false
+    },
+    {
+      "axle": 2,
+      "side": "links",
+      "designation": "",
+      "manufacturer": "",
+      "tireModel": "",
+      "type": "A",
+      "treadDepth": "",
+      "dotNumber": "",
+      "depreciationValue": 0,
+      "rimType": "",
+      "rimDamage": [],
+      "rimDamageDescription": null,
+      "hubCapDepreciation": null,
+      "images": [
+        "https://edelmira-unpreventible-xavier.ngrok-free.dev/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_left_wheel_1783407504505",
+        "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_left_wheel_1783407504505"
+      ],
+      "damaged": false
+    }
+  ],
+  "vehicleCategory": "Subcompact",
+  "vehicleConditionImages": [],
+  "vehicleConditionStatus": "",
+  "warningTriangle": {
+    "status": "",
+    "expirationDate": null,
+    "images": [],
+    "price": null
+  },
+  "meetingData": {
+    "vehicle_view_front_1783407139930": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_view_front_1783407139930.png",
+    "Overview_diagonal_front_left_1783407183157": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_left_1783407183157.png",
+    "Overview_diagonal_front_right_1783407195172": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_right_1783407195172.png",
+    "Overview_diagonal_front_right_1783407292589": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_right_1783407292589.png",
+    "vehicle_photo_left_side_1783407316298": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_left_side_1783407316298.png",
+    "vehicle_photo_right_side_1783407325458": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_right_side_1783407325458.png",
+    "Front_right_door_1783407338840": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_1783407338840.png",
+    "Rear_right_door_1783407351197": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_right_door_1783407351197.png",
+    "Front_left_door_1783407364217": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_1783407364217.png",
+    "Rear_left_door_1783407376128": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_1783407376128.png",
+    "Left_side_wall_1783407389098": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_side_wall_1783407389098.png",
+    "Tailgate_1783407389852": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Tailgate_1783407389852.png",
+    "Right_side_wall_1783407390238": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_side_wall_1783407390238.png",
+    "Left_rear_light_1783407396057": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_rear_light_1783407396057.png",
+    "rear_right_wheel_1783407395398": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_wheel_1783407395398.png",
+    "rear_bumper_1783407399058": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_bumper_1783407399058.png",
+    "Vehicle_view_from_the_rear_1783407403760": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Vehicle_view_from_the_rear_1783407403760.png",
+    "Heck_1783407404156": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Heck_1783407404156.png",
+    "Overview_diagonal_rear_right_1783407408853": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_rear_right_1783407408853.png",
+    "Overview_diagonal_rear_left_1783407411583": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_rear_left_1783407411583.png",
+    "Roof_1783407414428": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Roof_1783407414428.png",
+    "Front_left_fender_1783407421562": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_fender_1783407421562.png",
+    "Headlight_on_the_left_1783407423420": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_left_1783407423420.png",
+    "Headlight_on_the_right_1783407428834": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_right_1783407428834.png",
+    "Front_1783407429761": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_1783407429761.png",
+    "front_bumper_1783407432029": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_bumper_1783407432029.png",
+    "front_right_fender_1783407432084": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407432084.png",
+    "front_right_wheel_1783407432575": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_wheel_1783407432575.png",
+    "bonnet_1783407432071": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/bonnet_1783407432071.png",
+    "EV_charging_cover_1783407432575": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/EV_charging_cover_1783407432575.png",
+    "front_left_wheel_1783407435601": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_left_wheel_1783407435601.png",
+    "left_sill_1783407437386": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/left_sill_1783407437386.png",
+    "vin_number_1783407449668": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vin_number_1783407449668.png",
+    "front_right_fender_1783407450100": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407450100.png",
+    "Meter_reading_1783407453018": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Meter_reading_1783407453018.png",
+    "Left_wing_mirror_1783407455696": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_wing_mirror_1783407455696.png",
+    "Fuel_cap_1783407456969": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Fuel_cap_1783407456969.png",
+    "Taillights_right_1783407465572": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Taillights_right_1783407465572.png",
+    "Right_sill_1783407467577": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_sill_1783407467577.png",
+    "Front_left_door_window_1783407473053": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_window_1783407473053.png",
+    "Rear_left_door_window_1783407473968": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_window_1783407473968.png",
+    "rear_right_door_window_1783407481988": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_door_window_1783407481988.png",
+    "Front_right_door_window_1783407482353": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_window_1783407482353.png",
+    "rear_window_1783407484123": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_window_1783407484123.png",
+    "windshield_1783407489268": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/windshield_1783407489268.png",
+    "Right-hand_exterior_mirror_1783407494227": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right-hand_exterior_mirror_1783407494227.png",
+    "rear_left_wheel_1783407504505": "screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_left_wheel_1783407504505.png"
+  },
+  "videoRecordingKeys": [
+    "recordings/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/1783407549217.webm"
+  ],
+  "videoExpertImages": [
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_view_front_1783407139930",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_left_1783407183157",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_right_1783407195172",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_right_1783407292589",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_left_side_1783407316298",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_right_side_1783407325458",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_1783407338840",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_right_door_1783407351197",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_1783407364217",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_1783407376128",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_side_wall_1783407389098",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Tailgate_1783407389852",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_side_wall_1783407390238",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_rear_light_1783407396057",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_wheel_1783407395398",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_bumper_1783407399058",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Vehicle_view_from_the_rear_1783407403760",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Heck_1783407404156",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_rear_right_1783407408853",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_rear_left_1783407411583",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Roof_1783407414428",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_fender_1783407421562",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_left_1783407423420",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_right_1783407428834",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_1783407429761",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_bumper_1783407432029",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407432084",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_wheel_1783407432575",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/bonnet_1783407432071",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/EV_charging_cover_1783407432575",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_left_wheel_1783407435601",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/left_sill_1783407437386",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vin_number_1783407449668",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407450100",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Meter_reading_1783407453018",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_wing_mirror_1783407455696",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Fuel_cap_1783407456969",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Taillights_right_1783407465572",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_sill_1783407467577",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_window_1783407473053",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_window_1783407473968",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_door_window_1783407481988",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_window_1783407482353",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_window_1783407484123",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/windshield_1783407489268",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right-hand_exterior_mirror_1783407494227",
+    "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_left_wheel_1783407504505"
+  ],
+  "damageScreenshots": [
+    {
+      "part": "vehicle_view_front",
+      "screenshotKey": "vehicle_view_front_1783407139930",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_view_front_1783407139930",
+      "timestamp": {
+        "$numberLong": "1783407139930"
+      }
+    },
+    {
+      "part": "Overview_diagonal_front_left",
+      "screenshotKey": "Overview_diagonal_front_left_1783407183157",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_left_1783407183157",
+      "timestamp": {
+        "$numberLong": "1783407183157"
+      }
+    },
+    {
+      "part": "Overview_diagonal_front_right",
+      "screenshotKey": "Overview_diagonal_front_right_1783407195172",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_right_1783407195172",
+      "timestamp": {
+        "$numberLong": "1783407195172"
+      }
+    },
+    {
+      "part": "Overview_diagonal_front_right",
+      "screenshotKey": "Overview_diagonal_front_right_1783407292589",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_front_right_1783407292589",
+      "timestamp": {
+        "$numberLong": "1783407292589"
+      }
+    },
+    {
+      "part": "vehicle_photo_left_side",
+      "screenshotKey": "vehicle_photo_left_side_1783407316298",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_left_side_1783407316298",
+      "timestamp": {
+        "$numberLong": "1783407316298"
+      }
+    },
+    {
+      "part": "vehicle_photo_right_side",
+      "screenshotKey": "vehicle_photo_right_side_1783407325458",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vehicle_photo_right_side_1783407325458",
+      "timestamp": {
+        "$numberLong": "1783407325458"
+      }
+    },
+    {
+      "part": "Front_right_door",
+      "screenshotKey": "Front_right_door_1783407338840",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_1783407338840",
+      "timestamp": {
+        "$numberLong": "1783407338840"
+      }
+    },
+    {
+      "part": "Rear_right_door",
+      "screenshotKey": "Rear_right_door_1783407351197",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_right_door_1783407351197",
+      "timestamp": {
+        "$numberLong": "1783407351197"
+      }
+    },
+    {
+      "part": "Front_left_door",
+      "screenshotKey": "Front_left_door_1783407364217",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_1783407364217",
+      "timestamp": {
+        "$numberLong": "1783407364217"
+      }
+    },
+    {
+      "part": "Rear_left_door",
+      "screenshotKey": "Rear_left_door_1783407376128",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_1783407376128",
+      "timestamp": {
+        "$numberLong": "1783407376128"
+      }
+    },
+    {
+      "part": "Left_side_wall",
+      "screenshotKey": "Left_side_wall_1783407389098",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_side_wall_1783407389098",
+      "timestamp": {
+        "$numberLong": "1783407389098"
+      }
+    },
+    {
+      "part": "Tailgate",
+      "screenshotKey": "Tailgate_1783407389852",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Tailgate_1783407389852",
+      "timestamp": {
+        "$numberLong": "1783407389852"
+      }
+    },
+    {
+      "part": "Right_side_wall",
+      "screenshotKey": "Right_side_wall_1783407390238",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_side_wall_1783407390238",
+      "timestamp": {
+        "$numberLong": "1783407390238"
+      }
+    },
+    {
+      "part": "Left_rear_light",
+      "screenshotKey": "Left_rear_light_1783407396057",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_rear_light_1783407396057",
+      "timestamp": {
+        "$numberLong": "1783407396057"
+      }
+    },
+    {
+      "part": "rear_right_wheel",
+      "screenshotKey": "rear_right_wheel_1783407395398",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_wheel_1783407395398",
+      "timestamp": {
+        "$numberLong": "1783407395398"
+      }
+    },
+    {
+      "part": "rear_bumper",
+      "screenshotKey": "rear_bumper_1783407399058",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_bumper_1783407399058",
+      "timestamp": {
+        "$numberLong": "1783407399058"
+      }
+    },
+    {
+      "part": "Vehicle_view_from_the_rear",
+      "screenshotKey": "Vehicle_view_from_the_rear_1783407403760",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Vehicle_view_from_the_rear_1783407403760",
+      "timestamp": {
+        "$numberLong": "1783407403760"
+      }
+    },
+    {
+      "part": "Heck",
+      "screenshotKey": "Heck_1783407404156",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Heck_1783407404156",
+      "timestamp": {
+        "$numberLong": "1783407404156"
+      }
+    },
+    {
+      "part": "Overview_diagonal_rear_right",
+      "screenshotKey": "Overview_diagonal_rear_right_1783407408853",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_rear_right_1783407408853",
+      "timestamp": {
+        "$numberLong": "1783407408853"
+      }
+    },
+    {
+      "part": "Overview_diagonal_rear_left",
+      "screenshotKey": "Overview_diagonal_rear_left_1783407411583",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Overview_diagonal_rear_left_1783407411583",
+      "timestamp": {
+        "$numberLong": "1783407411583"
+      }
+    },
+    {
+      "part": "Roof",
+      "screenshotKey": "Roof_1783407414428",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Roof_1783407414428",
+      "timestamp": {
+        "$numberLong": "1783407414428"
+      }
+    },
+    {
+      "part": "Front_left_fender",
+      "screenshotKey": "Front_left_fender_1783407421562",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_fender_1783407421562",
+      "timestamp": {
+        "$numberLong": "1783407421562"
+      }
+    },
+    {
+      "part": "Headlight_on_the_left",
+      "screenshotKey": "Headlight_on_the_left_1783407423420",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_left_1783407423420",
+      "timestamp": {
+        "$numberLong": "1783407423420"
+      }
+    },
+    {
+      "part": "Headlight_on_the_right",
+      "screenshotKey": "Headlight_on_the_right_1783407428834",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Headlight_on_the_right_1783407428834",
+      "timestamp": {
+        "$numberLong": "1783407428834"
+      }
+    },
+    {
+      "part": "Front",
+      "screenshotKey": "Front_1783407429761",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_1783407429761",
+      "timestamp": {
+        "$numberLong": "1783407429761"
+      }
+    },
+    {
+      "part": "front_bumper",
+      "screenshotKey": "front_bumper_1783407432029",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_bumper_1783407432029",
+      "timestamp": {
+        "$numberLong": "1783407432029"
+      }
+    },
+    {
+      "part": "front_right_fender",
+      "screenshotKey": "front_right_fender_1783407432084",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407432084",
+      "timestamp": {
+        "$numberLong": "1783407432084"
+      }
+    },
+    {
+      "part": "front_right_wheel",
+      "screenshotKey": "front_right_wheel_1783407432575",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_wheel_1783407432575",
+      "timestamp": {
+        "$numberLong": "1783407432575"
+      }
+    },
+    {
+      "part": "bonnet",
+      "screenshotKey": "bonnet_1783407432071",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/bonnet_1783407432071",
+      "timestamp": {
+        "$numberLong": "1783407432071"
+      }
+    },
+    {
+      "part": "EV_charging_cover",
+      "screenshotKey": "EV_charging_cover_1783407432575",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/EV_charging_cover_1783407432575",
+      "timestamp": {
+        "$numberLong": "1783407432575"
+      }
+    },
+    {
+      "part": "front_left_wheel",
+      "screenshotKey": "front_left_wheel_1783407435601",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_left_wheel_1783407435601",
+      "timestamp": {
+        "$numberLong": "1783407435601"
+      }
+    },
+    {
+      "part": "left_sill",
+      "screenshotKey": "left_sill_1783407437386",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/left_sill_1783407437386",
+      "timestamp": {
+        "$numberLong": "1783407437386"
+      }
+    },
+    {
+      "part": "vin_number",
+      "screenshotKey": "vin_number_1783407449668",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/vin_number_1783407449668",
+      "timestamp": {
+        "$numberLong": "1783407449668"
+      }
+    },
+    {
+      "part": "front_right_fender",
+      "screenshotKey": "front_right_fender_1783407450100",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/front_right_fender_1783407450100",
+      "timestamp": {
+        "$numberLong": "1783407450100"
+      }
+    },
+    {
+      "part": "Meter_reading",
+      "screenshotKey": "Meter_reading_1783407453018",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Meter_reading_1783407453018",
+      "timestamp": {
+        "$numberLong": "1783407453018"
+      }
+    },
+    {
+      "part": "Left_wing_mirror",
+      "screenshotKey": "Left_wing_mirror_1783407455696",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Left_wing_mirror_1783407455696",
+      "timestamp": {
+        "$numberLong": "1783407455696"
+      }
+    },
+    {
+      "part": "Fuel_cap",
+      "screenshotKey": "Fuel_cap_1783407456969",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Fuel_cap_1783407456969",
+      "timestamp": {
+        "$numberLong": "1783407456969"
+      }
+    },
+    {
+      "part": "Taillights_right",
+      "screenshotKey": "Taillights_right_1783407465572",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Taillights_right_1783407465572",
+      "timestamp": {
+        "$numberLong": "1783407465572"
+      }
+    },
+    {
+      "part": "Right_sill",
+      "screenshotKey": "Right_sill_1783407467577",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right_sill_1783407467577",
+      "timestamp": {
+        "$numberLong": "1783407467577"
+      }
+    },
+    {
+      "part": "Front_left_door_window",
+      "screenshotKey": "Front_left_door_window_1783407473053",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_left_door_window_1783407473053",
+      "timestamp": {
+        "$numberLong": "1783407473053"
+      }
+    },
+    {
+      "part": "Rear_left_door_window",
+      "screenshotKey": "Rear_left_door_window_1783407473968",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Rear_left_door_window_1783407473968",
+      "timestamp": {
+        "$numberLong": "1783407473968"
+      }
+    },
+    {
+      "part": "rear_right_door_window",
+      "screenshotKey": "rear_right_door_window_1783407481988",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_right_door_window_1783407481988",
+      "timestamp": {
+        "$numberLong": "1783407481988"
+      }
+    },
+    {
+      "part": "Front_right_door_window",
+      "screenshotKey": "Front_right_door_window_1783407482353",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Front_right_door_window_1783407482353",
+      "timestamp": {
+        "$numberLong": "1783407482353"
+      }
+    },
+    {
+      "part": "rear_window",
+      "screenshotKey": "rear_window_1783407484123",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_window_1783407484123",
+      "timestamp": {
+        "$numberLong": "1783407484123"
+      }
+    },
+    {
+      "part": "windshield",
+      "screenshotKey": "windshield_1783407489268",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/windshield_1783407489268",
+      "timestamp": {
+        "$numberLong": "1783407489268"
+      }
+    },
+    {
+      "part": "Right-hand_exterior_mirror",
+      "screenshotKey": "Right-hand_exterior_mirror_1783407494227",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/Right-hand_exterior_mirror_1783407494227",
+      "timestamp": {
+        "$numberLong": "1783407494227"
+      }
+    },
+    {
+      "part": "rear_left_wheel",
+      "screenshotKey": "rear_left_wheel_1783407504505",
+      "url": "/api/screenshots/3d8cca4e-6932-41a2-2bde-08dec7abe9a1/rear_left_wheel_1783407504505",
+      "timestamp": {
+        "$numberLong": "1783407504505"
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# DEV profile — points at the OMT dev/testing server.
+# ---------------------------------------------------------------------------
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017}
+      database: ${MONGODB_DATABASE:my_gutachter_internal}
+
+# OMT dev backend. Defaults to the remote OMT dev/testing server; override
+# OMT_DEV_BACKEND_URL (e.g. in backend/.env) to point at a locally-running
+# OMT-Backend instead (its ServerRootAddress there is http://localhost:44311).
+omt:
+  dev-backend-url: ${OMT_DEV_BACKEND_URL:https://backend.dev.omt-mygutachter.com}
+  prod-backend-url: https://backend.omt-mygutachter.com
+
+# Legacy external.* keys kept for the current VehicleReport code paths.
+# These become outbound-only once the pull client is removed (T3.1).
+# Both follow OMT_DEV_BACKEND_URL so a local OMT override applies here too.
+external.api.url: ${OMT_DEV_BACKEND_URL:https://backend.dev.omt-mygutachter.com}/api/services/app/Order/GetReportData
+external.admin-auth.url: ${OMT_DEV_BACKEND_URL:https://backend.dev.omt-mygutachter.com}/api/TokenAuth/Authenticate

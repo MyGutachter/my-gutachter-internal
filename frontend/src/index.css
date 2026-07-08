@@ -1,0 +1,422 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+ * Theme (Tailwind v4). Custom colors/fonts live here as CSS variables and
+ * generate the matching utilities (bg-primary, text-navy, font-mono, …).
+ * ------------------------------------------------------------------------- */
+@theme {
+  --color-primary: #EE7700;
+  --color-primary-light: #FFF4E6;
+  --color-navy: #1e3a5f;
+  --color-highlight: #fff9c4;
+  --color-error-red: #dc3545;
+  --color-bold-red: #c62828;
+  --color-light-gray: #f5f5f5;
+  --color-dark-gray: #333333;
+
+  /* Dark scale used by the video-call UI (features/video), ported from VideoExpert. */
+  --color-dark-600: #3A3A3A;
+  --color-dark-700: #2C2C2C;
+  --color-dark-800: #1E1E1E;
+  --color-dark-900: #121212;
+  --color-dark-950: #0A0A0A;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+/* ---------------------------------------------------------------------------
+ * Video Expert theme variables (ported from my-gutachter-video-call, T7.6c).
+ * The ported /video pages reference these via arbitrary values like
+ * bg-[var(--color-primary-orange)]. Light-mode values only (merged app is
+ * light); the accent is aliased to the merged brand orange (#EE7700) so the
+ * Video Expert pages match the Vehicle Report pages.
+ * ------------------------------------------------------------------------- */
+:root {
+  --color-primary-orange: #EE7700;
+  --color-primary-orange-light: #FF8F66;
+  --color-primary-orange-dark: #CC6600;
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F8F9FA;
+  --color-bg-tertiary: #F1F3F4;
+  --color-bg-card: #FFFFFF;
+  --color-bg-hover: #F3F4F6;
+  --color-bg-active: #E5E7EB;
+  --color-bg-light: #F8F9FA;
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+  --color-text-on-dark: #F3F4F6;
+  --color-border-primary: #E5E7EB;
+  --color-border-secondary: #D1D5DB;
+  --color-border-subtle: #E5E7EB;
+  --color-surface-white: #FFFFFF;
+  --color-surface-glass: rgba(255, 255, 255, 0.9);
+  --color-bg-overlay: rgba(0, 0, 0, 0.6);
+  --color-scrollbar-track: transparent;
+  --color-scrollbar-thumb: rgba(238, 119, 0, 0.6);
+  --color-scrollbar-thumb-hover: rgba(238, 119, 0, 0.9);
+}
+
+/* ---------------------------------------------------------------------------
+ * Tailwind v3 → v4 compatibility. v4 changed the default border color to
+ * `currentColor` and buttons to `cursor: default`; the existing markup (207
+ * bare `border` usages) was written for v3's gray-200 default and pointer
+ * cursor, so restore both to avoid a visual regression.
+ * ------------------------------------------------------------------------- */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer base {
+  html {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    color: #333333;
+    background-color: #f5f5f5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 14px;
+  }
+
+  /* Remove default spinner styling on number inputs across all browsers for clean aesthetics */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+}
+
+@layer components {
+  .section-title {
+    @apply flex items-center gap-3 text-sm font-black text-navy uppercase tracking-widest mb-6;
+  }
+
+  .section-title::after {
+    content: '';
+    @apply flex-1 h-[2px] bg-gradient-to-r from-primary to-transparent opacity-30;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] p-3 md:p-4 border border-gray-100/50 transition-all duration-300;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white px-4 py-1.5 rounded-lg font-semibold hover:bg-orange-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-95 transform;
+  }
+
+  .btn-secondary {
+    @apply bg-navy text-white px-4 py-1.5 rounded-lg font-semibold hover:bg-blue-900 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-navy focus:ring-offset-2 active:scale-95 transform;
+  }
+
+  .btn-danger {
+    @apply bg-error-red text-white px-3 py-1.5 rounded-lg font-medium hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-error-red focus:ring-offset-2 active:scale-95 transform;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary px-4 py-1.5 rounded-lg font-semibold hover:bg-primary hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-95 transform;
+  }
+
+  .form-input {
+    @apply w-full px-2.5 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200 bg-white;
+  }
+
+  /* Same as .form-input but highlighted — expanded (not @apply .form-input) because
+     v4's @apply only inlines real utilities, not other component classes. */
+  .form-input-highlight {
+    @apply w-full px-2.5 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200 bg-highlight;
+  }
+
+  .form-label {
+    @apply block text-sm font-semibold text-dark-gray mb-1;
+  }
+
+  .table-header {
+    @apply bg-primary text-white text-xs font-semibold px-2 py-1.5 text-left;
+  }
+
+  .table-cell {
+    @apply px-2 py-1 text-xs border-b border-gray-200;
+  }
+
+  .table-row-alt:nth-child(even) {
+    @apply bg-primary-light;
+  }
+
+  .error-border {
+    @apply border-error-red ring-1 ring-error-red;
+  }
+
+  .step-active {
+    @apply bg-primary text-white;
+  }
+
+  .step-completed {
+    @apply bg-orange-600 text-white;
+  }
+
+  .step-inactive {
+    @apply bg-gray-300 text-gray-600;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px rgba(238, 119, 0, 0.4));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 12px rgba(238, 119, 0, 0.8));
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+.animate-glow {
+  animation: glow 1.5s ease-in-out infinite;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.15s ease-out;
+}
+
+/* Print CSS */
+@media print {
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #EE7700;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D46A00;
+}
+
+/* SVG car diagram hover states */
+.car-part {
+  cursor: pointer;
+  transition: fill 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
+}
+
+.car-part:hover {
+  fill: rgba(238, 119, 0, 0.15);
+  stroke: #EE7700;
+  stroke-width: 2;
+}
+
+.car-part.damaged {
+  fill: rgba(220, 53, 69, 0.2);
+  stroke: #dc3545;
+  stroke-width: 2;
+}
+
+.car-part.damaged:hover {
+  fill: rgba(220, 53, 69, 0.35);
+}
+
+/* ---------------------------------------------------------------------------
+ * Video Expert dashboard shell (T7.8). Faithful port of the VideoExpert
+ * MainLayout/Sidebar/Header/Footer + DashboardPage. The video shell is wrapped
+ * in `.video-app` so its accent (video orange #FF6B35) and dark-mode variables
+ * are SCOPED to the video subtree and never recolor the Vehicle Report pages.
+ * ThemeContext toggles `.dark` on <html>; only descendants of `.video-app`
+ * pick up the dark variable overrides (`.dark .video-app { … }`).
+ * ------------------------------------------------------------------------- */
+
+/* Extra light-mode vars the ported components reference (shared, additive). */
+:root {
+  --color-bg-sidebar: #FFFFFF;
+  --color-bg-header: #FFFFFF;
+  --color-bg-footer: #FFFFFF;
+  --color-text-active: #1F2937;
+  --color-text-hover: #1F2937;
+  --color-primary-orange-rgb: 238, 119, 0;
+  --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+  --shadow-glow: 0 0 15px rgba(255, 107, 53, 0.15);
+}
+
+/* Video-shell accent = VideoExpert orange (#FF6B35), scoped so report pages
+   keep the merged brand orange (#EE7700). */
+.video-app {
+  --color-primary-orange: #FF6B35;
+  --color-primary-orange-light: #FF8F66;
+  --color-primary-orange-dark: #E85A2D;
+  --color-primary: #FF6B35;
+  --color-primary-orange-rgb: 255, 107, 53;
+  --color-scrollbar-thumb: rgba(255, 107, 53, 0.6);
+  --color-scrollbar-thumb-hover: rgba(255, 107, 53, 0.9);
+}
+
+/* Scoped dark theme — only applies inside the video shell. */
+.dark .video-app {
+  --color-bg-primary: #121212;
+  --color-bg-secondary: #1E1E1E;
+  --color-bg-tertiary: #2C2C2C;
+  --color-bg-card: #1E1E1E;
+  --color-bg-sidebar: #1A1A1A;
+  --color-bg-header: #1A1A1A;
+  --color-bg-footer: #1A1A1A;
+  --color-bg-hover: #2C2C2C;
+  --color-bg-active: #3C3C3C;
+  --color-bg-light: #121212;
+  --color-text-primary: #F3F4F6;
+  --color-text-secondary: #D1D5DB;
+  --color-text-muted: #9CA3AF;
+  --color-text-active: #F3F4F6;
+  --color-text-hover: #F3F4F6;
+  --color-border-primary: #374151;
+  --color-border-secondary: #4B5563;
+  --color-border-subtle: #2C2C2C;
+  --color-surface-white: #1E1E1E;
+  --color-surface-glass: rgba(30, 30, 30, 0.9);
+  --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 20px rgba(255, 107, 53, 0.25);
+}
+
+/* Utilities the ported components use (not already defined above). */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track, transparent);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb, rgba(255, 107, 53, 0.6));
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover, rgba(255, 107, 53, 0.9));
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* react-international-phone theming to match the video shell. */
+.video-app {
+  --react-international-phone-background-color: var(--color-bg-primary);
+  --react-international-phone-text-color: var(--color-text-primary);
+  --react-international-phone-border-color: var(--color-primary-orange);
+  --react-international-phone-font-size: 14px;
+  --react-international-phone-border-radius: 8px;
+}
