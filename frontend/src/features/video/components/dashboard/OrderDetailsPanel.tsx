@@ -176,9 +176,12 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
         return `${sizeInMB.toFixed(2)} MB`;
     };
 
+    const isDigitalUvv = order?.claimType === 'Digital UVV';
+
     const tabs = [
         { id: 'details', label: t('order.tabs.details', { defaultValue: 'Details' }), icon: FileText },
         { id: '2d', label: t('order.tabs.2dView', { defaultValue: '2D View' }), icon: Car },
+        ...(isDigitalUvv ? [{ id: 'uvv', label: t('order.tabs.uvvCertificate', { defaultValue: 'UVV' }), icon: CheckSquare }] : []),
         { id: 'images', label: t('order.tabs.images', { defaultValue: 'Images' }), icon: ImageIcon },
         { id: 'video', label: t('order.tabs.video', { defaultValue: 'Video' }), icon: VideoIcon },
     ];
@@ -294,86 +297,86 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                 )}
 
                 {activeTab === '2d' && (
-                    order?.claimType === 'Digital UVV' ? (
-                        <div className="h-full w-full p-4 overflow-y-auto custom-scrollbar flex flex-col items-center">
-                            <div className="w-full max-w-2xl space-y-4 text-left pb-10">
-                                <div className={`p-4 rounded-xl border flex items-center justify-between shadow-sm ${order.uvvResult === 'PASSED'
-                                    ? 'bg-green-950/40 border-green-700 text-green-400'
-                                    : 'bg-red-950/40 border-red-700 text-red-400'
-                                    }`}>
-                                    <div>
-                                        <h2 className="text-sm font-bold tracking-wide">
-                                            UVV-FAHRZEUGPRÜFUNG: {order.uvvResult === 'PASSED' ? 'BESTANDEN' : 'NICHT BESTANDEN'}
-                                        </h2>
-                                        <p className="text-[10px] opacity-90">
-                                            {order.uvvResult === 'PASSED'
-                                                ? 'Das Prüfzertifikat wurde automatisch generiert und an den Halter gesendet.'
-                                                : 'Aufgrund festgestellter Mängel wurde kein Zertifikat ausgestellt.'}
-                                        </p>
-                                    </div>
-                                    <div className="text-xl font-extrabold uppercase px-2 py-1 border rounded-lg rotate-[-3deg] select-none">
-                                        {order.uvvResult === 'PASSED' ? 'Bestanden' : 'Mängel'}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 text-[11px]">
-                                    <div className="p-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] rounded-lg">
-                                        <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Prüfer</span>
-                                        <span className="font-semibold text-[var(--color-text-primary)]">{order.vehicleExpertName || '-'}</span>
-                                    </div>
-                                    <div className="p-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] rounded-lg">
-                                        <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Prüfdatum</span>
-                                        <span className="font-semibold text-[var(--color-text-primary)]">
-                                            {order.uvvInspectionDate ? new Date(order.uvvInspectionDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {order.uvvResult === 'PASSED' && (
-                                    <UvvCertificateViewer order={order} compact />
-                                )}
+                    <div className="h-full w-full flex flex-col items-center justify-center relative">
+                        {isLoading && (
+                            <div className="absolute inset-0 bg-[var(--color-bg-card)]/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                                <CarInspectionLoader size="md" />
                             </div>
-                        </div>
-                    ) : (
-                        <div className="h-full w-full flex flex-col items-center justify-center relative">
-                            {isLoading && (
-                                <div className="absolute inset-0 bg-[var(--color-bg-card)]/80 backdrop-blur-sm z-50 flex items-center justify-center">
-                                    <CarInspectionLoader size="md" />
+                        )}
+                        {hasMeetingData && (
+                            <div className="absolute top-4 left-4 z-10 bg-[var(--color-bg-card)]/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-[var(--color-border-primary)]">
+                                <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+                                    {t('order.selectedParts', { count: selectedParts.length, defaultValue: `${selectedParts.length} parts selected` })}
+                                </span>
+                            </div>
+                        )}
+                        <CarOverlay
+                            onPartSelected={handlePartClick}
+                            selectedParts={selectedParts}
+                            savedScreenshots={savedScreenshots}
+                            onViewScreenshot={(filename) => {
+                                const partId = Object.keys(meetingImages).find((key) => meetingImages[key] === filename);
+                                if (partId) {
+                                    const cleanPartId = getPartIdFromKey(partId);
+                                    setPopupState({
+                                        isOpen: true,
+                                        imageUrl: getImageUrl(partId, filename),
+                                        title: t(`carParts.${cleanPartId}`, { defaultValue: cleanPartId.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') }),
+                                    });
+                                } else if (filename) {
+                                    setPopupState({
+                                        isOpen: true,
+                                        imageUrl: getPartImageSrc(filename),
+                                        title: t('common.screenshot', { defaultValue: 'Screenshot' }),
+                                    });
+                                }
+                            }}
+                            hideSelectedList={true}
+                            readOnly={!hasMeetingData}
+                        />
+                    </div>
+                )}
+
+                {activeTab === 'uvv' && (
+                    <div className="h-full w-full p-4 overflow-y-auto custom-scrollbar flex flex-col items-center">
+                        <div className="w-full max-w-2xl space-y-4 text-left pb-10">
+                            <div className={`p-4 rounded-xl border flex items-center justify-between shadow-sm ${order.uvvResult === 'PASSED'
+                                ? 'bg-green-950/40 border-green-700 text-green-400'
+                                : 'bg-red-950/40 border-red-700 text-red-400'
+                                }`}>
+                                <div>
+                                    <h2 className="text-sm font-bold tracking-wide">
+                                        UVV-FAHRZEUGPRÜFUNG: {order.uvvResult === 'PASSED' ? 'BESTANDEN' : 'NICHT BESTANDEN'}
+                                    </h2>
+                                    <p className="text-[10px] opacity-90">
+                                        {order.uvvResult === 'PASSED'
+                                            ? 'Das Prüfzertifikat wurde automatisch generiert und an den Halter gesendet.'
+                                            : 'Aufgrund festgestellter Mängel wurde kein Zertifikat ausgestellt.'}
+                                    </p>
                                 </div>
-                            )}
-                            {hasMeetingData && (
-                                <div className="absolute top-4 left-4 z-10 bg-[var(--color-bg-card)]/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-[var(--color-border-primary)]">
-                                    <span className="text-xs font-medium text-[var(--color-text-secondary)]">
-                                        {t('order.selectedParts', { count: selectedParts.length, defaultValue: `${selectedParts.length} parts selected` })}
+                                <div className="text-xl font-extrabold uppercase px-2 py-1 border rounded-lg rotate-[-3deg] select-none">
+                                    {order.uvvResult === 'PASSED' ? 'Bestanden' : 'Mängel'}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 text-[11px]">
+                                <div className="p-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] rounded-lg">
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Prüfer</span>
+                                    <span className="font-semibold text-[var(--color-text-primary)]">{order.vehicleExpertName || '-'}</span>
+                                </div>
+                                <div className="p-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] rounded-lg">
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Prüfdatum</span>
+                                    <span className="font-semibold text-[var(--color-text-primary)]">
+                                        {order.uvvInspectionDate ? new Date(order.uvvInspectionDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
                                     </span>
                                 </div>
+                            </div>
+
+                            {order.uvvResult === 'PASSED' && (
+                                <UvvCertificateViewer order={order} compact />
                             )}
-                            <CarOverlay
-                                onPartSelected={handlePartClick}
-                                selectedParts={selectedParts}
-                                savedScreenshots={savedScreenshots}
-                                onViewScreenshot={(filename) => {
-                                    const partId = Object.keys(meetingImages).find((key) => meetingImages[key] === filename);
-                                    if (partId) {
-                                        const cleanPartId = getPartIdFromKey(partId);
-                                        setPopupState({
-                                            isOpen: true,
-                                            imageUrl: getImageUrl(partId, filename),
-                                            title: t(`carParts.${cleanPartId}`, { defaultValue: cleanPartId.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') }),
-                                        });
-                                    } else if (filename) {
-                                        setPopupState({
-                                            isOpen: true,
-                                            imageUrl: getPartImageSrc(filename),
-                                            title: t('common.screenshot', { defaultValue: 'Screenshot' }),
-                                        });
-                                    }
-                                }}
-                                hideSelectedList={true}
-                                readOnly={!hasMeetingData}
-                            />
                         </div>
-                    )
+                    </div>
                 )}
 
                 {activeTab === 'images' && (
