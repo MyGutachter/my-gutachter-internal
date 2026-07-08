@@ -3,7 +3,7 @@ import { Camera, Trash2, Eye, CheckCircle } from 'lucide-react';
 import { API_BASE_URL } from '../../videoConfig';
 
 interface ReportSlotsPanelProps {
-    order: any;
+    roomId: string;
     savedScreenshots: Record<string, string>;
     onCapture: (slotId: string) => void;
     onDelete: (filename: string) => void;
@@ -59,7 +59,7 @@ const SLOTS_CONFIG = [
 ];
 
 export const ReportSlotsPanel: React.FC<ReportSlotsPanelProps> = ({
-    order,
+    roomId,
     savedScreenshots,
     onCapture,
     onDelete,
@@ -100,7 +100,7 @@ export const ReportSlotsPanel: React.FC<ReportSlotsPanelProps> = ({
                                         {hasImage ? (
                                             <div className="relative w-12 h-9 rounded-lg overflow-hidden border border-gray-700 bg-black flex-shrink-0">
                                                 <img
-                                                    src={`${API_BASE_URL}/screenshots/${order.id}/${filename}`}
+                                                    src={`${API_BASE_URL}/screenshots/${roomId}/${filename}`}
                                                     alt={slot.label}
                                                     className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
                                                     onClick={() => onView(filename)}

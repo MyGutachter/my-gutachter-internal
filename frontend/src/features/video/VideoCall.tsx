@@ -1693,7 +1693,7 @@ export const VideoCall = () => {
                                 />
                             ) : (
                                 <ReportSlotsPanel
-                                    order={order}
+                                    roomId={roomId}
                                     savedScreenshots={savedScreenshots}
                                     onCapture={(slotId) => {
                                         if (remoteStreams.size > 1) {
