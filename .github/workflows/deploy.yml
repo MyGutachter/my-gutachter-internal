@@ -1,0 +1,131 @@
+name: 🚀 Deploy My-Gutachter-Internal
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DEPLOY_HOST: ${{ secrets.PROD_SERVER_HOST }}
+  DEPLOY_USER: ${{ secrets.PROD_SERVER_USERNAME }}
+  DEPLOY_KEY:  ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+
+jobs:
+  prepare:
+    name: 📥 Pull Changes & Check Diffs
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.set.outputs.backend }}
+      frontend: ${{ steps.set.outputs.frontend }}
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Determine Changes
+        id: set
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "Manual trigger (workflow_dispatch) detected. Deploying both backend and frontend."
+            exit 0
+          fi
+
+          git fetch origin
+          
+          BEFORE_SHA="${{ github.event.before }}"
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ] || [ -z "$BEFORE_SHA" ]; then
+            BEFORE_SHA="HEAD~1"
+          fi
+          
+          echo "Comparing $BEFORE_SHA with ${{ github.sha }}"
+          
+          BACKEND_CHANGED=$(git diff --name-only $BEFORE_SHA ${{ github.sha }} | grep '^backend/' || true)
+          FRONTEND_CHANGED=$(git diff --name-only $BEFORE_SHA ${{ github.sha }} | grep '^frontend/' || true)
+          
+          if [ -n "$BACKEND_CHANGED" ]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "Backend changes detected."
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -n "$FRONTEND_CHANGED" ]; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "Frontend changes detected."
+          else
+            echo "frontend=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -z "$BACKEND_CHANGED" ] && [ -z "$FRONTEND_CHANGED" ]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "No directory-specific changes detected, deploying both backend and frontend."
+          fi
+
+      - name: 🔌 Pull Latest Code on Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_KEY }}
+          script: |
+            echo "=================================================="
+            echo "📁 Navigating to repository..."
+            cd /home/ubuntu/repositories/my-gutachter-internal
+            
+            echo "📥 Fetching and pulling latest changes from origin/main..."
+            git fetch origin
+            git reset --hard origin/main
+            echo "=================================================="
+
+  backend:
+    name: ⚙️ Build & Deploy Backend
+    needs: prepare
+    if: needs.prepare.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔌 Build Backend
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_KEY }}
+          script: |
+            echo "=================================================="
+            echo "🐳 Navigating to Docker Compose directory..."
+            cd /home/ubuntu/repositories
+            
+            echo "🔨 Rebuilding & restarting backend container (internal_backend)..."
+            docker compose build --no-cache internal_backend && docker compose up -d --no-deps internal_backend
+            
+            echo "🧹 Pruning unused Docker images..."
+            docker image prune -f
+            echo "=================================================="
+
+  frontend:
+    name: 🎨 Build & Deploy Frontend
+    needs: prepare
+    if: needs.prepare.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔌 Build Frontend
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_KEY }}
+          script: |
+            echo "=================================================="
+            echo "🐳 Navigating to Docker Compose directory..."
+            cd /home/ubuntu/repositories
+            
+            echo "🔨 Rebuilding & restarting frontend container (internal_frontend)..."
+            docker compose build --no-cache internal_frontend && docker compose up -d --no-deps internal_frontend
+            
+            echo "🧹 Pruning unused Docker images..."
+            docker image prune -f
+            echo "=================================================="
