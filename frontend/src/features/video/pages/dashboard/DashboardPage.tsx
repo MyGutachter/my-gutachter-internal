@@ -1,11 +1,9 @@
-import { Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import CarInspectionLoader from '../../CarInspectionLoader';
 import OrderCard from '../../components/dashboard/OrderCard';
 import OrderSearchPanel from '../../components/dashboard/OrderSearchPanel';
 import OrderDetailsPanel from '../../components/dashboard/OrderDetailsPanel';
-import CreateOrderModal from '../../components/modals/CreateOrderModal';
 import type { Order } from '../../types';
 import NoOrdersImage from '../../assets/no_orders_placeholder.png';
 import { getDashboardOrders, updateOrderStatus } from '../../services/orderService';
@@ -18,7 +16,6 @@ import { getDashboardOrders, updateOrderStatus } from '../../services/orderServi
 const DashboardPage = () => {
     const { t } = useTranslation();
     const [orders, setOrders] = useState<Order[]>([]);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [showArchive, setShowArchive] = useState(false);
     const [search, setSearch] = useState('');
@@ -51,9 +48,7 @@ const DashboardPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showArchive, search]);
 
-    const handleOrderCreated = () => {
-        fetchOrders();
-    };
+
 
     const handleUpdateStatus = async (orderId: string, status: 'DONE' | 'PENDING') => {
         try {
@@ -69,15 +64,6 @@ const DashboardPage = () => {
 
             {/* Global Header Actions - Sticky at top */}
             <div className="sticky top-0 z-20 bg-[var(--color-bg-light)] pt-3 sm:pb-2 pb-0 flex flex-col md:flex-row gap-3 shrink-0">
-                <div className="w-full md:w-[280px] lg:w-[300px] xl:w-[320px] bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-primary)] p-2.5 shadow-card flex items-center transition-all hover:shadow-lg">
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="w-full bg-gradient-to-r from-[var(--color-primary-orange)] to-[var(--color-primary-orange-dark)] text-white py-2 rounded-lg flex items-center justify-center font-bold text-[13px] uppercase tracking-wide hover:shadow-glow hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t('dashboardPage.createOrder', { defaultValue: 'Create Order' })}
-                    </button>
-                </div>
 
                 <div className="flex-1 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-primary)] shadow-card overflow-hidden flex flex-col sm:flex-row sm:items-center pr-0 sm:pr-4">
                     <div className="flex-1 min-w-0">
@@ -110,7 +96,7 @@ const DashboardPage = () => {
                     <div className="h-full flex flex-col items-center justify-center opacity-70">
                         <img src={NoOrdersImage} alt="No Orders" className="w-[300px] mb-4" />
                         <p className="text-[var(--color-text-muted)] font-bold text-lg">{t('dashboardPage.noOrders', { defaultValue: 'No orders found' })}</p>
-                        <p className="text-[var(--color-text-muted)] text-sm">{t('dashboardPage.createToStart', { defaultValue: 'Create a new order to get started' })}</p>
+                        <p className="text-[var(--color-text-muted)] text-sm">{t('dashboardPage.createToStart', { defaultValue: 'Waiting for orders imported from OMT.' })}</p>
                     </div>
                 ) : (
                     orders.map((order) => (
@@ -126,11 +112,6 @@ const DashboardPage = () => {
                 )}
             </div>
 
-            <CreateOrderModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onOrderCreated={handleOrderCreated}
-            />
         </div>
     );
 };

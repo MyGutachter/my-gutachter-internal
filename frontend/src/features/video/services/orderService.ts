@@ -85,11 +85,7 @@ export const getExperts = async (): Promise<ExpertOption[]> => {
     }
 };
 
-/** POST /orders — create a manual order (CreateOrderModal). */
-export const createOrder = async (payload: Record<string, unknown>) => {
-    const res = await api.post('/orders', payload);
-    return res.data;
-};
+
 
 /** GET /orders/{id} → the video Order shape. */
 export const getOrder = async (id: string): Promise<Order> => {

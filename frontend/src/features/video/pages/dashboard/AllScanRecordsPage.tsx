@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Search, Car, Link as LinkIcon, Plus, X, Filter } from 'lucide-react';
+import { Search, Car, Link as LinkIcon, X, Filter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import CreateOrderModal from '../../components/modals/CreateOrderModal';
 import OrderDetailsPanel from '../../components/dashboard/OrderDetailsPanel';
 import CarInspectionLoader from '../../CarInspectionLoader';
 import type { Order } from '../../types';
@@ -32,7 +31,6 @@ const AllScanRecordsPage = () => {
     const [search, setSearch] = useState('');
     const [selectedUser, setSelectedUser] = useState('');
     const [showArchive, setShowArchive] = useState(false);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
     const [experts, setExperts] = useState<ExpertOption[]>([]);
@@ -73,23 +71,14 @@ const AllScanRecordsPage = () => {
         setTimeout(fetchOrders, 0);
     };
 
-    const handleOrderCreated = () => {
-        fetchOrders();
-    };
+
 
     return (
         <div className="w-full min-h-full flex flex-col p-2 sm:p-3 bg-[var(--color-bg-secondary)] font-sans">
-            {/* Header & Filters Section */}
             <div className="bg-[var(--color-bg-card)] rounded-xl shadow-sm border border-[var(--color-border-primary)] mb-3 transition-all duration-300">
                 <div className="p-3 flex xl:hidden items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <h1 className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)] whitespace-nowrap">{t('allScanRecordsPage.title', { defaultValue: 'Vin List' })}</h1>
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="h-8 w-8 flex items-center justify-center rounded border border-[var(--color-primary-orange)] text-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)] hover:text-white transition-all shadow-sm active:scale-95"
-                        >
-                            <Plus className="w-5 h-5" />
-                        </button>
                     </div>
 
                     <button
@@ -104,12 +93,6 @@ const AllScanRecordsPage = () => {
                 <div className={`p-3 xl:flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-0 ${isFilterExpanded ? 'flex' : 'hidden'} border-t xl:border-0 border-[var(--color-border-primary)]`}>
                     <div className="hidden xl:flex items-center gap-2 mr-4">
                         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('allScanRecordsPage.title', { defaultValue: 'Vin List' })}</h1>
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="h-8 w-8 flex items-center justify-center rounded border border-[var(--color-primary-orange)] text-[var(--color-primary-orange)] hover:bg-orange-50 transition-colors cursor-pointer"
-                        >
-                            <Plus className="w-5 h-5" />
-                        </button>
                     </div>
 
                     <div className="hidden xl:block h-6 w-px bg-[var(--color-border-primary)] mx-2"></div>
@@ -344,11 +327,6 @@ const AllScanRecordsPage = () => {
                 document.body
             )}
 
-            <CreateOrderModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onOrderCreated={handleOrderCreated}
-            />
         </div>
     );
 };

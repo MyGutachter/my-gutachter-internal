@@ -177,28 +177,7 @@ public class VideoOrderController {
         return ResponseEntity.ok(new ArrayList<>(byEmail.values()));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Create a manual order — POST /api/orders  (CreateOrderModal)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    @PostMapping
-    public ResponseEntity<?> createOrder(@RequestBody Order body, HttpServletRequest request) {
-        String userEmail = (String) request.getAttribute("userEmail");
-        try {
-            // A manual order created from the video app: MANUAL source, VIDEO_EXPERT mode,
-            // assigned to the creator. importOrder unions the mode into `modes` and stamps
-            // timestamps / default PENDING status.
-            body.setSource(OrderSource.MANUAL.name());
-            body.setMode(OrderMode.VIDEO_EXPERT.name());
-            if (userEmail != null) {
-                body.setUserEmail(userEmail);
-            }
-            Document saved = orderService.importOrder(body);
-            return ResponseEntity.ok(toVideoOrderDto(saved));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Update lifecycle status — PATCH /api/orders/{id}/status
