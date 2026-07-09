@@ -1186,6 +1186,7 @@
         "title": "My Orders",
         "subtitle": "Overview of all your reports",
         "createNew": "Create New Report",
+        "importRequired": "Reports must be imported from OMT and cannot be created manually.",
         "table": {
             "caseNumber": "Case Number",
             "licensePlate": "License Plate",

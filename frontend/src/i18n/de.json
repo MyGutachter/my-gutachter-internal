@@ -1204,6 +1204,7 @@
         "title": "Meine Aufträge",
         "subtitle": "Alle Ihre Gutachten im Überblick",
         "createNew": "Neues Gutachten erstellen",
+        "importRequired": "Gutachten müssen über das OMT importiert werden und können nicht manuell erstellt werden.",
         "table": {
             "caseNumber": "Vorgangsnummer",
             "licensePlate": "Kennzeichen",

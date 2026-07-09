@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
-import { FileText, Plus, Search, ArrowUpDown, Filter, Loader2, Video, ClipboardList } from 'lucide-react';
+import { FileText, Search, ArrowUpDown, Filter, Loader2, Video, ClipboardList } from 'lucide-react';
 import AppHeader from '../components/layout/AppHeader';
 import AppFooter from '../components/layout/AppFooter';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -103,11 +103,6 @@ const OrdersOverviewPage: React.FC = () => {
         });
     }, [reports, search, sortField, sortOrder]);
 
-    const handleCreateNew = () => {
-        resetReport();
-        useUIStore.getState().setCurrentStep(1);
-        navigate('/report/form');
-    };
 
     const handleRowClick = (caseNumber: string) => {
         navigate(`/report/form?caseNumber=${caseNumber}`);
@@ -200,13 +195,7 @@ const OrdersOverviewPage: React.FC = () => {
                             </p>
                         </div>
 
-                        <button
-                            onClick={handleCreateNew}
-                            className="btn-primary flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95"
-                        >
-                            <Plus className="w-5 h-5" />
-                            <span className="font-bold">{t('orders.createNew')}</span>
-                        </button>
+
                     </div>
 
                     {/* Filters & Search */}
@@ -245,12 +234,7 @@ const OrdersOverviewPage: React.FC = () => {
                         <Card className="text-center py-20">
                             <FileText className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                             <h3 className="text-lg font-bold text-gray-400">{t('orders.noOrders')}</h3>
-                            <button
-                                onClick={handleCreateNew}
-                                className="mt-4 text-primary font-bold hover:underline"
-                            >
-                                {t('orders.createNew')}
-                            </button>
+
                         </Card>
                     ) : (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

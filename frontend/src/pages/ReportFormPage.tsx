@@ -1,6 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useReportStore } from '../store/reportStore';
 import type { ReportData } from '../types/report.types';
 import api from '../utils/api';
@@ -112,6 +112,7 @@ function debounce<T extends (...args: any[]) => void>(func: T, delay: number): D
 const ReportFormPage: React.FC = () => {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const caseNumberParam = searchParams.get('caseNumber');
     const { currentStep, setCurrentStep, _hasHydrated: uiHydrated, setShowValidationErrors } = useUIStore();
     const role = useAuthStore(state => state.role);
@@ -364,19 +365,14 @@ const ReportFormPage: React.FC = () => {
 
     // ───── Initial load: check for existing report (duplicate prevention) ─────
     React.useEffect(() => {
-        // Fetch global field configurations (mandatory requirements etc)
-        fetchFieldConfigs();
-
         if (!caseNumberParam) {
-            // New report: ensure we start on step 1
-            if (currentStep !== 1) {
-                setCurrentStep(1);
-            }
-            loadedCaseNumberRef.current = null;
-            // Fetch global config to clear/reset any customer-specific configs
-            useReportStore.getState().fetchGlobalConfig();
+            toast.error(t('orders.importRequired') || 'Orders must be imported from OMT.');
+            navigate('/report', { replace: true });
             return;
         }
+
+        // Fetch global field configurations (mandatory requirements etc)
+        fetchFieldConfigs();
 
         if (loadedCaseNumberRef.current === caseNumberParam) return;
         loadedCaseNumberRef.current = caseNumberParam;
@@ -389,7 +385,7 @@ const ReportFormPage: React.FC = () => {
         }
 
         refetchReport();
-    }, [caseNumberParam, refetchReport]);
+    }, [caseNumberParam, refetchReport, navigate, t]);
 
     // ───── Scroll to top when step changes ─────
     React.useEffect(() => {

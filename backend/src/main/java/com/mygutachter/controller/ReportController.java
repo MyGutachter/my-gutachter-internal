@@ -240,19 +240,20 @@ public class ReportController {
             report.setUserEmail(userEmail);
         }
 
-        // Fetch existing report to compare
-        ReportDTO oldReport = null;
-        if (report.getCaseNumber() != null && !report.getCaseNumber().trim().isEmpty()) {
-            Document existingDoc = collection.find(Filters.and(
-                    Filters.eq("userEmail", userEmail),
-                    Filters.eq("caseNumber", report.getCaseNumber()))).first();
-            if (existingDoc != null) {
-                oldReport = objectMapper.convertValue(existingDoc, ReportDTO.class);
-            } else {
-                // New report: set creation timestamp
-                report.setCreatedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-            }
+        if (report.getCaseNumber() == null || report.getCaseNumber().trim().isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Case number is required. Reports must be imported from OMT.");
         }
+
+        // Fetch existing report to compare
+        Document existingDoc = collection.find(Filters.and(
+                Filters.eq("userEmail", userEmail),
+                Filters.eq("caseNumber", report.getCaseNumber()))).first();
+
+        if (existingDoc == null) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Report not found. Reports must be imported from OMT.");
+        }
+
+        ReportDTO oldReport = objectMapper.convertValue(existingDoc, ReportDTO.class);
 
         // Process photos: save base64 data to disk
         if (report.getPhotos() != null && !report.getPhotos().isEmpty()) {
@@ -373,20 +374,15 @@ public class ReportController {
                     saveSignatureFile(report.getAuthorizedPersonPhoto(), "authorized_person", userEmail));
         }
 
-        final String lockKey = (report.getCaseNumber() != null && !report.getCaseNumber().trim().isEmpty()
-                ? report.getCaseNumber()
-                : userEmail).intern();
+        final String lockKey = report.getCaseNumber().intern();
         ReportDTO mergedReport;
 
         synchronized (lockKey) {
             // 1. Fetch current version from DB to have a complete view for valuations
-            Document existingDoc = null;
-            if (report.getCaseNumber() != null && !report.getCaseNumber().trim().isEmpty()) {
-                existingDoc = collection.find(
-                        Filters.and(Filters.eq("userEmail", userEmail),
-                                Filters.eq("caseNumber", report.getCaseNumber())))
-                        .first();
-            }
+            existingDoc = collection.find(
+                    Filters.and(Filters.eq("userEmail", userEmail),
+                            Filters.eq("caseNumber", report.getCaseNumber())))
+                    .first();
 
             mergedReport = report;
             if (existingDoc != null) {
@@ -424,34 +420,18 @@ public class ReportController {
             }
             // Always ensure userEmail and caseNumber are set
             updateFields.append("userEmail", userEmail);
-            if (report.getCaseNumber() != null) {
-                updateFields.append("caseNumber", report.getCaseNumber());
-            }
+            updateFields.append("caseNumber", report.getCaseNumber());
 
             Document updateDoc = new Document("$set", updateFields);
 
-            // Use caseNumber if available, else update the single userEmail document
-            if (report.getCaseNumber() != null && !report.getCaseNumber().trim().isEmpty()) {
-                collection.updateOne(
-                        Filters.and(Filters.eq("userEmail", userEmail),
-                                Filters.eq("caseNumber", report.getCaseNumber())),
-                        updateDoc,
-                        new UpdateOptions().upsert(true));
-            } else {
-                collection.updateOne(
-                        Filters.eq("userEmail", userEmail),
-                        updateDoc,
-                        new UpdateOptions().upsert(true));
-            }
+            collection.updateOne(
+                    Filters.and(Filters.eq("userEmail", userEmail),
+                            Filters.eq("caseNumber", report.getCaseNumber())),
+                    updateDoc);
         }
 
         // Log the change
-        if (oldReport == null) {
-            activityLogService.logChange(report.getCaseNumber(), userEmail, userName, "General", "Case Created",
-                    "New case added");
-        } else {
-            activityLogService.compareAndLog(oldReport, report, userEmail, userName);
-        }
+        activityLogService.compareAndLog(oldReport, report, userEmail, userName);
 
         return ResponseEntity.ok(mergedReport);
     }
