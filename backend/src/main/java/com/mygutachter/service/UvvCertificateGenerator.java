@@ -103,11 +103,11 @@ public class UvvCertificateGenerator {
             }
 
             Font verticalFont = new Font(baseFont, 10, Font.BOLD, java.awt.Color.WHITE);
-            Font titleFont = new Font(baseFont, 32, Font.BOLD, java.awt.Color.BLACK);
+            Font titleFont = new Font(baseFont, 36, Font.BOLD, java.awt.Color.BLACK);
             Font companyFont = new Font(baseFont, 11, Font.NORMAL, java.awt.Color.GRAY);
             Font regularFont = new Font(baseFont, 10.5f, Font.NORMAL, java.awt.Color.BLACK);
             Font regularBoldFont = new Font(baseFont, 10.5f, Font.BOLD, java.awt.Color.BLACK);
-            Font plateLargeFont = new Font(baseFont, 17, Font.BOLD, java.awt.Color.BLACK);
+            Font plateLargeFont = new Font(baseFont, 26, Font.BOLD, java.awt.Color.BLACK);
             Font detailLabelFont = new Font(baseFont, 10.5f, Font.BOLD, java.awt.Color.GRAY);
             Font detailValueFont = new Font(baseFont, 10.5f, Font.NORMAL, java.awt.Color.BLACK);
             Font headerLabelFont = new Font(baseFont, 10.5f, Font.BOLD, java.awt.Color.BLACK);
@@ -229,12 +229,6 @@ public class UvvCertificateGenerator {
 
             String inspectionDateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
 
-            // 5. Plate Number (Large Center Bold)
-            Paragraph platePara = new Paragraph(plateNumber, plateLargeFont);
-            platePara.setAlignment(Element.ALIGN_CENTER);
-            platePara.setSpacingBefore(12f); // compact spacing
-            document.add(platePara);
-
             // 6. Details Table
             PdfPTable detailsTable = new PdfPTable(new float[] { 165f, 175f });
             detailsTable.setTotalWidth(340f);
@@ -280,9 +274,6 @@ public class UvvCertificateGenerator {
                 companyVal = order.getString("concernCompany");
             }
             if (companyVal == null || companyVal.isBlank()) {
-                companyVal = order.getString("repairerName");
-            }
-            if (companyVal == null || companyVal.isBlank()) {
                 companyVal = getMsg("meta.val.company.default", langCode);
             }
 
@@ -290,8 +281,8 @@ public class UvvCertificateGenerator {
             if (driverVal == null || driverVal.isBlank()) {
                 driverVal = order.getString("carOwnerFullName");
             }
-            if (driverVal == null || driverVal.isBlank()) {
-                driverVal = getMsg("meta.val.driver.default", langCode);
+            if (driverVal == null) {
+                driverVal = "";
             }
 
             String modelVal = order.getString("vehicleModel");
@@ -388,23 +379,84 @@ public class UvvCertificateGenerator {
             PdfPTable resultSummaryTable = new PdfPTable(new float[] { 220f, 239f });
             resultSummaryTable.setWidthPercentage(100);
 
+            // Determine the result summary values
+            boolean hasChecklistData = order.containsKey("registrationCertificateStatus")
+                || order.containsKey("nextHU")
+                || order.containsKey("vehicleConditionStatus")
+                || order.containsKey("engineRunWarningLightsActive")
+                || order.containsKey("warningTriangle")
+                || order.containsKey("safetyVest")
+                || order.containsKey("firstAidKit")
+                || order.containsKey("fireExtinguisher")
+                || order.containsKey("chargingCable")
+                || order.containsKey("testDriveDone");
+
+            boolean hasCriticalDefect = false;
+            int[] criticalIndices = { 18, 19, 20, 22, 23, 24, 25, 26 };
+            for (int idx : criticalIndices) {
+                if ("DEFECT".equalsIgnoreCase(getChecklistStatus(idx, order, false))) {
+                    hasCriticalDefect = true;
+                    break;
+                }
+            }
+
+            boolean hasOccupationalDefect = false;
+            int[] occupationalIndices = { 30, 31, 32, 33, 34, 35, 36, 48, 49 };
+            for (int idx : occupationalIndices) {
+                if ("DEFECT".equalsIgnoreCase(getChecklistStatus(idx, order, false))) {
+                    hasOccupationalDefect = true;
+                    break;
+                }
+            }
+
+            boolean hasAnyDefect = false;
+            for (int i = 1; i <= 51; i++) {
+                if ("DEFECT".equalsIgnoreCase(getChecklistStatus(i, order, false))) {
+                    hasAnyDefect = true;
+                    break;
+                }
+            }
+
+            boolean isSafe;
+            boolean isRoad;
+            boolean isOccupational;
+            boolean isDefectsFound;
+            boolean isReinspection;
+            boolean isContinued;
+
+            if (hasChecklistData) {
+                isSafe = !hasAnyDefect;
+                isRoad = !hasCriticalDefect;
+                isOccupational = !hasOccupationalDefect;
+                isDefectsFound = hasAnyDefect;
+                isContinued = !hasCriticalDefect;
+            } else {
+                isSafe = isPassed;
+                isRoad = isPassed;
+                isOccupational = isPassed;
+                isDefectsFound = !isPassed;
+                isContinued = isPassed;
+            }
+
+            isReinspection = reinspectionRequired;
+
             // Rows in Table 3
-            String res1 = isPassed 
+            String res1 = isSafe 
                 ? getMsg("result.summary.opt.safe.passed", langCode)
                 : getMsg("result.summary.opt.safe.failed", langCode);
-            String res2 = isPassed 
+            String res2 = isRoad 
                 ? getMsg("result.summary.opt.road.passed", langCode)
                 : getMsg("result.summary.opt.road.failed", langCode);
-            String res3 = isPassed 
+            String res3 = isOccupational 
                 ? getMsg("result.summary.opt.occupational.passed", langCode)
                 : getMsg("result.summary.opt.occupational.failed", langCode);
-            String res4 = isPassed 
-                ? getMsg("result.summary.opt.defects.passed", langCode)
-                : getMsg("result.summary.opt.defects.failed", langCode);
-            String res5 = reinspectionRequired 
+            String res4 = isDefectsFound 
+                ? getMsg("result.summary.opt.defects.failed", langCode)
+                : getMsg("result.summary.opt.defects.passed", langCode);
+            String res5 = isReinspection 
                 ? getMsg("result.summary.opt.reinspection.failed", langCode)
                 : getMsg("result.summary.opt.reinspection.passed", langCode);
-            String res6 = isPassed 
+            String res6 = isContinued 
                 ? getMsg("result.summary.opt.continued.passed", langCode)
                 : getMsg("result.summary.opt.continued.failed", langCode);
 
@@ -430,7 +482,7 @@ public class UvvCertificateGenerator {
             nestedLeft.setWidthPercentage(100);
 
             PdfPCell spacerCell = new PdfPCell();
-            spacerCell.setFixedHeight(60f);
+            spacerCell.setFixedHeight(80f);
             spacerCell.setBorder(Rectangle.NO_BORDER);
             nestedLeft.addCell(spacerCell);
 
@@ -461,7 +513,7 @@ public class UvvCertificateGenerator {
             nestedRight.setWidthPercentage(100);
 
             PdfPCell stampImgCell = new PdfPCell();
-            stampImgCell.setFixedHeight(60f);
+            stampImgCell.setFixedHeight(80f);
             stampImgCell.setBorder(Rectangle.NO_BORDER);
             stampImgCell.setVerticalAlignment(Element.ALIGN_BOTTOM);
             stampImgCell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -471,7 +523,7 @@ public class UvvCertificateGenerator {
                 if (stampStream != null) {
                     byte[] stampBytes = stampStream.readAllBytes();
                     Image stampImg = Image.getInstance(stampBytes);
-                    stampImg.scaleToFit(120f, 50f);
+                    stampImg.scaleToFit(160f, 75f);
                     stampImg.setAlignment(Element.ALIGN_CENTER);
                     stampImgCell.addElement(stampImg);
                     stampLoaded = true;
@@ -482,7 +534,7 @@ public class UvvCertificateGenerator {
 
             if (!stampLoaded) {
                 PdfPCell emptyStamp = new PdfPCell();
-                emptyStamp.setFixedHeight(50f);
+                emptyStamp.setFixedHeight(75f);
                 emptyStamp.setBorder(Rectangle.NO_BORDER);
                 stampImgCell.addElement(emptyStamp);
             }
@@ -697,16 +749,23 @@ public class UvvCertificateGenerator {
             }
             case 2: {
                 String status = order.getString("registrationCertificateStatus");
+                String serviceStatus = order.getString("serviceBookletStatus");
+                String manualStatus = order.getString("operatingManualStatus");
+                if ("not_available".equalsIgnoreCase(status) || "not_available".equalsIgnoreCase(serviceStatus) || "not_available".equalsIgnoreCase(manualStatus)) {
+                    return "DEFECT";
+                }
                 if ("Original".equalsIgnoreCase(status) || "Copy".equalsIgnoreCase(status)) {
                     return "OK";
-                } else if ("Not Available".equalsIgnoreCase(status)) {
-                    return "DEFECT";
                 }
                 return "NA";
             }
             case 3: {
                 Object nextHU = order.get("nextHU");
                 return (nextHU != null && !nextHU.toString().isBlank()) ? "OK" : "NA";
+            }
+            case 4: { // Kennzeichen vorne/hinten vorhanden, lesbar, fest
+                boolean plateDmg = hasBodyPartDamage(order, "frontLicensePlate", "rearLicensePlate", "licensePlate");
+                return plateDmg ? "DEFECT" : "OK";
             }
             case 5: {
                 String cond = order.getString("vehicleConditionStatus");
@@ -716,6 +775,104 @@ public class UvvCertificateGenerator {
                     return "OK";
                 }
                 return "NA";
+            }
+            case 6: { // Karosserie
+                boolean bodyDmg = hasBodyPartDamage(order, 
+                    "bumper_front", "hood", "fender_front_left", "door_front_left", "door_rear_left", 
+                    "quarter_panel_left", "sill_left", "roof_frame_left", "fender_front_right", 
+                    "door_front_right", "door_rear_right", "quarter_panel_right", "sill_right", 
+                    "roof_frame_right", "roof", "tailgate", "bumper_rear"
+                );
+                return bodyDmg ? "DEFECT" : "OK";
+            }
+            case 7: { // Türen, Hauben, Klappen, Schlösser
+                boolean doorsDmg = hasBodyPartDamage(order, 
+                    "door_front_left", "door_rear_left", "door_front_right", "door_rear_right", "tailgate", "hood"
+                );
+                return doorsDmg ? "DEFECT" : "OK";
+            }
+            case 8: { // Scheiben
+                boolean windshieldDmg = hasBodyPartDamage(order, "windshield");
+                return windshieldDmg ? "DEFECT" : "OK";
+            }
+            case 9: { // Spiegel
+                boolean mirrorDmg = hasBodyPartDamage(order, "mirror_left", "mirror_right");
+                return mirrorDmg ? "DEFECT" : "OK";
+            }
+            case 12: { // Beleuchtung vorne
+                boolean frontLightsDmg = hasBodyPartDamage(order, "headlight_left", "headlight_right");
+                return frontLightsDmg ? "DEFECT" : "OK";
+            }
+            case 13: { // Beleuchtung hinten
+                boolean rearLightsDmg = hasBodyPartDamage(order, "rear_light_left", "rear_light_right");
+                return rearLightsDmg ? "DEFECT" : "OK";
+            }
+            case 20: { // Lenkung
+                boolean steeringDmg = hasBodyPartDamage(order, "steering_wheel");
+                return steeringDmg ? "DEFECT" : "OK";
+            }
+            case 21: { // Fahrwerk/Federung
+                Boolean below = order.getBoolean("inspectionFromBelow");
+                if (Boolean.FALSE.equals(below)) {
+                    return "NA";
+                }
+                return "OK";
+            }
+            case 22: { // Reifen Profiltiefe
+                java.util.List<org.bson.Document> tires = order.getList("tires", org.bson.Document.class);
+                if (tires == null || tires.isEmpty()) {
+                    return "NA";
+                }
+                boolean hasLowTread = false;
+                for (org.bson.Document tire : tires) {
+                    Object tdObj = tire.get("treadDepth");
+                    if (tdObj != null) {
+                        try {
+                            double depth = Double.parseDouble(tdObj.toString().trim().replaceAll("[^0-9.]", ""));
+                            if (depth < 1.6) {
+                                hasLowTread = true;
+                                break;
+                            }
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                    }
+                }
+                return hasLowTread ? "DEFECT" : "OK";
+            }
+            case 23: { // Reifen Schäden
+                java.util.List<org.bson.Document> tires = order.getList("tires", org.bson.Document.class);
+                if (tires == null || tires.isEmpty()) {
+                    return "NA";
+                }
+                boolean hasDamage = false;
+                for (org.bson.Document tire : tires) {
+                    Boolean damaged = tire.getBoolean("damaged");
+                    if (Boolean.TRUE.equals(damaged)) {
+                        hasDamage = true;
+                        break;
+                    }
+                }
+                return hasDamage ? "DEFECT" : "OK";
+            }
+            case 26: { // Felgen/Räder
+                java.util.List<org.bson.Document> tires = order.getList("tires", org.bson.Document.class);
+                if (tires == null || tires.isEmpty()) {
+                    return "NA";
+                }
+                boolean hasRimDamage = false;
+                for (org.bson.Document tire : tires) {
+                    java.util.List<?> rimDmgList = tire.getList("rimDamage", Object.class);
+                    if (rimDmgList != null && !rimDmgList.isEmpty()) {
+                        hasRimDamage = true;
+                        break;
+                    }
+                }
+                return hasRimDamage ? "DEFECT" : "OK";
+            }
+            case 28: { // Sitze
+                boolean seatsDmg = hasBodyPartDamage(order, "seat_driver", "seat_passenger");
+                return seatsDmg ? "DEFECT" : "OK";
             }
             case 29: {
                 String warningLights = order.getString("engineRunWarningLightsActive");
@@ -738,11 +895,27 @@ public class UvvCertificateGenerator {
             case 33: {
                 return getEquipmentStatus(order, "fireExtinguisher");
             }
+            case 39: { // Elektrische Anlage / Batterie
+                Boolean batteryChecked = order.getBoolean("hybridBatteryChecked");
+                if (batteryChecked != null && !batteryChecked) {
+                    return "DEFECT";
+                }
+                return "OK";
+            }
             case 44: {
                 String chargingCable = order.getString("chargingCable");
                 if ("available".equalsIgnoreCase(chargingCable) || "present".equalsIgnoreCase(chargingCable)) {
                     return "OK";
                 } else if ("not_available".equalsIgnoreCase(chargingCable)) {
+                    return "DEFECT";
+                }
+                return "NA";
+            }
+            case 49: { // Sonderaufbauten
+                String status = order.getString("liftingPlatformStatus");
+                if ("available".equalsIgnoreCase(status) || "ok".equalsIgnoreCase(status) || "present".equalsIgnoreCase(status)) {
+                    return "OK";
+                } else if ("not_available".equalsIgnoreCase(status) || "defect".equalsIgnoreCase(status)) {
                     return "DEFECT";
                 }
                 return "NA";
@@ -761,6 +934,37 @@ public class UvvCertificateGenerator {
             default:
                 return "OK";
         }
+    }
+
+    private boolean hasBodyPartDamage(org.bson.Document order, String... bodyParts) {
+        java.util.List<org.bson.Document> damages = order.getList("damages", org.bson.Document.class);
+        if (damages != null) {
+            for (org.bson.Document d : damages) {
+                String bp = d.getString("bodyPart");
+                if (bp != null) {
+                    for (String target : bodyParts) {
+                        if (target.equalsIgnoreCase(bp)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        java.util.List<org.bson.Document> rows = order.getList("minderwertRows", org.bson.Document.class);
+        if (rows != null) {
+            for (org.bson.Document r : rows) {
+                String bp = r.getString("bodyPart");
+                String dmg = r.getString("damage");
+                if (bp != null && dmg != null && !dmg.isBlank()) {
+                    for (String target : bodyParts) {
+                        if (target.equalsIgnoreCase(bp)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private String getEquipmentStatus(org.bson.Document order, String fieldName) {

@@ -62,6 +62,33 @@ public class UvvCertificateGeneratorTest {
         savePdfFile("UVV_Zertifikat_EN_Failed.pdf", pdfBytes);
     }
 
+    @Test
+    public void testGenerateCertificatePdf_FallbackChecklist_NoDefect() throws Exception {
+        Document order = createTestOrder();
+        // Make sure it has no defects by fixing the fireExtinguisher
+        Document extinguisherDoc = new Document();
+        extinguisherDoc.put("status", "available");
+        order.put("fireExtinguisher", extinguisherDoc);
+
+        UvvCertificateGenerator generator = createGenerator();
+        byte[] pdfBytes = generator.generateCertificatePdf(order, "John Doe", null, "de");
+
+        verifyPdfBytes(pdfBytes);
+        savePdfFile("UVV_Zertifikat_Fallback_NoDefect.pdf", pdfBytes);
+    }
+
+    @Test
+    public void testGenerateCertificatePdf_FallbackChecklist_WithDefect() throws Exception {
+        Document order = createTestOrder();
+        // createTestOrder already has a defect in fireExtinguisher
+
+        UvvCertificateGenerator generator = createGenerator();
+        byte[] pdfBytes = generator.generateCertificatePdf(order, "John Doe", null, "de");
+
+        verifyPdfBytes(pdfBytes);
+        savePdfFile("UVV_Zertifikat_Fallback_WithDefect.pdf", pdfBytes);
+    }
+
     private Document createTestOrder() {
         Document order = new Document();
         order.put("licensePlateNumber", "K-IT 1113");
@@ -98,6 +125,19 @@ public class UvvCertificateGeneratorTest {
         Document extinguisherDoc = new Document();
         extinguisherDoc.put("status", "not_available"); // Defect case to verify defect mapping
         order.put("fireExtinguisher", extinguisherDoc);
+
+        // Tires
+        java.util.List<Document> tires = new java.util.ArrayList<>();
+        Document t1 = new Document();
+        t1.put("treadDepth", "5.0");
+        t1.put("damaged", false);
+        t1.put("rimDamage", new java.util.ArrayList<>());
+        tires.add(t1);
+        order.put("tires", tires);
+
+        // Damages and minderwertRows
+        order.put("damages", new java.util.ArrayList<>());
+        order.put("minderwertRows", new java.util.ArrayList<>());
 
         return order;
     }

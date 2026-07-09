@@ -6,7 +6,7 @@ export interface Order {
     dispatchOrOrderNo?: string;
     numberOfPhotos?: number;
     // Contact
-    repairerName?: string;
+    clientName?: string;
     contactPersonName?: string;
     contactPersonMobile?: string;
     contactPersonEmail?: string;

@@ -47,7 +47,7 @@ public class Order {
     private String mode;
 
     // ===== contact / vehicle basics =====
-    private String repairerName;
+    private String clientName;
     private String contactPersonName;
     private String contactPersonMobile;
     private String contactPersonEmail;
@@ -112,8 +112,8 @@ public class Order {
     public String getMode() { return mode; }
     public void setMode(String mode) { this.mode = mode; }
 
-    public String getRepairerName() { return repairerName; }
-    public void setRepairerName(String repairerName) { this.repairerName = repairerName; }
+    public String getClientName() { return clientName; }
+    public void setClientName(String clientName) { this.clientName = clientName; }
 
     public String getContactPersonName() { return contactPersonName; }
     public void setContactPersonName(String contactPersonName) { this.contactPersonName = contactPersonName; }

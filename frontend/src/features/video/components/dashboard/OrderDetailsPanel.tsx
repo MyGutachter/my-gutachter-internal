@@ -267,7 +267,7 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                                 {t('order.contactDetails', { defaultValue: 'Contact Details' })}
                             </h3>
                             <dl className="space-y-2 text-[11px]">
-                                {renderRow(t('order.fields.repairer', { defaultValue: 'Repairer' }), order.repairerName)}
+                                {renderRow(t('order.fields.repairer', { defaultValue: 'Repairer' }), order.clientName)}
                                 {renderRow(t('order.fields.contactPerson', { defaultValue: 'Contact Person' }), order.contactPersonName)}
                                 {renderRow(t('order.fields.mobile', { defaultValue: 'Mobile' }), order.contactPersonMobile, false, <MessageSquare size={14} />)}
                                 {renderRow(t('order.fields.email', { defaultValue: 'Email' }), order.contactPersonEmail, true)}

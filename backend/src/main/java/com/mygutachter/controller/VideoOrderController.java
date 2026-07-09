@@ -343,7 +343,7 @@ public class VideoOrderController {
         o.put("status", d.getString("orderStatus"));
         o.put("source", d.getString("source"));
         o.put("claimType", d.getString("claimType"));
-        o.put("repairerName", d.getString("repairerName"));
+        o.put("clientName", d.getString("clientName"));
         o.put("contactPersonName", d.getString("contactPersonName"));
         o.put("contactPersonMobile", d.getString("contactPersonMobile"));
         o.put("contactPersonEmail", d.getString("contactPersonEmail"));

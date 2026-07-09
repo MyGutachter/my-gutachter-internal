@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
 import { useNavigate } from 'react-router-dom';
-import orderLogo from '../../assets/order_logo.png';
+import orderLogo from '../../assets/logo.png';
 import { sendMeetingInvite } from '../../services/orderService';
 import type { Order } from '../../types';
 
@@ -91,16 +91,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
                     formattedDate = `${d}.${m}.${y}`;
                 }
 
-                const formattedTime = (() => {
-                    if (!time) return time;
-                    const [hStr, mStr] = time.split(':');
-                    const h = Number(hStr);
-                    const m = Number(mStr);
-                    if (Number.isNaN(h) || Number.isNaN(m)) return time;
-                    const ampm = h >= 12 ? 'PM' : 'AM';
-                    const h12 = ((h + 11) % 12) + 1;
-                    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
-                })();
+                const formattedTime = time;
 
                 await sendMeetingInvite(
                     sendEmail ? email : '',
