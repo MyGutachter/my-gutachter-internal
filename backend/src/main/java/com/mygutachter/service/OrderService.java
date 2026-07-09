@@ -184,10 +184,10 @@ public class OrderService {
         Document existingOrder = collection.find(filter).first();
 
         // Initialize collections if they don't exist in existingOrder
-        if (existingOrder == null || !existingOrder.containsKey("minderwertRows") || 
-            !(existingOrder.get("minderwertRows") instanceof java.util.List) || 
+        if (existingOrder == null || !existingOrder.containsKey("minderwertRows") ||
+            !(existingOrder.get("minderwertRows") instanceof java.util.List) ||
             ((java.util.List<?>) existingOrder.get("minderwertRows")).isEmpty()) {
-            
+
             java.util.List<Document> defaultMinderwertRows = new java.util.ArrayList<>();
             for (String partId : DEFAULT_BODY_PARTS) {
                 Document row = new Document()
@@ -499,7 +499,7 @@ public class OrderService {
         if (photos == null) {
             photos = new ArrayList<>();
         }
-        
+
         int foundIndex = -1;
         for (int i = 0; i < photos.size(); i++) {
             Document p = photos.get(i);
@@ -605,7 +605,7 @@ public class OrderService {
 
     private void removeScreenshotFromReport(Document doc, String dbKey) {
         String filename = dbKey + ".png";
-        
+
         removeFromUniqueLists(doc, filename);
         removeFromTires(doc, filename);
         removeFromEquipment(doc, filename);
@@ -616,9 +616,9 @@ public class OrderService {
 
     private void removeFromUniqueLists(Document doc, String filename) {
         String[] listFields = {
-            "identificationImages", "mileageImages", "nextHUImages", 
-            "keysImages", "fzScheinImages", "serviceheftImages", 
-            "bordliteraturImages", "environmentalBadgeImages", 
+            "identificationImages", "mileageImages", "nextHUImages",
+            "keysImages", "fzScheinImages", "serviceheftImages",
+            "bordliteraturImages", "environmentalBadgeImages",
             "maintenanceImages", "chargingCableImages"
         };
         for (String field : listFields) {
@@ -988,9 +988,9 @@ public class OrderService {
         }
 
         String[] uniqueListFields = {
-            "identificationImages", "mileageImages", "nextHUImages", 
-            "keysImages", "fzScheinImages", "serviceheftImages", 
-            "bordliteraturImages", "environmentalBadgeImages", 
+            "identificationImages", "mileageImages", "nextHUImages",
+            "keysImages", "fzScheinImages", "serviceheftImages",
+            "bordliteraturImages", "environmentalBadgeImages",
             "maintenanceImages", "chargingCableImages"
         };
         for (String field : uniqueListFields) {

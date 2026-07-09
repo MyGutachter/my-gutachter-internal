@@ -38,7 +38,7 @@ public class OrderController {
     public ResponseEntity<?> importOrder(@RequestBody Order order) {
         try {
             Document saved = orderService.importOrder(order);
-            return ResponseEntity.ok(saved);
+            return ResponseEntity.ok(VideoOrderController.toVideoOrderDto(saved));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

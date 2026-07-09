@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,9 +23,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mygutachter.model.Order;
 import com.mygutachter.model.OrderMode;
-import com.mygutachter.model.OrderSource;
 import com.mygutachter.service.OrderService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -314,7 +311,7 @@ public class VideoOrderController {
     }
 
     /** Map a unified order document into the video frontend's {@code Order} DTO shape. */
-    private Map<String, Object> toVideoOrderDto(Document d) {
+    public static Map<String, Object> toVideoOrderDto(Document d) {
         Map<String, Object> o = new LinkedHashMap<>();
         String id = firstNonNull(d.getString("caseNumber"), d.getString("omtOrderId"));
         o.put("id", id);
