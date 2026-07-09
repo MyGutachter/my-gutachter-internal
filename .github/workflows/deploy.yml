@@ -12,12 +12,9 @@ env:
   DEPLOY_KEY:  ${{ secrets.PROD_SSH_PRIVATE_KEY }}
 
 jobs:
-  prepare:
-    name: 📥 Pull Changes & Check Diffs
+  deploy:
+    name: 🚀 Deploy My-Gutachter-Internal
     runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.set.outputs.backend }}
-      frontend: ${{ steps.set.outputs.frontend }}
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -66,12 +63,16 @@ jobs:
             echo "No directory-specific changes detected, deploying both backend and frontend."
           fi
 
-      - name: 🔌 Pull Latest Code on Server
+      - name: 🔌 Pull Code & Deploy on Server
         uses: appleboy/ssh-action@master
+        env:
+          BACKEND_CHANGED: ${{ steps.set.outputs.backend }}
+          FRONTEND_CHANGED: ${{ steps.set.outputs.frontend }}
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_KEY }}
+          envs: BACKEND_CHANGED,FRONTEND_CHANGED
           script: |
             echo "=================================================="
             echo "📁 Navigating to repository..."
@@ -81,50 +82,22 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             echo "=================================================="
-
-  backend:
-    name: ⚙️ Build & Deploy Backend
-    needs: prepare
-    if: needs.prepare.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🔌 Build Backend
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ env.DEPLOY_KEY }}
-          script: |
-            echo "=================================================="
+            
             echo "🐳 Navigating to Docker Compose directory..."
             cd /home/ubuntu/repositories
             
-            echo "🔨 Rebuilding & restarting backend container (internal_backend)..."
-            docker compose build --no-cache internal_backend && docker compose up -d --no-deps internal_backend
-            
-            echo "🧹 Pruning unused Docker images..."
-            docker image prune -f
-            echo "=================================================="
-
-  frontend:
-    name: 🎨 Build & Deploy Frontend
-    needs: prepare
-    if: needs.prepare.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🔌 Build Frontend
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
-          key: ${{ env.DEPLOY_KEY }}
-          script: |
-            echo "=================================================="
-            echo "🐳 Navigating to Docker Compose directory..."
-            cd /home/ubuntu/repositories
-            
-            echo "🔨 Rebuilding & restarting frontend container (internal_frontend)..."
-            docker compose build --no-cache internal_frontend && docker compose up -d --no-deps internal_frontend
+            if [ "$BACKEND_CHANGED" = "true" ] && [ "$FRONTEND_CHANGED" = "true" ]; then
+              echo "🔨 Rebuilding & restarting both backend & frontend containers..."
+              docker compose build --no-cache internal_backend internal_frontend && docker compose up -d --no-deps internal_backend internal_frontend
+            elif [ "$BACKEND_CHANGED" = "true" ]; then
+              echo "🔨 Rebuilding & restarting backend container (internal_backend)..."
+              docker compose build --no-cache internal_backend && docker compose up -d --no-deps internal_backend
+            elif [ "$FRONTEND_CHANGED" = "true" ]; then
+              echo "🔨 Rebuilding & restarting frontend container (internal_frontend)..."
+              docker compose build --no-cache internal_frontend && docker compose up -d --no-deps internal_frontend
+            else
+              echo "ℹ️ No changes detected to build or deploy."
+            fi
             
             echo "🧹 Pruning unused Docker images..."
             docker image prune -f
