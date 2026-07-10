@@ -46,6 +46,11 @@ public class UserController {
             user.put("username", doc.getString("username"));
             user.put("role", doc.getString("role"));
             user.put("canViewAllOrders", doc.getBoolean("canViewAllOrders", false));
+            user.put("videoXpertViewOwn", doc.getBoolean("videoXpertViewOwn", false));
+            user.put("videoXpertViewAll", doc.getBoolean("videoXpertViewAll", false));
+            user.put("vehicleValuationViewOwn", doc.getBoolean("vehicleValuationViewOwn", false));
+            user.put("vehicleValuationViewAll", doc.getBoolean("vehicleValuationViewAll", false));
+            user.put("vehicleValuationAdministrate", doc.getBoolean("vehicleValuationAdministrate", false));
             users.add(user);
         }
 

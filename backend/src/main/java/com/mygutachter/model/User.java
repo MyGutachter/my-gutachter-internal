@@ -32,6 +32,11 @@ public class User {
     private String password;
     /** Per-user override; role-level default lives in rateConfig. */
     private boolean canViewAllOrders;
+    private boolean videoXpertViewOwn;
+    private boolean videoXpertViewAll;
+    private boolean vehicleValuationViewOwn;
+    private boolean vehicleValuationViewAll;
+    private boolean vehicleValuationAdministrate;
 
     // Two-factor (TOTP)
     private boolean twoFactorEnabled;
@@ -75,6 +80,21 @@ public class User {
 
     public boolean isCanViewAllOrders() { return canViewAllOrders; }
     public void setCanViewAllOrders(boolean canViewAllOrders) { this.canViewAllOrders = canViewAllOrders; }
+
+    public boolean isVideoXpertViewOwn() { return videoXpertViewOwn; }
+    public void setVideoXpertViewOwn(boolean videoXpertViewOwn) { this.videoXpertViewOwn = videoXpertViewOwn; }
+
+    public boolean isVideoXpertViewAll() { return videoXpertViewAll; }
+    public void setVideoXpertViewAll(boolean videoXpertViewAll) { this.videoXpertViewAll = videoXpertViewAll; }
+
+    public boolean isVehicleValuationViewOwn() { return vehicleValuationViewOwn; }
+    public void setVehicleValuationViewOwn(boolean vehicleValuationViewOwn) { this.vehicleValuationViewOwn = vehicleValuationViewOwn; }
+
+    public boolean isVehicleValuationViewAll() { return vehicleValuationViewAll; }
+    public void setVehicleValuationViewAll(boolean vehicleValuationViewAll) { this.vehicleValuationViewAll = vehicleValuationViewAll; }
+
+    public boolean isVehicleValuationAdministrate() { return vehicleValuationAdministrate; }
+    public void setVehicleValuationAdministrate(boolean vehicleValuationAdministrate) { this.vehicleValuationAdministrate = vehicleValuationAdministrate; }
 
     public boolean isTwoFactorEnabled() { return twoFactorEnabled; }
     public void setTwoFactorEnabled(boolean twoFactorEnabled) { this.twoFactorEnabled = twoFactorEnabled; }

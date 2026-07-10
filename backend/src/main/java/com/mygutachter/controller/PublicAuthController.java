@@ -25,6 +25,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -277,24 +278,6 @@ public class PublicAuthController {
         String email = request.getEmail().trim();
         Document existingUser = userAccountService.findByEmail(email);
 
-        if (existingUser != null) {
-            String existingEmail = existingUser.getString("email");
-            List<ApiKey> apiKeys = apiKeyService.getApiKeys(existingEmail);
-            ApiKey activeKey = apiKeys.stream()
-                    .filter(ApiKey::isActive)
-                    .findFirst()
-                    .orElseGet(() -> apiKeyService.generateApiKey(existingEmail, "Default Key"));
-
-            Object idObj = existingUser.get("_id");
-            String userId = idObj != null ? idObj.toString() : "";
-
-            return ResponseEntity.ok(new QuickRegisterResponse(userId, activeKey.getKey()));
-        }
-
-        // Create new user Document
-        String randomPassword = UUID.randomUUID().toString();
-        String hashedPassword = passwordEncoder.encode(randomPassword);
-
         UserRole mappedRole = UserRole.EXPERT;
         if (request.getRoles() != null) {
             if (request.getRoles().contains("Admin")) {
@@ -308,11 +291,66 @@ public class PublicAuthController {
             }
         }
 
+        boolean videoXpertViewOwn = false;
+        boolean videoXpertViewAll = false;
+        boolean vehicleValuationViewOwn = false;
+        boolean vehicleValuationViewAll = false;
+        boolean vehicleValuationAdministrate = false;
+
+        if (request.getPermissions() != null) {
+            videoXpertViewOwn = Boolean.TRUE.equals(request.getPermissions().get("videoXpertViewOwn"));
+            videoXpertViewAll = Boolean.TRUE.equals(request.getPermissions().get("videoXpertViewAll"));
+            vehicleValuationViewOwn = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationViewOwn"));
+            vehicleValuationViewAll = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationViewAll"));
+            vehicleValuationAdministrate = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationAdministrate"));
+        }
+
+        if (existingUser != null) {
+            String existingEmail = existingUser.getString("email");
+            List<ApiKey> apiKeys = apiKeyService.getApiKeys(existingEmail);
+            ApiKey activeKey = apiKeys.stream()
+                    .filter(ApiKey::isActive)
+                    .findFirst()
+                    .orElseGet(() -> apiKeyService.generateApiKey(existingEmail, "Default Key"));
+
+            Object idObj = existingUser.get("_id");
+            String userId = idObj != null ? idObj.toString() : "";
+
+            List<org.bson.conversions.Bson> updates = new ArrayList<>();
+            updates.add(Updates.set("role", mappedRole.name()));
+            updates.add(Updates.set("videoXpertViewOwn", videoXpertViewOwn));
+            updates.add(Updates.set("videoXpertViewAll", videoXpertViewAll));
+            updates.add(Updates.set("vehicleValuationViewOwn", vehicleValuationViewOwn));
+            updates.add(Updates.set("vehicleValuationViewAll", vehicleValuationViewAll));
+            updates.add(Updates.set("vehicleValuationAdministrate", vehicleValuationAdministrate));
+            updates.add(Updates.set("updatedDate", new Date()));
+            if (request.getName() != null && !request.getName().trim().isEmpty()) {
+                updates.add(Updates.set("username", request.getName()));
+                updates.add(Updates.set("fullName", request.getName()));
+            }
+
+            userAccountService.collection().updateOne(
+                    userAccountService.emailFilter(existingEmail),
+                    Updates.combine(updates)
+            );
+
+            return ResponseEntity.ok(new QuickRegisterResponse(userId, activeKey.getKey()));
+        }
+
+        // Create new user Document
+        String randomPassword = UUID.randomUUID().toString();
+        String hashedPassword = passwordEncoder.encode(randomPassword);
+
         Document newUser = new Document("email", email)
                 .append("username", request.getName())
                 .append("fullName", request.getName())
                 .append("password", hashedPassword)
                 .append("role", mappedRole.name())
+                .append("videoXpertViewOwn", videoXpertViewOwn)
+                .append("videoXpertViewAll", videoXpertViewAll)
+                .append("vehicleValuationViewOwn", vehicleValuationViewOwn)
+                .append("vehicleValuationViewAll", vehicleValuationViewAll)
+                .append("vehicleValuationAdministrate", vehicleValuationAdministrate)
                 .append("twoFactorEnabled", false)
                 .append("connectedWithOmt", true)
                 .append("createdDate", new Date())
@@ -332,6 +370,126 @@ public class PublicAuthController {
         String userId = idObj != null ? idObj.toString() : "";
 
         return ResponseEntity.ok(new QuickRegisterResponse(userId, apiKey.getKey()));
+    }
+
+    @PostMapping("/quick-register/bulk")
+    public ResponseEntity<?> bulkQuickRegister(
+            @RequestBody List<QuickRegisterRequest> requests,
+            @RequestHeader(value = "X-API-Key", required = false) String headerApiKey) {
+        String keyToCheck = headerApiKey;
+        if (keyToCheck == null || keyToCheck.isEmpty()) {
+            if (requests != null && !requests.isEmpty()) {
+                keyToCheck = requests.get(0).getApiKey();
+            }
+        }
+
+        if (keyToCheck == null || !keyToCheck.equals(quickRegisterApiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid Quick Register API Key"));
+        }
+
+        if (requests == null || requests.isEmpty()) {
+            return ResponseEntity.ok(Map.of("message", "No users to sync"));
+        }
+
+        List<QuickRegisterResponse> responses = new ArrayList<>();
+
+        for (QuickRegisterRequest request : requests) {
+            if (request.getEmail() == null || request.getEmail().isEmpty()) {
+                continue;
+            }
+
+            String email = request.getEmail().trim();
+            Document existingUser = userAccountService.findByEmail(email);
+
+            UserRole mappedRole = UserRole.EXPERT;
+            if (request.getRoles() != null) {
+                if (request.getRoles().contains("Admin")) {
+                    mappedRole = UserRole.ADMIN;
+                } else if (request.getRoles().contains("Expert")) {
+                    mappedRole = UserRole.EXPERT;
+                } else if (request.getRoles().contains("Dispatch")) {
+                    mappedRole = UserRole.DISPATCH;
+                } else if (request.getRoles().contains("Accounting")) {
+                    mappedRole = UserRole.ACCOUNTING;
+                }
+            }
+
+            boolean videoXpertViewOwn = false;
+            boolean videoXpertViewAll = false;
+            boolean vehicleValuationViewOwn = false;
+            boolean vehicleValuationViewAll = false;
+            boolean vehicleValuationAdministrate = false;
+
+            if (request.getPermissions() != null) {
+                videoXpertViewOwn = Boolean.TRUE.equals(request.getPermissions().get("videoXpertViewOwn"));
+                videoXpertViewAll = Boolean.TRUE.equals(request.getPermissions().get("videoXpertViewAll"));
+                vehicleValuationViewOwn = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationViewOwn"));
+                vehicleValuationViewAll = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationViewAll"));
+                vehicleValuationAdministrate = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationAdministrate"));
+            }
+
+            if (existingUser != null) {
+                String existingEmail = existingUser.getString("email");
+                List<ApiKey> apiKeys = apiKeyService.getApiKeys(existingEmail);
+                ApiKey activeKey = apiKeys.stream()
+                        .filter(ApiKey::isActive)
+                        .findFirst()
+                        .orElseGet(() -> apiKeyService.generateApiKey(existingEmail, "Default Key"));
+
+                Object idObj = existingUser.get("_id");
+                String userId = idObj != null ? idObj.toString() : "";
+
+                List<org.bson.conversions.Bson> updates = new ArrayList<>();
+                updates.add(Updates.set("role", mappedRole.name()));
+                updates.add(Updates.set("videoXpertViewOwn", videoXpertViewOwn));
+                updates.add(Updates.set("videoXpertViewAll", videoXpertViewAll));
+                updates.add(Updates.set("vehicleValuationViewOwn", vehicleValuationViewOwn));
+                updates.add(Updates.set("vehicleValuationViewAll", vehicleValuationViewAll));
+                updates.add(Updates.set("vehicleValuationAdministrate", vehicleValuationAdministrate));
+                updates.add(Updates.set("updatedDate", new Date()));
+                if (request.getName() != null && !request.getName().trim().isEmpty()) {
+                    updates.add(Updates.set("username", request.getName()));
+                    updates.add(Updates.set("fullName", request.getName()));
+                }
+
+                userAccountService.collection().updateOne(
+                        userAccountService.emailFilter(existingEmail),
+                        Updates.combine(updates)
+                );
+
+                responses.add(new QuickRegisterResponse(userId, activeKey.getKey()));
+            } else {
+                String randomPassword = UUID.randomUUID().toString();
+                String hashedPassword = passwordEncoder.encode(randomPassword);
+
+                Document newUser = new Document("email", email)
+                        .append("username", request.getName())
+                        .append("fullName", request.getName())
+                        .append("password", hashedPassword)
+                        .append("role", mappedRole.name())
+                        .append("videoXpertViewOwn", videoXpertViewOwn)
+                        .append("videoXpertViewAll", videoXpertViewAll)
+                        .append("vehicleValuationViewOwn", vehicleValuationViewOwn)
+                        .append("vehicleValuationViewAll", vehicleValuationViewAll)
+                        .append("vehicleValuationAdministrate", vehicleValuationAdministrate)
+                        .append("twoFactorEnabled", false)
+                        .append("connectedWithOmt", true)
+                        .append("createdDate", new Date())
+                        .append("updatedDate", new Date());
+
+                userAccountService.collection().insertOne(newUser);
+
+                Document savedUser = userAccountService.findByEmail(email);
+                ApiKey apiKey = apiKeyService.generateApiKey(email, "Default Key");
+
+                Object idObj = savedUser.get("_id");
+                String userId = idObj != null ? idObj.toString() : "";
+
+                responses.add(new QuickRegisterResponse(userId, apiKey.getKey()));
+            }
+        }
+
+        return ResponseEntity.ok(responses);
     }
 
     // --- shared -----------------------------------------------------------------

@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -76,6 +77,10 @@ public class VideoOrderController {
         String userEmail = (String) request.getAttribute("userEmail");
         String userRole = (String) request.getAttribute("userRole");
 
+        if (!canViewOwnVideoOrders(userEmail, userRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         Document filter = new Document("$and", baseVideoFilter(userEmail, userRole, showArchive, search));
 
         long totalElements = collection.countDocuments(filter);
@@ -111,6 +116,10 @@ public class VideoOrderController {
         String userEmail = (String) request.getAttribute("userEmail");
         String userRole = (String) request.getAttribute("userRole");
 
+        if (!canViewOwnVideoOrders(userEmail, userRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         List<Document> filter = baseVideoFilter(userEmail, userRole, showArchive, search);
 
         // Optional explicit expert filter (userId == the expert's email in our model).
@@ -121,6 +130,7 @@ public class VideoOrderController {
         if (startDate != null && !startDate.isBlank()) {
             filter.add(new Document("createdAt", new Document("$gte", startDate)));
         }
+        //Created-date range (createdAt is stored ISO_LOCAL_DATE_TIME; lexicographic compare works).
         if (endDate != null && !endDate.isBlank()) {
             filter.add(new Document("createdAt", new Document("$lte", endDate + "T23:59:59")));
         }
@@ -154,6 +164,10 @@ public class VideoOrderController {
     public ResponseEntity<List<Map<String, Object>>> experts(HttpServletRequest request) {
         String userEmail = (String) request.getAttribute("userEmail");
         String userRole = (String) request.getAttribute("userRole");
+
+        if (!canViewOwnVideoOrders(userEmail, userRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         Document query = new Document("$and", baseVideoFilter(userEmail, userRole, true, ""));
         List<Document> docs = new ArrayList<>();
@@ -193,7 +207,7 @@ public class VideoOrderController {
 
         Document order = findScoped(id, request);
         if (order == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         collection.updateOne(Filters.eq("caseNumber", id),
@@ -211,7 +225,7 @@ public class VideoOrderController {
     public ResponseEntity<?> getOrder(@PathVariable String id, HttpServletRequest request) {
         Document order = findScoped(id, request);
         if (order == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(toVideoOrderDto(order));
     }
@@ -219,7 +233,7 @@ public class VideoOrderController {
     @GetMapping("/{id}/parts")
     public ResponseEntity<List<String>> getOrderParts(@PathVariable String id, HttpServletRequest request) {
         if (findScoped(id, request) == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(orderService.getOrderPartKeys(id));
     }
@@ -232,7 +246,7 @@ public class VideoOrderController {
     @GetMapping("/{id}/images")
     public ResponseEntity<Map<String, String>> getOrderImages(@PathVariable String id, HttpServletRequest request) {
         if (findScoped(id, request) == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(orderService.getOrderImages(id));
     }
@@ -245,11 +259,16 @@ public class VideoOrderController {
     private Document findScoped(String caseNumber, HttpServletRequest request) {
         String userEmail = (String) request.getAttribute("userEmail");
         String userRole = (String) request.getAttribute("userRole");
+        
+        if (!canViewOwnVideoOrders(userEmail, userRole)) {
+            return null;
+        }
+
         Document order = orderService.findByCaseNumber(caseNumber);
         if (order == null) {
             return null;
         }
-        if (!canViewAllOrders(userEmail, userRole)) {
+        if (!canViewAllVideoOrders(userEmail, userRole)) {
             String owner = order.getString("userEmail");
             if (owner == null || !owner.equalsIgnoreCase(userEmail)) {
                 return null;
@@ -266,7 +285,7 @@ public class VideoOrderController {
     private List<Document> baseVideoFilter(String userEmail, String userRole, boolean showArchive, String search) {
         List<Document> and = new ArrayList<>();
 
-        if (!canViewAllOrders(userEmail, userRole)) {
+        if (!canViewAllVideoOrders(userEmail, userRole)) {
             and.add(new Document("userEmail", userEmail));
         }
 
@@ -361,15 +380,14 @@ public class VideoOrderController {
         return null;
     }
 
-    /** Mirror of {@code ReportController.canViewAllOrders} (admin / user flag / role-config). */
-    private boolean canViewAllOrders(String userEmail, String userRole) {
+    private boolean canViewAllVideoOrders(String userEmail, String userRole) {
         if ("ADMIN".equals(userRole)) {
             return true;
         }
         if (userEmail != null) {
             Document userDoc = usersCollection
                     .find(Filters.regex("email", "^" + Pattern.quote(userEmail) + "$", "i")).first();
-            if (userDoc != null && Boolean.TRUE.equals(userDoc.getBoolean("canViewAllOrders"))) {
+            if (userDoc != null && Boolean.TRUE.equals(userDoc.getBoolean("videoXpertViewAll"))) {
                 return true;
             }
         }
@@ -378,6 +396,23 @@ public class VideoOrderController {
             List<?> allowedRoles = globalConfig.getList("allowedRolesToViewAllOrders", String.class);
             if (allowedRoles != null && allowedRoles.contains(userRole)) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean canViewOwnVideoOrders(String userEmail, String userRole) {
+        if ("ADMIN".equals(userRole)) {
+            return true;
+        }
+        if (userEmail != null) {
+            Document userDoc = usersCollection
+                    .find(Filters.regex("email", "^" + Pattern.quote(userEmail) + "$", "i")).first();
+            if (userDoc != null) {
+                if (Boolean.TRUE.equals(userDoc.getBoolean("videoXpertViewOwn")) ||
+                    Boolean.TRUE.equals(userDoc.getBoolean("videoXpertViewAll"))) {
+                    return true;
+                }
             }
         }
         return false;

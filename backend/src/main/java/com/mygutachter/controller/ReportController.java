@@ -108,20 +108,16 @@ public class ReportController {
         return "report-photos/" + rel;
     }
 
-    private boolean canViewAllOrders(String userEmail, String userRole) {
+    private boolean canViewAllVehicleValuations(String userEmail, String userRole) {
         if ("ADMIN".equals(userRole)) {
             return true;
         }
-
-        // 1. Check user-specific permission in the users collection
         if (userEmail != null) {
             Document userDoc = usersCollection.find(Filters.regex("email", "^" + java.util.regex.Pattern.quote(userEmail) + "$", "i")).first();
-            if (userDoc != null && Boolean.TRUE.equals(userDoc.getBoolean("canViewAllOrders"))) {
+            if (userDoc != null && (Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationViewAll")) || Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationAdministrate")))) {
                 return true;
             }
         }
-
-        // 2. Check role-based permission in the rateConfig collection
         Document globalConfig = rateConfigCollection.find(Filters.eq("type", "global")).first();
         if (globalConfig != null && globalConfig.containsKey("allowedRolesToViewAllOrders")) {
             List<?> allowedRoles = globalConfig.getList("allowedRolesToViewAllOrders", String.class);
@@ -129,7 +125,23 @@ public class ReportController {
                 return true;
             }
         }
+        return false;
+    }
 
+    private boolean canViewOwnVehicleValuations(String userEmail, String userRole) {
+        if ("ADMIN".equals(userRole)) {
+            return true;
+        }
+        if (userEmail != null) {
+            Document userDoc = usersCollection.find(Filters.regex("email", "^" + java.util.regex.Pattern.quote(userEmail) + "$", "i")).first();
+            if (userDoc != null) {
+                if (Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationViewOwn")) ||
+                    Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationViewAll")) ||
+                    Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationAdministrate"))) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -145,10 +157,15 @@ public class ReportController {
             HttpServletRequest request) {
         String userEmail = (String) request.getAttribute("userEmail");
         String userRole = (String) request.getAttribute("userRole");
+
+        if (!canViewOwnVehicleValuations(userEmail, userRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         List<Document> reports = new ArrayList<>();
 
         Document base = new Document();
-        if (!canViewAllOrders(userEmail, userRole)) {
+        if (!canViewAllVehicleValuations(userEmail, userRole)) {
             // Experts only see reports assigned to them (identified by userEmail)
             base.put("userEmail", userEmail);
         }
@@ -198,9 +215,13 @@ public class ReportController {
         String requesterEmail = (String) request.getAttribute("userEmail");
         String requesterRole = (String) request.getAttribute("userRole");
 
+        if (!canViewOwnVehicleValuations(requesterEmail, requesterRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         Document report = null;
         if (caseNumber != null && !caseNumber.trim().isEmpty()) {
-            if (canViewAllOrders(requesterEmail, requesterRole)) {
+            if (canViewAllVehicleValuations(requesterEmail, requesterRole)) {
                 // Admin can search globally by caseNumber
                 report = collection.find(Filters.eq("caseNumber", caseNumber)).first();
             } else {
@@ -232,9 +253,13 @@ public class ReportController {
         String userRole = (String) request.getAttribute("userRole");
         String userName = (String) request.getAttribute("expertName");
 
+        if (!canViewOwnVehicleValuations(userEmail, userRole)) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
         // If requester is authorized to view all orders and userEmail is provided in body, use it.
         // Otherwise, use the requester's email.
-        if (canViewAllOrders(userEmail, userRole) && report.getUserEmail() != null && !report.getUserEmail().isEmpty()) {
+        if (canViewAllVehicleValuations(userEmail, userRole) && report.getUserEmail() != null && !report.getUserEmail().isEmpty()) {
             userEmail = report.getUserEmail();
         } else {
             report.setUserEmail(userEmail);
@@ -447,9 +472,13 @@ public class ReportController {
         String requesterRole = (String) request.getAttribute("userRole");
         String requesterName = (String) request.getAttribute("expertName");
 
+        if (!canViewOwnVehicleValuations(requesterEmail, requesterRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         // Find report first to check permissions and get targetEmail for file cleanup
         Document report;
-        if (canViewAllOrders(requesterEmail, requesterRole)) {
+        if (canViewAllVehicleValuations(requesterEmail, requesterRole)) {
             report = collection.find(Filters.eq("caseNumber", caseNumber)).first();
         } else {
             report = collection.find(Filters.and(
@@ -528,9 +557,13 @@ public class ReportController {
         String requesterRole = (String) request.getAttribute("userRole");
         String requesterName = (String) request.getAttribute("expertName");
 
+        if (!canViewOwnVehicleValuations(requesterEmail, requesterRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         // Find report first to check permissions and get targetEmail
         Document report;
-        if (canViewAllOrders(requesterEmail, requesterRole)) {
+        if (canViewAllVehicleValuations(requesterEmail, requesterRole)) {
             report = collection.find(Filters.eq("caseNumber", caseNumber)).first();
         } else {
             report = collection.find(Filters.and(
@@ -580,9 +613,13 @@ public class ReportController {
         String requesterRole = (String) request.getAttribute("userRole");
         String requesterName = (String) request.getAttribute("expertName");
 
+        if (!canViewOwnVehicleValuations(requesterEmail, requesterRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         // Find report first to check permissions and get targetEmail
         Document existingDoc;
-        if (canViewAllOrders(requesterEmail, requesterRole)) {
+        if (canViewAllVehicleValuations(requesterEmail, requesterRole)) {
             existingDoc = collection.find(Filters.eq("caseNumber", caseNumber)).first();
         } else {
             existingDoc = collection.find(Filters.and(
@@ -771,7 +808,11 @@ public class ReportController {
         String userEmail = (String) request.getAttribute("userEmail");
         String userRole = (String) request.getAttribute("userRole");
 
-        Document query = canViewAllOrders(userEmail, userRole)
+        if (!canViewOwnVehicleValuations(userEmail, userRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        Document query = canViewAllVehicleValuations(userEmail, userRole)
                 ? new Document("caseNumber", caseNumber)
                 : new Document("userEmail", userEmail).append("caseNumber", caseNumber);
         Document order = collection.find(query).first();
@@ -797,9 +838,13 @@ public class ReportController {
         String requesterEmail = (String) request.getAttribute("userEmail");
         String requesterRole = (String) request.getAttribute("userRole");
 
+        if (!canViewOwnVehicleValuations(requesterEmail, requesterRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         // Find report first to check permissions and get targetEmail
         Document report;
-        if (canViewAllOrders(requesterEmail, requesterRole)) {
+        if (canViewAllVehicleValuations(requesterEmail, requesterRole)) {
             report = collection.find(Filters.eq("caseNumber", caseNumber)).first();
         } else {
             report = collection.find(Filters.and(
