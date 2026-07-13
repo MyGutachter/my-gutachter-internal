@@ -257,6 +257,7 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                             </h3>
                             <dl className="space-y-2 text-[11px]">
                                 {renderRow(t('order.dispatchOrderNo', { defaultValue: 'Dispatch/Order No.' }), order.dispatchOrOrderNo)}
+                                {renderRow(t('order.claimType', { defaultValue: 'Claim Type' }), order.claimType)}
                                 {renderRow(t('order.numberOfPhotos', { defaultValue: 'Number of Photos' }), order.numberOfPhotos)}
                             </dl>
                         </div>

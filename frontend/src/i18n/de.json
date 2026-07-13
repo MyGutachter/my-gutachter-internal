@@ -1316,7 +1316,8 @@
     "order": {
         "number": "Auftragsnummer",
         "dispatchOrderNo": "Versand-Nr./Bestell-Nr.",
-        "searchPlaceholder": "Suche nach Versand-Nr./Bestell-Nr.",
+        "claimType": "Auftragsart",
+        "searchPlaceholder": "Suche nach Versand-Nr./Bestell-Nr./Auftragsart",
         "active": "Aktiv",
         "viewDetails": "Details anzeigen",
         "markCompleted": "Als erledigt markieren",

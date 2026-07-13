@@ -307,6 +307,7 @@ public class VideoOrderController {
                     regex("licensePlate", rx),
                     regex("contactPersonName", rx),
                     regex("vehicleExpertName", rx),
+                    regex("claimType", rx),
                     regex("vinNumber", rx))));
         }
         return and;

@@ -1298,7 +1298,8 @@
     "order": {
         "number": "Order No.",
         "dispatchOrderNo": "Dispatch No./Order No.",
-        "searchPlaceholder": "Search by dispatch no./order no.",
+        "claimType": "Claim Type",
+        "searchPlaceholder": "Search by dispatch no./order no./claim type",
         "active": "Active",
         "viewDetails": "View Details",
         "markCompleted": "Mark Completed",

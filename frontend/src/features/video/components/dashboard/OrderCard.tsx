@@ -139,6 +139,11 @@ const OrderCard = ({ order }: OrderCardProps) => {
                             {order.source}
                         </span>
                     )}
+                    {order.claimType && (
+                        <span className="px-2 py-0.5 bg-[var(--color-primary-orange)]/10 text-[var(--color-primary-orange)] text-[9px] font-bold rounded-full border border-[var(--color-primary-orange)]/20 uppercase tracking-wider">
+                            {order.claimType}
+                        </span>
+                    )}
                     <span className="px-2 py-0.5 bg-green-100/50 text-green-600 text-[9px] font-bold rounded-full border border-green-200/50 uppercase tracking-wider">{order.status ? t(`common.${order.status.toLowerCase()}`, { defaultValue: order.status }) : t('common.active', { defaultValue: 'Active' })}</span>
                 </div>
             </div>

@@ -12,7 +12,7 @@ const OrderSearchPanel = ({ search, onSearchChange }: OrderSearchPanelProps) => 
     return (
         <div className="p-3 sm:p-4 flex flex-col justify-center">
             <div className="hidden sm:flex justify-between items-center mb-1">
-                <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{t('order.dispatchOrderNo', { defaultValue: 'Dispatch No./Order No.' })}</span>
+                <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{t('order.searchLabel', { defaultValue: 'Dispatch No. / Order No. / Claim Type' })}</span>
             </div>
             <div className="relative group">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary-orange)] transition-colors w-3.5 h-3.5" />
