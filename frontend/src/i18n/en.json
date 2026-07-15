@@ -36,7 +36,7 @@
     "step1": {
         "title": "Order Information",
         "claimType": "Claim Type",
-        "caseNumber": "Case Number",
+        "caseNumber": "Order Number",
         "licensePlate": "License Plate",
         "customerNumber": "Customer No.",
         "contractNumber": "Contract Number",
@@ -55,7 +55,7 @@
         "inspectorName": "Inspector",
         "valuationDate": "Valuation Date",
         "debtorSelect": "Select Debtor",
-        "caseNumberPlaceholder": "e.g. 2024-12345",
+        "caseNumberPlaceholder": "e.g. 1234",
         "customerNumberPlaceholder": "e.g. CUST-001",
         "contractNumberPlaceholder": "e.g. VTR-789",
         "concernCompanyPlaceholder": "e.g. LeasePlan Deutschland GmbH",
@@ -657,7 +657,7 @@
         "groupByExpert": "Group by Expert",
         "reportsFor": "Reports for",
         "noReportsFound": "No reports found",
-        "caseNumber": "Case Number",
+        "caseNumber": "Order Number",
         "licensePlate": "License Plate",
         "date": "Date",
         "actions": "Actions",
@@ -1188,7 +1188,7 @@
         "createNew": "Create New Report",
         "importRequired": "Reports must be imported from OMT and cannot be created manually.",
         "table": {
-            "caseNumber": "Case Number",
+            "caseNumber": "Order Number",
             "licensePlate": "License Plate",
             "client": "Client",
             "date": "Date",
@@ -1197,7 +1197,7 @@
             "actions": "Actions"
         },
         "noOrders": "No orders found.",
-        "searchPlaceholder": "Search by license plate, case number...",
+        "searchPlaceholder": "Search by license plate, order number...",
         "statusValues": {
             "OPEN": "Open",
             "IN_PROGRESS": "In Progress",

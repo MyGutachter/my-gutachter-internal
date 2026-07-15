@@ -276,6 +276,7 @@ export interface ReportData {
     // Step 1 - Order Info
     userEmail?: string;
     caseNumber: string;
+    auftragsnummer?: string;
     licensePlate: string;
     customerNumber: string;
     customerEmail: string;

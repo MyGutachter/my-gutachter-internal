@@ -1563,7 +1563,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
           <table style="border-collapse:collapse">
             <tr>
               <td style="border-left:3px solid ${BLUE};padding-left:10px">
-                <div style="font-size:10pt;font-weight:bold;color:${THEME};margin-bottom:2px">${r.caseNumber}</div>
+                <div style="font-size:10pt;font-weight:bold;color:${THEME};margin-bottom:2px">${r.auftragsnummer || r.caseNumber}</div>
                 <div style="font-size:8pt;color:#666">${L.photoFrom} ${fmtDate(r.inspectionDate)} &nbsp;&bull;&nbsp; <span style="color:${ORANGE};font-weight:600">${L.page} ${pageNo} ${L.of} ${totalPages}</span></div>
               </td>
             </tr>
@@ -1723,7 +1723,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   ${secHead(L.caseSection)}
     <div style="font-size:9.5pt;line-height:1.6;margin-bottom:15px;color:#1A202C">
       <div style="display:flex;flex-wrap:wrap;row-gap:6px;">
-        <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.orderNo}:</span><span style="font-weight:600;">${r.caseNumber}</span></div>
+        <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.orderNo}:</span><span style="font-weight:600;">${r.auftragsnummer || r.caseNumber}</span></div>
         <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.customerNo}:</span><span style="font-weight:600;">${r.customerNumber}</span></div>
 
         <div style="width:100%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.client}:</span><span style="font-weight:600;">${r.clientName}, ${r.clientAddress}, ${r.clientZip} ${r.clientCity}</span></div>

@@ -2,7 +2,7 @@
  * the merged `VideoOrderController` from the unified `orders` collection. */
 export interface Order {
     id: string;
-
+    auftragsnummer?: string;     // OMT InternalId — human-readable Auftragsnummer
     dispatchOrOrderNo?: string;
     numberOfPhotos?: number;
     // Contact

@@ -127,7 +127,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
                     <span className="text-[var(--color-primary-orange)] font-black text-sm">#</span>
                     <div className="flex flex-col">
                         <span className="text-[8px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest leading-none mb-0.5">{t('order.number', { defaultValue: 'Order No.' })}</span>
-                        <span className="font-bold text-xs text-[var(--color-text-primary)] tracking-tight">{order.dispatchOrOrderNo || 'N/A'}</span>
+                        <span className="font-bold text-xs text-[var(--color-text-primary)] tracking-tight">{order.auftragsnummer || order.dispatchOrOrderNo || 'N/A'}</span>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">

@@ -302,6 +302,7 @@ public class VideoOrderController {
         if (!q.isEmpty()) {
             String rx = Pattern.quote(q);
             and.add(new Document("$or", List.of(
+                    regex("auftragsnummer", rx),
                     regex("dispatchOrOrderNo", rx),
                     regex("licensePlateNumber", rx),
                     regex("licensePlate", rx),
@@ -335,6 +336,8 @@ public class VideoOrderController {
         Map<String, Object> o = new LinkedHashMap<>();
         String id = firstNonNull(d.getString("caseNumber"), d.getString("omtOrderId"));
         o.put("id", id);
+        // Human-readable Auftragsnummer (OMT InternalId). Falls back to dispatchOrOrderNo for legacy orders.
+        o.put("auftragsnummer", firstNonNull(d.getString("auftragsnummer"), d.getString("dispatchOrOrderNo")));
         o.put("dispatchOrOrderNo", d.getString("dispatchOrOrderNo"));
         o.put("status", d.getString("orderStatus"));
         o.put("source", d.getString("source"));

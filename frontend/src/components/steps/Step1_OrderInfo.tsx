@@ -279,22 +279,21 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         />
                         {/* Config status badge */}
                         {configStatus !== 'idle' && (
-                            <div className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md w-fit ${
-                                configStatus === 'loading' ? 'bg-gray-100 text-gray-500' :
+                            <div className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md w-fit ${configStatus === 'loading' ? 'bg-gray-100 text-gray-500' :
                                 configStatus === 'customer' ? 'bg-green-50 text-green-700 border border-green-200' :
-                                'bg-amber-50 text-amber-700 border border-amber-200'
-                            }`}>
+                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}>
                                 {configStatus === 'loading' && (
                                     <><span className="w-2.5 h-2.5 rounded-full border-2 border-gray-400 border-t-transparent animate-spin inline-block" />
-                                    {t('step1.configLoading')}</>
+                                        {t('step1.configLoading')}</>
                                 )}
                                 {configStatus === 'customer' && (
                                     <><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-                                    {t('step1.configCustomer')}</>
+                                        {t('step1.configCustomer')}</>
                                 )}
                                 {configStatus === 'default' && (
                                     <><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                                    {t('step1.configDefault')}</>
+                                        {t('step1.configDefault')}</>
                                 )}
                             </div>
                         )}
@@ -303,7 +302,7 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         name="caseNumber"
                         error={getFieldError('caseNumber')}
                         label={t('step1.caseNumber')}
-                        value={store.caseNumber}
+                        value={store.auftragsnummer || store.caseNumber}
                         onChange={v => store.updateField('caseNumber', v)}
                         mono
                         disabled

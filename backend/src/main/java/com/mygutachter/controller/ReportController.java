@@ -662,8 +662,12 @@ public class ReportController {
         }
 
         try {
+            String displayOrderNumber = existingDoc.getString("auftragsnummer");
+            if (displayOrderNumber == null || displayOrderNumber.trim().isEmpty()) {
+                displayOrderNumber = caseNumber;
+            }
             // Send Email
-            emailService.sendReportEmail(email, caseNumber, pdf, claimType, licensePlate);
+            emailService.sendReportEmail(email, displayOrderNumber, pdf, claimType, licensePlate);
 
             // Save PDF with versioning
             String pdfRelativePath = handlePdfVersioning(caseNumber, pdf, targetEmail, requesterName);

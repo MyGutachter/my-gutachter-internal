@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 
 interface ReportSummary {
     caseNumber: string;
+    auftragsnummer?: string;
     licensePlate: string;
     clientName: string;
     orderDate: string;
@@ -88,6 +89,7 @@ const OrdersOverviewPage: React.FC = () => {
         const query = search.toLowerCase();
         let filtered = reports.filter(r =>
             (r.caseNumber || '').toLowerCase().includes(query) ||
+            (r.auftragsnummer || '').toLowerCase().includes(query) ||
             (r.licensePlate || '').toLowerCase().includes(query) ||
             (r.clientName || '').toLowerCase().includes(query) ||
             (r.inspectorName || '').toLowerCase().includes(query)
@@ -302,7 +304,7 @@ const OrdersOverviewPage: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-dark-gray">
-                                                    {report.caseNumber}
+                                                    {report.auftragsnummer || report.caseNumber}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     {report.clientName || '-'}

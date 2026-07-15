@@ -36,6 +36,7 @@ public class Order {
     private String caseNumber;      // == omtOrderId by convention; the report docs key on this
     private String source;          // OrderSource: OMT | OMT_DEV | MANUAL
     private String orderStatus;     // OrderStatus: PENDING | DONE | CANCEL | ARCHIVE
+    private String auftragsnummer;  // OMT InternalId — human-readable sequential order number (Auftragsnummer)
     private String claimType;
     private String userEmail;       // assigned expert — aligns with {userEmail, caseNumber} report keying
     private List<String> additionalUserIds;
@@ -96,6 +97,9 @@ public class Order {
 
     public String getOrderStatus() { return orderStatus; }
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
+
+    public String getAuftragsnummer() { return auftragsnummer; }
+    public void setAuftragsnummer(String auftragsnummer) { this.auftragsnummer = auftragsnummer; }
 
     public String getClaimType() { return claimType; }
     public void setClaimType(String claimType) { this.claimType = claimType; }

@@ -509,7 +509,8 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
 
         // Determine safe scale based on page count estimate to prevent exceeding browser canvas height limits
         const estimatedPages = 5 + Math.ceil((reportData.photos?.length || 0) / 2);
-        const fileName = `Gutachten_${store.caseNumber}.pdf`;
+        const displayOrderNumber = store.auftragsnummer || store.caseNumber;
+        const fileName = `Gutachten_${displayOrderNumber}.pdf`;
 
         const opt = {
             margin: 0,
