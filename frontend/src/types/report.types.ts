@@ -277,6 +277,7 @@ export interface ReportData {
     userEmail?: string;
     caseNumber: string;
     auftragsnummer?: string;
+    source?: string;
     licensePlate: string;
     customerNumber: string;
     customerEmail: string;

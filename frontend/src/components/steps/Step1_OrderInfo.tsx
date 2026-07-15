@@ -302,7 +302,7 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         name="caseNumber"
                         error={getFieldError('caseNumber')}
                         label={t('step1.caseNumber')}
-                        value={store.auftragsnummer || store.caseNumber}
+                        value={store.source && store.source !== 'MANUAL' ? `${store.source.replace('-', '_')}_${store.auftragsnummer || store.caseNumber}` : (store.auftragsnummer || store.caseNumber)}
                         onChange={v => store.updateField('caseNumber', v)}
                         mono
                         disabled

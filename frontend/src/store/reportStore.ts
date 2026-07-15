@@ -99,6 +99,7 @@ const initialState: ReportData = {
     ...DEFAULT_GLOBAL_CONFIG,
     globalConfig: (storedConfig && Object.keys(storedConfig).length > 0) ? storedConfig : DEFAULT_GLOBAL_CONFIG,
     caseNumber: generateCaseNumber(),
+    source: '',
     licensePlate: '',
     customerNumber: '',
     customerEmail: '',

@@ -37,6 +37,7 @@
         "title": "Order Information",
         "claimType": "Claim Type",
         "caseNumber": "Order Number",
+        "source": "Order Source",
         "licensePlate": "License Plate",
         "customerNumber": "Customer No.",
         "contractNumber": "Contract Number",

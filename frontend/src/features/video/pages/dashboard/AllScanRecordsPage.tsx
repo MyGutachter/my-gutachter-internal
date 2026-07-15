@@ -221,7 +221,9 @@ const AllScanRecordsPage = () => {
                                         <td
                                             onClick={() => { setSelectedOrder(record); setIsDetailsOpen(true); }}
                                             className="px-2 sm:px-4 py-3 font-medium text-[var(--color-primary-orange)] hover:underline cursor-pointer break-all sm:break-normal">
-                                            {record.auftragsnummer || record.dispatchOrOrderNo || '-'}
+                                            {record.source && record.source !== 'MANUAL' && record.auftragsnummer
+                                                ? `${record.source.replace('-', '_')}_${record.auftragsnummer}`
+                                                : (record.auftragsnummer || record.dispatchOrOrderNo || '-')}
                                         </td>
                                         <td className="px-2 sm:px-4 py-3 text-[var(--color-text-primary)]">
                                             <div className="max-w-[120px] sm:max-w-none truncate sm:whitespace-normal">
@@ -296,7 +298,9 @@ const AllScanRecordsPage = () => {
                                 <h2 className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)] flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <span className="whitespace-nowrap">{t('order.tabs.details', { defaultValue: 'Order Details' })}</span>
                                     <span className="text-[var(--color-text-muted)] font-normal text-sm sm:text-base truncate">
-                                        #{selectedOrder.auftragsnummer || selectedOrder.dispatchOrOrderNo}
+                                        #{selectedOrder.source && selectedOrder.source !== 'MANUAL' && selectedOrder.auftragsnummer
+                                            ? `${selectedOrder.source.replace('-', '_')}_${selectedOrder.auftragsnummer}`
+                                            : (selectedOrder.auftragsnummer || selectedOrder.dispatchOrOrderNo)}
                                     </span>
                                 </h2>
                             </div>

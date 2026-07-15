@@ -135,6 +135,7 @@
         "title": "Auftragsinformationen",
         "claimType": "Auftragsart",
         "caseNumber": "Auftragsnummer",
+        "source": "Übermittlungskanal",
         "licensePlate": "Kennzeichen",
         "customerNumber": "Kunden-Nr.",
         "contractNumber": "Vertragsnummer",

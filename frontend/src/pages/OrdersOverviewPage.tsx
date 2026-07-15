@@ -25,6 +25,7 @@ interface ReportSummary {
     expertAssessmentStatus: string | null;
     inspectorName?: string;
     claimType?: string;
+    source?: string;
 }
 
 // UVV Digital orders default-highlight the Video Expert mode; every order stays
@@ -304,7 +305,9 @@ const OrdersOverviewPage: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-dark-gray">
-                                                    {report.auftragsnummer || report.caseNumber}
+                                                    {report.source && report.source !== 'MANUAL'
+                                                        ? `${report.source.replace('-', '_')}_${report.auftragsnummer || report.caseNumber}`
+                                                        : (report.auftragsnummer || report.caseNumber)}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     {report.clientName || '-'}

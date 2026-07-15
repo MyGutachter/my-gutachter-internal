@@ -80,7 +80,7 @@ const OrderDetailsPage: React.FC = () => {
                     <span>{t('orderDeepLink.backToDashboard', { defaultValue: 'Back to Dashboard' })}</span>
                 </button>
                 <h1 className="text-sm font-extrabold uppercase tracking-wider text-[var(--color-text-primary)]">
-                    {t('pageTitles.orderDetails', { defaultValue: 'Order Details' })}: {order.auftragsnummer || order.dispatchOrOrderNo || order.id}
+                    {t('pageTitles.orderDetails', { defaultValue: 'Order Details' })}: {order.source && order.source !== 'MANUAL' && order.auftragsnummer ? `${order.source.replace('-', '_')}_${order.auftragsnummer}` : (order.auftragsnummer || order.dispatchOrOrderNo || order.id)}
                 </h1>
             </div>
 
