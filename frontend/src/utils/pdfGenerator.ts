@@ -10,6 +10,7 @@ import { getCarSvgHtml } from './pdfCarDiagram';
 import { calcBrutto, calcNetto } from './vatCalculator';
 
 interface PDFReportData {
+  auftragsnummer?: string;
   caseNumber: string; licensePlate: string; vin: string; claimType: string;
   customerNumber: string; contractNumber: string; concernType: string;
   concernCompany: string; clientName: string;
