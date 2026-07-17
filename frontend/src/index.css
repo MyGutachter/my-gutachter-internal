@@ -420,3 +420,46 @@
   --react-international-phone-font-size: 14px;
   --react-international-phone-border-radius: 8px;
 }
+
+/* ---------------------------------------------------------------------------
+ * Sidebar embedded ReportFormPage overrides
+ * ------------------------------------------------------------------------- */
+.sidebar-embedded header,
+.sidebar-embedded footer,
+.sidebar-embedded nav {
+  display: none !important;
+}
+
+.sidebar-embedded {
+  overflow-y: auto !important;
+  height: 100% !important;
+}
+
+.sidebar-embedded .min-h-screen {
+  min-height: auto !important;
+  height: auto !important;
+  background: transparent !important;
+}
+
+.sidebar-embedded main {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+}
+
+.sidebar-embedded main > div {
+  padding: 0.5rem !important;
+}
+
+.sidebar-embedded .card {
+  padding: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.sidebar-embedded input,
+.sidebar-embedded select,
+.sidebar-embedded textarea {
+  font-size: 0.75rem !important;
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+}

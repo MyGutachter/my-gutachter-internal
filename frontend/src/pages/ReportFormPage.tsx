@@ -5,6 +5,7 @@ import { useReportStore } from '../store/reportStore';
 import type { ReportData } from '../types/report.types';
 import api from '../utils/api';
 import { formatDate, formatMonthYear, normalizeDate, normalizeTime } from '../utils/dateFormatter';
+import { scrollToElement } from '../utils/scroll';
 
 import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -113,7 +114,7 @@ const ReportFormPage: React.FC = () => {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const caseNumberParam = searchParams.get('caseNumber');
+    const caseNumberParam = searchParams.get('caseNumber') || searchParams.get('roomId');
     const { currentStep, setCurrentStep, _hasHydrated: uiHydrated, setShowValidationErrors } = useUIStore();
     const role = useAuthStore(state => state.role);
     const { setAllData, getStepValidationErrors, fetchFieldConfigs, _hasHydrated: reportHydrated } = useReportStore();
@@ -191,7 +192,7 @@ const ReportFormPage: React.FC = () => {
                 const firstErrorKey = Object.keys(errors)[0];
                 const element = document.querySelector(`[data-fieldname="${firstErrorKey}"]`);
                 if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    scrollToElement(element as HTMLElement);
                     const focusable = element.querySelector('input, select, textarea, [tabindex]');
                     if (focusable) {
                         (focusable as HTMLElement).focus();
@@ -350,7 +351,7 @@ const ReportFormPage: React.FC = () => {
                 const firstErrorKey = Object.keys(errors)[0];
                 const element = document.querySelector(`[data-fieldname="${firstErrorKey}"]`);
                 if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    scrollToElement(element as HTMLElement);
                     const focusable = element.querySelector('input, select, textarea, [tabindex]');
                     if (focusable) {
                         (focusable as HTMLElement).focus();
@@ -540,11 +541,11 @@ const ReportFormPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-light-gray">
+        <div className="min-h-screen flex flex-col bg-light-gray @container">
             <AppHeader />
             <StepIndicator />
 
-            <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <main className="flex-1 container mx-auto px-4 @@7xl:px-6 @5xl:px-8 py-4">
                 <div className="flex gap-4">
                     {/* Main content */}
                     <div className="flex-1 min-w-0">
@@ -553,7 +554,7 @@ const ReportFormPage: React.FC = () => {
                         {renderStep()}
 
                         {/* Navigation buttons */}
-                        <div className="flex justify-between mt-4 mb-16 lg:mb-4">
+                        <div className="flex justify-between mt-4 mb-16 @5xl:mb-4">
                             {currentStep > 1 ? (
                                 <button onClick={() => goToStep(currentStep - 1)} className="btn-outline flex items-center gap-1">
                                     <ChevronLeft className="w-4 h-4" /> {t('nav.back')}

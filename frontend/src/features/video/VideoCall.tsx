@@ -1,16 +1,18 @@
-import { useEffect, useState, useRef, useMemo, type ChangeEvent } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useWebRTC } from './useWebRTC';
-import { CarOverlay, getPartIdFromKey } from './CarOverlay';
-import { UvvChecklistPanel } from './UvvChecklistPanel';
-import CarInspectionLoader from './CarInspectionLoader';
-import { ReportSlotsPanel } from './components/dashboard/ReportSlotsPanel';
-import { Mic, MicOff, Video, VideoOff, Phone, Copy, Camera, X, SwitchCamera, ZoomIn, CarFront, Images, Zap, ZapOff, Gauge, User, Mail, Smartphone, Eye, EyeOff, ChevronLeft, ChevronRight, Trash2, Download } from 'lucide-react';
-import { uploadScreenshot, deleteScreenshot, getScreenshots, uploadRecording, getOrder } from './videoApi';
-import type { Order } from './videoTypes';
-import { API_BASE_URL } from './videoConfig';
 import clsx from 'clsx';
+import { Camera, CarFront, ChevronLeft, ChevronRight, Copy, Download, Eye, EyeOff, Gauge, Images, Mail, Mic, MicOff, Phone, Smartphone, SwitchCamera, Trash2, User, Video, VideoOff, X, Zap, ZapOff, ZoomIn } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import CarInspectionLoader from './CarInspectionLoader';
+import { CarOverlay, getPartIdFromKey } from './CarOverlay';
+import { useWebRTC } from './useWebRTC';
+import { UvvChecklistPanel } from './UvvChecklistPanel';
+import { UvvInlineChecklistPanel } from './UvvInlineChecklistPanel';
+import { VehicleReportStepsPanel } from './VehicleReportStepsPanel';
+import ReportFormPage from '../../pages/ReportFormPage';
+import { deleteScreenshot, getOrder, getScreenshots, uploadRecording, uploadScreenshot } from './videoApi';
+import { API_BASE_URL } from './videoConfig';
+import type { Order } from './videoTypes';
 
 // Import car placeholder images
 import car1 from '../../assets/car_placeholder/car-1.png';
@@ -179,7 +181,15 @@ export const VideoCall = () => {
     const [showMobileCarOverlay, setShowMobileCarOverlay] = useState(false);
     const [showGallery, setShowGallery] = useState(false);
     const [isSavingScreenshot, setIsSavingScreenshot] = useState(false);
-    const [expertSideTab, setExpertSideTab] = useState<'2d' | 'slots'>('2d');
+    const [expertSideTab, setExpertSideTab] = useState<'2d' | 'slots' | 'uvv' | 'report'>('2d');
+    
+    // Auto-fallback from UVV tab if not a Digital UVV claim
+    useEffect(() => {
+        if (order && order.claimType !== 'Digital UVV' && expertSideTab === 'uvv') {
+            setExpertSideTab('2d');
+        }
+    }, [order, expertSideTab]);
+
     const [isSwitchingLocalCamera, setIsSwitchingLocalCamera] = useState(false);
 
     // Camera Overlay / Watermark State
@@ -224,11 +234,11 @@ export const VideoCall = () => {
                 console.error('[Recording] No supported video MIME type found');
                 return;
             }
-            
+
             console.log('[Recording] Starting with MIME:', mimeType);
             const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1000000 });
             recordedChunksRef.current = [];
-            
+
             recorder.ondataavailable = (e) => {
                 if (e.data && e.data.size > 0) {
                     recordedChunksRef.current.push(e.data);
@@ -252,19 +262,19 @@ export const VideoCall = () => {
     const stopRecordingAndUpload = (): Promise<void> => {
         // Immediately mark as finished to prevent useEffect from restarting
         recordingFinishedRef.current = true;
-        
+
         return new Promise((resolve) => {
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 const recorder = mediaRecorderRef.current;
-                
+
                 recorder.onstop = () => {
                     // Now it's safe to clean up refs
                     mediaRecorderRef.current = null;
                     setIsRecording(false);
-                    
+
                     const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
                     console.log('[Recording] Stop: blob size =', (blob.size / (1024 * 1024)).toFixed(2), 'MB, chunks:', recordedChunksRef.current.length);
-                    
+
                     if (blob.size === 0) {
                         console.warn('[Recording] Empty blob, skipping upload');
                         resolve();
@@ -272,7 +282,7 @@ export const VideoCall = () => {
                     }
 
                     setIsUploadingVideo(true);
-                    
+
                     // Upload the raw WebM blob directly
                     uploadRecording(blob, roomId).then(() => {
                         console.log('[Recording] Upload successful');
@@ -284,7 +294,7 @@ export const VideoCall = () => {
                         resolve();
                     });
                 };
-                
+
                 recorder.stop();
             } else {
                 mediaRecorderRef.current = null;
@@ -830,7 +840,7 @@ export const VideoCall = () => {
                 if (type === 'REPORT_STORE_UPDATE') {
                     setOrder(prev => {
                         if (!prev) return null;
-                        
+
                         const mapped: Partial<Order> = {};
                         if (payload.manufacturer !== undefined) mapped.vehicleMake = payload.manufacturer;
                         if (payload.baseModel !== undefined || payload.subModel !== undefined) {
@@ -1045,7 +1055,7 @@ export const VideoCall = () => {
             return;
         }
         await stopRecordingAndUpload();
-        
+
         if (!isGuest) {
             sendMessage('end-meeting', {});
             setTimeout(() => {
@@ -1551,7 +1561,7 @@ export const VideoCall = () => {
                                 >
                                     {overlayVisible ? <Eye size={16} /> : <EyeOff size={16} />}
                                 </button>
-                                
+
                                 {(!isGuest) && (
                                     <div className="flex items-center gap-1 border-l border-white/10 pl-2">
                                         <button
@@ -1627,13 +1637,13 @@ export const VideoCall = () => {
                                 </button>
                             </div>
                         )}
-                        
+
                         {/* Tab selection in Video Call sidebar */}
-                        <div className="flex border-b border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] flex-shrink-0">
+                        <div className="flex border-b border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] flex-shrink-0 overflow-x-auto">
                             <button
                                 onClick={() => setExpertSideTab('2d')}
                                 className={clsx(
-                                    "flex-1 py-3 text-xs font-bold transition-all relative cursor-pointer",
+                                    "flex-1 min-w-[60px] py-3 text-xs font-bold transition-all relative cursor-pointer whitespace-nowrap px-2",
                                     expertSideTab === '2d'
                                         ? "text-[var(--color-primary-orange)] bg-[var(--color-bg-card)]"
                                         : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
@@ -1647,14 +1657,44 @@ export const VideoCall = () => {
                             <button
                                 onClick={() => setExpertSideTab('slots')}
                                 className={clsx(
-                                    "flex-1 py-3 text-xs font-bold transition-all relative cursor-pointer",
+                                    "flex-1 min-w-[60px] py-3 text-xs font-bold transition-all relative cursor-pointer whitespace-nowrap px-2",
                                     expertSideTab === 'slots'
                                         ? "text-[var(--color-primary-orange)] bg-[var(--color-bg-card)]"
                                         : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
                                 )}
                             >
-                                {t('videoCall.reportSlots', { defaultValue: 'Report Slots' })}
+                                {t('videoCall.reportSlots', { defaultValue: 'Foto-Slots' })}
                                 {expertSideTab === 'slots' && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary-orange)] shadow-[0_-2px_6px_rgba(255,107,53,0.3)]"></div>
+                                )}
+                            </button>
+                            {order?.claimType === 'Digital UVV' && (
+                                <button
+                                    onClick={() => setExpertSideTab('uvv')}
+                                    className={clsx(
+                                        "flex-1 min-w-[60px] py-3 text-xs font-bold transition-all relative cursor-pointer whitespace-nowrap px-2",
+                                        expertSideTab === 'uvv'
+                                            ? "text-[var(--color-primary-orange)] bg-[var(--color-bg-card)]"
+                                            : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
+                                    )}
+                                >
+                                    {t('videoCall.uvvChecklist', { defaultValue: 'UVV Liste' })}
+                                    {expertSideTab === 'uvv' && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary-orange)] shadow-[0_-2px_6px_rgba(255,107,53,0.3)]"></div>
+                                    )}
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setExpertSideTab('report')}
+                                className={clsx(
+                                    "flex-1 min-w-[60px] py-3 text-xs font-bold transition-all relative cursor-pointer whitespace-nowrap px-2",
+                                    expertSideTab === 'report'
+                                        ? "text-[var(--color-primary-orange)] bg-[var(--color-bg-card)]"
+                                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
+                                )}
+                            >
+                                {t('videoCall.reportFields', { defaultValue: 'Bericht' })}
+                                {expertSideTab === 'report' && (
                                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary-orange)] shadow-[0_-2px_6px_rgba(255,107,53,0.3)]"></div>
                                 )}
                             </button>
@@ -1691,8 +1731,9 @@ export const VideoCall = () => {
                                     onViewScreenshot={(filename) => setViewingScreenshot(filename)}
                                     svgContainerStyle={{ width: '85%', height: '85%' }}
                                 />
-                            ) : (
-                                <ReportSlotsPanel
+                            ) : expertSideTab === 'slots' ? (
+                                <VehicleReportStepsPanel
+                                    order={order}
                                     roomId={roomId}
                                     savedScreenshots={savedScreenshots}
                                     onCapture={(slotId) => {
@@ -1713,6 +1754,26 @@ export const VideoCall = () => {
                                     onDelete={(filename) => handleDeleteScreenshot(filename)}
                                     onView={(filename) => setViewingScreenshot(filename)}
                                 />
+                            ) : expertSideTab === 'uvv' ? (
+                                order ? (
+                                    <UvvInlineChecklistPanel
+                                        order={order}
+                                        roomId={roomId}
+                                        onComplete={() => {
+                                            showNotification(t('uvv.checklist.completed', { defaultValue: 'UVV-Prüfung abgeschlossen!' }));
+                                            setExpertSideTab('2d');
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="flex-1 flex items-center justify-center p-8 text-[var(--color-text-muted)] text-xs text-center">
+                                        {t('videoCall.loadingOrder', { defaultValue: 'Auftragsdaten werden geladen…' })}
+                                    </div>
+                                )
+                            ) : (
+                                /* 'report' tab */
+                                <div className="sidebar-embedded flex-1 flex flex-col overflow-y-auto custom-scrollbar h-full">
+                                    <ReportFormPage />
+                                </div>
                             )}
                         </div>
                     </div>
@@ -1793,7 +1854,7 @@ export const VideoCall = () => {
                                         <Download size={16} />
                                         <span className="hidden sm:inline">{t('common.download', { defaultValue: 'Download' })}</span>
                                     </button>
-                                    
+
                                     {/* Remove / Delete button */}
                                     <button
                                         onClick={() => {
@@ -2137,4 +2198,3 @@ export const VideoCall = () => {
         </div>
     );
 };
-

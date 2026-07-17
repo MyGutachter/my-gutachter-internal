@@ -244,7 +244,7 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
         <div className="animate-fade-in">
             <SectionTitle>{t('step1.title')}</SectionTitle>
             <Card>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6">
+                <div className="grid grid-cols-1 @3xl:grid-cols-2 @5xl:grid-cols-3 gap-x-6">
                     <div className="col-span-full mb-4">
                         <FormSelect
                             name="claimType"

@@ -16,6 +16,7 @@ import { validateImageAspectRatio } from '../../utils/imageValidation';
 import { lookupDepreciationMatrixFactor, parseGermanDate } from '../../utils/minderwertCalculator';
 import { calcBrutto, calcNetto } from '../../utils/vatCalculator';
 import Card from '../ui/Card';
+import { scrollToElement } from '../../utils/scroll';
 import { CarOverlay } from '../ui/CarOverlay';
 import DamageEntryModal from '../ui/DamageEntryModal';
 import ModalWrapper from '../ui/ModalWrapper';
@@ -421,7 +422,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
         setTimeout(() => {
             const element = componentRefs.current[refKey];
             if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                scrollToElement(element);
 
                 // Find and focus the first editable input, select, or textarea
                 const input = element.querySelector('input:not([type="file"]):not([type="hidden"]), select, textarea') as HTMLElement;
@@ -487,7 +488,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
 
             {/* ── Warning banner when Step-2 photos are missing ── */}
             {missingStep2Photos.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-amber-50 border border-amber-300 rounded-xl shadow-sm animate-fade-in">
+                <div className="flex flex-col @@7xl:flex-row items-start @@7xl:items-center gap-4 p-4 bg-amber-50 border border-amber-300 rounded-xl shadow-sm animate-fade-in">
                     <div className="flex items-start gap-3 flex-1">
                         <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
                             <AlertTriangle className="w-5 h-5 text-amber-600" />
@@ -516,7 +517,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
             )}
 
             <SectionTitle>{t('step4.mandatoryPhotos')}</SectionTitle>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 @@7xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
                 {MANDATORY_PHOTOS.map(photo => {
                     const isPhotoRequired = isRequired(photo.id);
                     // Find all photos for this category (show newest first)
@@ -847,7 +848,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
             <Card>
                 {/* Car Diagram */}
                 <div className="flex justify-center mb-8">
-                    <div className="w-full max-w-md lg:max-w-lg">
+                    <div className="w-full max-w-md @5xl:max-w-lg">
                         <CarOverlay
                             selectedParts={selectedParts}
                             onPartSelected={handlePartClick}
@@ -863,9 +864,9 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
 
                 {/* Unified Table */}
                 {/* Unified Layout: Table for Desktop, Cards for Mobile */}
-                <div className="-mx-4 md:mx-0 font-sans">
+                <div className="-mx-4 @3xl:mx-0 font-sans">
                     {/* Desktop Table - Hidden on Mobile */}
-                    <div className="hidden lg:block overflow-x-auto">
+                    <div className="hidden @5xl:block overflow-x-auto">
                         <table className="w-full min-w-[1000px]">
                             <thead>
                                 <tr className="bg-gray-50/50">
@@ -1456,7 +1457,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     </div>
 
                     {/* Mobile Cards - Hidden on Desktop */}
-                    <div className="lg:hidden space-y-3 px-1 pb-4">
+                    <div className="@5xl:hidden space-y-3 px-1 pb-4">
                         {[...store.minderwertRows.filter(r => !r.isCustom), ...store.damages].map((item: any) => {
                             // Correctly identify if this is a user-added damage entry (should have a delete button)
                             const isUserAdded = store.damages.some(d => d.id === item.id);
@@ -1848,7 +1849,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 store.addDamage(newId, 'manual');
                                 setActiveComponentId(newId);
                                 setTimeout(() => {
-                                    componentRefs.current[newId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    scrollToElement(componentRefs.current[newId]);
                                 }, 100);
                             }}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-primary/30 bg-white text-primary text-xs font-semibold hover:bg-primary/5 hover:border-primary/50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
@@ -1918,7 +1919,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                 </div>
 
                 {allPhotosForGallery.length > 0 && (
-                    <motion.div layout className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+                    <motion.div layout className="grid grid-cols-2 @@7xl:grid-cols-3 @5xl:grid-cols-4 gap-4 mt-4">
                         <AnimatePresence mode="popLayout">
                             {allPhotosForGallery.map((p) => {
                                 const isVirtual = (p as any).isVirtual;
@@ -2090,7 +2091,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     {t('step4.newPhotosCount', 'Es wurden {{count}} neue(s) Foto(s) erfolgreich importiert:', { count: newlyAddedPhotos.length })}
                                 </span>
                             </div>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto p-2 bg-gray-50 rounded-2xl border border-gray-100">
+                            <div className="grid grid-cols-3 @@7xl:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto p-2 bg-gray-50 rounded-2xl border border-gray-100">
                                 {newlyAddedPhotos.map((url, idx) => (
                                     <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white group hover:shadow transition-all">
                                         <SecureImage src={url} className="w-full h-full object-cover" />

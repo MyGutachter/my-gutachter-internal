@@ -769,14 +769,32 @@ public class OrderService {
             throw new IllegalArgumentException("No order found for caseNumber " + caseNumber);
         }
 
-        collection.updateOne(
-                Filters.eq("caseNumber", caseNumber),
-                Updates.combine(
-                        Updates.set("orderStatus", OrderStatus.DONE.name()),
-                        Updates.set("uvvResult", request.getUvvResult()),
-                        Updates.set("uvvInspectionDate", LocalDateTime.now().toString()),
-                        Updates.set("uvvCertificateAvailable", false),
-                        Updates.set("updatedAt", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))));
+        // Persist the per-item checklist to the order document so the PDF generator
+        // reads explicit values instead of inferring from vehicle report fields.
+        if (request.getChecklistItems() != null && !request.getChecklistItems().isEmpty()) {
+            Document checklistDoc = new Document();
+            for (java.util.Map.Entry<Integer, String> entry : request.getChecklistItems().entrySet()) {
+                if (entry.getValue() != null) {
+                    checklistDoc.put(String.valueOf(entry.getKey()), entry.getValue());
+                }
+            }
+            order.put("uvvChecklist", checklistDoc);
+        }
+
+        // Build combined update — include uvvChecklist if provided
+        java.util.List<org.bson.conversions.Bson> updateOps = new java.util.ArrayList<>();
+        updateOps.add(Updates.set("orderStatus", OrderStatus.DONE.name()));
+        updateOps.add(Updates.set("uvvResult", request.getUvvResult()));
+        updateOps.add(Updates.set("uvvInspectionDate", LocalDateTime.now().toString()));
+        updateOps.add(Updates.set("uvvCertificateAvailable", false));
+        updateOps.add(Updates.set("updatedAt", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)));
+        if (request.getChecklistItems() != null && !request.getChecklistItems().isEmpty()) {
+            Document checklistDoc = order.get("uvvChecklist", Document.class);
+            if (checklistDoc != null) {
+                updateOps.add(Updates.set("uvvChecklist", checklistDoc));
+            }
+        }
+        collection.updateOne(Filters.eq("caseNumber", caseNumber), Updates.combine(updateOps));
 
         String source = order.getString("source");
         String omtOrderId = order.getString("omtOrderId");
@@ -784,7 +802,8 @@ public class OrderService {
             omtOrderId = caseNumber;
         }
 
-        // Generate and upload UVV certificate PDF locally
+        // Generate and upload UVV certificate PDF locally.
+        // The order document already has uvvChecklist set, so the generator will use it.
         try {
             byte[] pdfBytes = uvvCertificateGenerator.generateCertificatePdf(order, request.getInspectorName(), request.getUvvResult());
             s3.uploadFile("uvv-certificates/" + caseNumber + ".pdf", pdfBytes, "application/pdf");
@@ -803,6 +822,7 @@ public class OrderService {
                     Updates.set("uvvCertificateAvailable", true));
         }
     }
+
 
     /**
      * Fetch the UVV certificate PDF for an order (only when the result is PASSED). Serves the local

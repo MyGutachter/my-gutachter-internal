@@ -711,7 +711,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     {/* Identification Photos aligned above the Search Button */}
                     <div
                         data-fieldname="identificationImages"
-                        className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 rounded-xl transition-all ${
+                        className={`flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4 p-3 rounded-xl transition-all ${
                             showValidationErrors && (validationErrors['identificationImages'] || validationErrors['vin_photo'])
                                 ? 'border-2 border-red-500 bg-red-50/10'
                                 : 'border border-transparent'
@@ -737,7 +737,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         </div>
 
                         {store.identificationImages && store.identificationImages.length > 0 && (
-                            <div className="flex flex-wrap md:justify-end gap-1.5">
+                            <div className="flex flex-wrap @3xl:justify-end gap-1.5">
                                 {store.identificationImages.map((img, idx) => (
                                     <PhotoThumbnail
                                         key={idx}
@@ -752,7 +752,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         )}
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                    <div className="flex flex-col @@7xl:flex-row gap-3 @@7xl:items-end">
                         <div className="flex-1 w-full">
                             <FormInput
                                 name="vin"
@@ -846,7 +846,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     <div className="border-b border-gray-100 pb-2 mb-4 flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-gray-700">{t('step2.manualEntry')}</h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
                         <GermanDatePickerInput
                             name="firstRegistration"
                             error={getFieldError('firstRegistration')}
@@ -1003,7 +1003,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 @@7xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
                             {/* Target Keys — manually editable */}
                             <FormInput
                                 label={t('step2.targetKeysCount')}
@@ -1080,7 +1080,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         <h3 className="text-sm font-semibold text-gray-700">{t('step2.vehicleData')}</h3>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2">
+                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 @3xl:grid-cols-3 gap-x-6 gap-y-2">
                         <FormInput
                             name="manufacturer"
                             error={getFieldError('manufacturer')}
@@ -1334,7 +1334,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                 <div className="space-y-6">
                     {/* Add Equipment Form & Search Bar */}
                     <div className="flex flex-col gap-4 bg-gray-50/80 p-4 rounded-2xl border border-gray-100">
-                        <div className="flex flex-col sm:flex-row gap-3 items-end">
+                        <div className="flex flex-col @@7xl:flex-row gap-3 items-end">
                             <div className="flex-1 w-full">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                                     {t('step2.addEquipmentItem')}
@@ -1352,7 +1352,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     }}
                                 />
                             </div>
-                            <div className="flex gap-2 w-full sm:w-auto h-[42px]">
+                            <div className="flex gap-2 w-full @@7xl:w-auto h-[42px]">
                                 <button
                                     onClick={() => handleAddEquipment('standard')}
                                     className="px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 whitespace-nowrap h-full"
@@ -1397,7 +1397,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 </span>
                             </div>
                             {store.optionalEquipment.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
+                                <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-x-8 gap-y-2.5">
                                     {store.optionalEquipment
                                         .filter(item => item.toLowerCase().includes(equipmentSearch.toLowerCase()))
                                         .map((item, i) => (
@@ -1436,7 +1436,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 </span>
                             </div>
                             {store.standardEquipment.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
+                                <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-x-8 gap-y-2.5">
                                     {store.standardEquipment
                                         .filter(item => item.toLowerCase().includes(equipmentSearch.toLowerCase()))
                                         .map((item, i) => (

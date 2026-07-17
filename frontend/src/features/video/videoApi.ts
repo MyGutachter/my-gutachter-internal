@@ -52,8 +52,13 @@ export const getOrder = async (id: string): Promise<Order> => {
     return response.data as Order;
 };
 
-export const completeUvv = async (id: string, uvvResult: 'PASSED' | 'FAILED', inspectorName: string) => {
-    await api.patch(`/orders/${id}/uvv`, { uvvResult, inspectorName });
+export const completeUvv = async (
+    id: string,
+    uvvResult: 'PASSED' | 'FAILED',
+    inspectorName: string,
+    checklistItems?: Record<number, string | null>
+) => {
+    await api.patch(`/orders/${id}/uvv`, { uvvResult, inspectorName, checklistItems });
 };
 
 export const uploadRecording = async (blob: Blob, meetingId: string) => {

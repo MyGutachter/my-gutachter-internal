@@ -13,6 +13,7 @@ import { getAutomaticDevaluations } from '../../utils/automaticDevaluationServic
 import { formatCurrency } from '../../utils/currency';
 import { compressImage } from '../../utils/imageCompression';
 import { validateImageAspectRatio } from '../../utils/imageValidation';
+import { scrollToElement } from '../../utils/scroll';
 import { generatePDFHTML } from '../../utils/pdfGenerator';
 import { calcBrutto, calcNetto } from '../../utils/vatCalculator';
 import Card from '../ui/Card';
@@ -51,7 +52,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                     const firstErrorKey = Object.keys(errors)[0];
                     const element = document.querySelector(`[data-fieldname="${firstErrorKey}"]`);
                     if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        scrollToElement(element as HTMLElement);
                         const focusable = element.querySelector('input, select, textarea, [tabindex]');
                         if (focusable) {
                             (focusable as HTMLElement).focus();
@@ -774,7 +775,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                     <div className="h-1.5 bg-primary" />
 
                     <div className="p-8">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                        <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-6 mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-primary-light rounded-2xl text-primary shadow-sm">
                                     <Calculator className="w-6 h-6" />
@@ -801,7 +802,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                             </div>
                         ) : store.globalConfig?.calculationType === 'hundred_percent' ? (
                             /* ── Type 2: 100% ── */
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-6 mb-8">
                                 <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-lg transition-all duration-300">
                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">{t('step2.vehicleBaseValue')}</span>
                                     <span className="text-2xl font-black text-dark-gray">{formatCurrency(store.vehicleBaseValue || 0)}</span>
@@ -817,7 +818,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                             </div>
                         ) : (
                             /* ── Type 1: Proportional (default) ── */
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-6 mb-8">
                                 <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-lg transition-all duration-300">
                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">{t('step2.vehicleBaseValue')}</span>
                                     <span className="text-2xl font-black text-dark-gray">{formatCurrency(store.vehicleBaseValue || 0)}</span>
@@ -855,12 +856,12 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                         {store.globalConfig?.calculationType !== 'text_only' && (
                             <div className="relative group">
                                 <div className="absolute -inset-1 bg-gradient-to-r from-primary to-orange-400 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-1000" />
-                                <div className="relative flex flex-col md:flex-row items-center justify-between p-8 bg-white border-2 border-primary rounded-2xl shadow-xl overflow-hidden">
-                                    <div className="relative z-10 text-center md:text-left mb-6 md:mb-0">
+                                <div className="relative flex flex-col @3xl:flex-row items-center justify-between p-8 bg-white border-2 border-primary rounded-2xl shadow-xl overflow-hidden">
+                                    <div className="relative z-10 text-center @3xl:text-left mb-6 @3xl:mb-0">
                                         <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-2">{t('step2.calculatedValue')}</p>
                                         <p className="text-4xl font-black text-dark-gray">{formatCurrency(store.finalVehicleValue || 0)}</p>
                                     </div>
-                                    <div className="relative z-10 text-center md:text-right">
+                                    <div className="relative z-10 text-center @3xl:text-right">
                                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-light rounded-xl border border-primary/20 mb-2">
                                             <Zap className="w-3.5 h-3.5 text-primary" />
                                             <span className="text-[10px] font-black text-primary uppercase tracking-widest">Audit-Ready Formula</span>
@@ -876,7 +877,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
 
             <SectionTitle>{t('step5.reviewTabular')}</SectionTitle>
             <Card className="overflow-hidden no-padding">
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden @3xl:block overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-gray-100 border-b border-gray-200">
@@ -921,7 +922,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                 </div>
 
                 {/* Mobile View */}
-                <div className="md:hidden divide-y divide-gray-100">
+                <div className="@3xl:hidden divide-y divide-gray-100">
                     {buildConsolidatedRows().map((item, idx) => (
                         <div key={item.id || idx} className={`p-4 flex items-center justify-between gap-4 ${item.type === 'auto' || item.type === 'system' || item.type === 'equipment' ? 'bg-orange-50/20' : 'bg-white'}`}>
                             <div className="min-w-0">
@@ -1012,7 +1013,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-4">
                     <div className="space-y-2 text-left" data-fieldname={showValidationErrors && validationErrors['signatureDriver'] ? "signatureDriver" : undefined}>
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{t('step5.sigDriver')}</span>
@@ -1144,7 +1145,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                     </div>
 
                     {store.isAuthorizedPerson && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-primary/5 rounded-xl border border-primary/10 animate-fade-in">
+                        <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-6 p-4 bg-primary/5 rounded-xl border border-primary/10 animate-fade-in">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-primary uppercase tracking-tight">{t('step5.authorizedPersonName')}</label>
                                 <div className="relative">
@@ -1225,7 +1226,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
 
             {/* Actions */}
             <Card className="flex justify-end ">
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col @@7xl:flex-row gap-3">
                     {previewing ? (
                         <button disabled className="btn-outline flex items-center justify-center gap-2 px-5 py-2 text-sm opacity-70 bg-white">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -1379,7 +1380,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                     {store.versions && store.versions.length > 0 ? (
                         <>
                             {/* Desktop Table View */}
-                            <div className="hidden md:block overflow-x-auto">
+                            <div className="hidden @3xl:block overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-gray-50 border-b border-gray-200">
@@ -1426,7 +1427,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                             </div>
 
                             {/* Mobile Card View */}
-                            <div className="md:hidden divide-y divide-gray-100">
+                            <div className="@3xl:hidden divide-y divide-gray-100">
                                 {[...store.versions].reverse().map((v) => (
                                     <div key={v.version} className="p-4 space-y-4 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center justify-between">

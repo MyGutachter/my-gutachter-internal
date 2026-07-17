@@ -735,6 +735,26 @@ public class UvvCertificateGenerator {
     }
 
     private String getChecklistStatus(int itemNr, org.bson.Document order, boolean isPassed) {
+        // ── Priority 1: explicit per-item data from the inline UVV checklist panel ──
+        // If the inspector filled in the checklist via the new sidebar tab, use those values
+        // directly rather than inferring from vehicle report fields.
+        org.bson.Document uvvChecklist = order.get("uvvChecklist", org.bson.Document.class);
+        if (uvvChecklist != null) {
+            String explicit = uvvChecklist.getString(String.valueOf(itemNr));
+            if (explicit != null && !explicit.isBlank()) {
+                // Normalise frontend values to the expected PDF format
+                switch (explicit.toUpperCase()) {
+                    case "OK":          return "OK";
+                    case "DEFECT":      return "DEFECT";
+                    case "NA":          return "NA";
+                    case "YES":         return "OK";   // item 52/53 "Ja" → green
+                    case "NO":          return "DEFECT"; // item 52/53 "Nein" → defect
+                    case "CONDITIONAL": return "NA";   // item 52 "mit Aufl." → N/A (conditional)
+                    default:            return explicit;
+                }
+            }
+        }
+        // ── Fallback: infer status from vehicle report fields (legacy behaviour) ──
         switch (itemNr) {
             case 1: {
                 String plate = order.getString("licensePlateNumber");

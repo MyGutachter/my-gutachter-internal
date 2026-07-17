@@ -35,6 +35,8 @@ export interface Order {
     uvvResult?: 'PASSED' | 'FAILED' | null;
     uvvInspectionDate?: string;
     uvvCertificateAvailable?: boolean;
+    /** Per-item checklist state saved by UvvInlineChecklistPanel */
+    uvvChecklist?: Record<string, string>;
 }
 
 export interface CarPart {
