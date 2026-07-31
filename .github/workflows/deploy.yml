@@ -70,7 +70,7 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "git_dir=/opt/my-gutachter-internal/my-gutachter-internal" >> $GITHUB_OUTPUT
             echo "compose_dir=/opt/my-gutachter-internal" >> $GITHUB_OUTPUT
-            echo "compose_cmd=sudo docker-compose" >> $GITHUB_OUTPUT
+            echo "compose_cmd=sudo docker compose" >> $GITHUB_OUTPUT
             echo "docker_cmd=sudo docker" >> $GITHUB_OUTPUT
             echo "branch=main" >> $GITHUB_OUTPUT
           else
