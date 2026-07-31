@@ -70,12 +70,14 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "git_dir=/opt/my-gutachter-internal/my-gutachter-internal" >> $GITHUB_OUTPUT
             echo "compose_dir=/opt/my-gutachter-internal" >> $GITHUB_OUTPUT
-            echo "compose_cmd=docker-compose" >> $GITHUB_OUTPUT
+            echo "compose_cmd=sudo docker-compose" >> $GITHUB_OUTPUT
+            echo "docker_cmd=sudo docker" >> $GITHUB_OUTPUT
             echo "branch=main" >> $GITHUB_OUTPUT
           else
             echo "git_dir=/home/ubuntu/repositories/my-gutachter-internal" >> $GITHUB_OUTPUT
             echo "compose_dir=/home/ubuntu/repositories" >> $GITHUB_OUTPUT
             echo "compose_cmd=docker compose" >> $GITHUB_OUTPUT
+            echo "docker_cmd=docker" >> $GITHUB_OUTPUT
             echo "branch=develop" >> $GITHUB_OUTPUT
           fi
 
@@ -87,12 +89,13 @@ jobs:
           GIT_DIR: ${{ steps.server.outputs.git_dir }}
           COMPOSE_DIR: ${{ steps.server.outputs.compose_dir }}
           COMPOSE_CMD: ${{ steps.server.outputs.compose_cmd }}
+          DOCKER_CMD: ${{ steps.server.outputs.docker_cmd }}
           BRANCH: ${{ steps.server.outputs.branch }}
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_KEY }}
-          envs: BACKEND_CHANGED,FRONTEND_CHANGED,GIT_DIR,COMPOSE_DIR,COMPOSE_CMD,BRANCH
+          envs: BACKEND_CHANGED,FRONTEND_CHANGED,GIT_DIR,COMPOSE_DIR,COMPOSE_CMD,DOCKER_CMD,BRANCH
           script: |
             echo "=================================================="
             echo "📁 Navigating to repository..."
@@ -120,5 +123,5 @@ jobs:
             fi
             
             echo "🧹 Pruning unused Docker images..."
-            docker image prune -f
+            $DOCKER_CMD image prune -f
             echo "=================================================="
