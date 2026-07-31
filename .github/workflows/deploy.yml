@@ -4,12 +4,13 @@ on:
   push:
     branches:
       - main
+      - develop
   workflow_dispatch:
 
 env:
-  DEPLOY_HOST: ${{ secrets.PROD_SERVER_HOST }}
-  DEPLOY_USER: ${{ secrets.PROD_SERVER_USERNAME }}
-  DEPLOY_KEY:  ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+  DEPLOY_HOST: ${{ github.ref_name == 'main' && secrets.MAIN_SERVER_HOST || secrets.PROD_SERVER_HOST }}
+  DEPLOY_USER: ${{ github.ref_name == 'main' && secrets.MAIN_SERVER_USERNAME || secrets.PROD_SERVER_USERNAME }}
+  DEPLOY_KEY:  ${{ github.ref_name == 'main' && secrets.MAIN_SSH_PRIVATE_KEY || secrets.PROD_SSH_PRIVATE_KEY }}
 
 jobs:
   deploy:
@@ -63,38 +64,57 @@ jobs:
             echo "No directory-specific changes detected, deploying both backend and frontend."
           fi
 
+      - name: 🔍 Determine Server
+        id: server
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "git_dir=/opt/my-gutachter-internal/my-gutachter-internal" >> $GITHUB_OUTPUT
+            echo "compose_dir=/opt/my-gutachter-internal" >> $GITHUB_OUTPUT
+            echo "compose_cmd=docker-compose" >> $GITHUB_OUTPUT
+            echo "branch=main" >> $GITHUB_OUTPUT
+          else
+            echo "git_dir=/home/ubuntu/repositories/my-gutachter-internal" >> $GITHUB_OUTPUT
+            echo "compose_dir=/home/ubuntu/repositories" >> $GITHUB_OUTPUT
+            echo "compose_cmd=docker compose" >> $GITHUB_OUTPUT
+            echo "branch=develop" >> $GITHUB_OUTPUT
+          fi
+
       - name: 🔌 Pull Code & Deploy on Server
         uses: appleboy/ssh-action@master
         env:
           BACKEND_CHANGED: ${{ steps.set.outputs.backend }}
           FRONTEND_CHANGED: ${{ steps.set.outputs.frontend }}
+          GIT_DIR: ${{ steps.server.outputs.git_dir }}
+          COMPOSE_DIR: ${{ steps.server.outputs.compose_dir }}
+          COMPOSE_CMD: ${{ steps.server.outputs.compose_cmd }}
+          BRANCH: ${{ steps.server.outputs.branch }}
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_KEY }}
-          envs: BACKEND_CHANGED,FRONTEND_CHANGED
+          envs: BACKEND_CHANGED,FRONTEND_CHANGED,GIT_DIR,COMPOSE_DIR,COMPOSE_CMD,BRANCH
           script: |
             echo "=================================================="
             echo "📁 Navigating to repository..."
-            cd /home/ubuntu/repositories/my-gutachter-internal
+            cd "$GIT_DIR"
             
-            echo "📥 Fetching and pulling latest changes from origin/main..."
+            echo "📥 Fetching and pulling latest changes from origin/$BRANCH..."
             git fetch origin
-            git reset --hard origin/main
+            git reset --hard origin/$BRANCH
             echo "=================================================="
             
             echo "🐳 Navigating to Docker Compose directory..."
-            cd /home/ubuntu/repositories
+            cd "$COMPOSE_DIR"
             
             if [ "$BACKEND_CHANGED" = "true" ] && [ "$FRONTEND_CHANGED" = "true" ]; then
               echo "🔨 Rebuilding & restarting both backend & frontend containers..."
-              docker compose build --no-cache internal_backend internal_frontend && docker compose up -d --no-deps internal_backend internal_frontend
+              $COMPOSE_CMD build --no-cache internal_backend internal_frontend && $COMPOSE_CMD up -d --no-deps internal_backend internal_frontend
             elif [ "$BACKEND_CHANGED" = "true" ]; then
               echo "🔨 Rebuilding & restarting backend container (internal_backend)..."
-              docker compose build --no-cache internal_backend && docker compose up -d --no-deps internal_backend
+              $COMPOSE_CMD build --no-cache internal_backend && $COMPOSE_CMD up -d --no-deps internal_backend
             elif [ "$FRONTEND_CHANGED" = "true" ]; then
               echo "🔨 Rebuilding & restarting frontend container (internal_frontend)..."
-              docker compose build --no-cache internal_frontend && docker compose up -d --no-deps internal_frontend
+              $COMPOSE_CMD build --no-cache internal_frontend && $COMPOSE_CMD up -d --no-deps internal_frontend
             else
               echo "ℹ️ No changes detected to build or deploy."
             fi
