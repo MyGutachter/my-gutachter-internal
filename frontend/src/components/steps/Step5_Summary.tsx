@@ -1226,7 +1226,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
 
             {/* Actions */}
             <Card className="flex justify-end ">
-                <div className="flex flex-col @@7xl:flex-row gap-3">
+                <div className="flex flex-col @3xl:flex-row gap-3">
                     {previewing ? (
                         <button disabled className="btn-outline flex items-center justify-center gap-2 px-5 py-2 text-sm opacity-70 bg-white">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />

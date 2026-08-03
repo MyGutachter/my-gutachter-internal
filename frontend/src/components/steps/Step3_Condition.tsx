@@ -243,7 +243,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
             <SectionTitle>{t('step3.inspectionChecks')}</SectionTitle>
             <Card>
                 <div className="space-y-6">
-                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-x-6 gap-y-4">
                         {/* Test Drive Group */}
                         <FormSelect
                             name="testDriveDone"
@@ -280,7 +280,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     </div>
 
                     {/* Inspection Group */}
-                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-x-6 gap-y-4">
                         <FormSelect
                             name="inspectionFromBelow"
                             error={getFieldError('inspectionFromBelow')}
@@ -312,7 +312,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     </div>
 
                     {/* Vehicle Condition Group */}
-                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-x-6 gap-y-4">
                         <div className="flex flex-col gap-2">
                             <FormSelect
                                 name="vehicleConditionStatus"
@@ -367,7 +367,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     </div>
 
                     {/* System Checks Group */}
-                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-x-6 gap-y-4">
                         <div className="flex flex-col gap-2">
                             <FormSelect
                                 name="errorMemoryRead"
@@ -425,7 +425,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     </div>
 
                     {/* Documentation Group */}
-                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-x-6 gap-y-4">
                         <div className="flex flex-col gap-2">
                             <FormSelect
                                 label={t('step3.equipmentListAvailable')}
@@ -662,11 +662,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         <div className="space-y-6 mt-4">
                             {/* Registration Certificate */}
                             <div className="space-y-3">
-                                <div className="flex flex-col @@7xl:flex-row @@7xl:items-center justify-between gap-4">
-                                    <label className="text-sm font-medium text-gray-700 w-full @@7xl:w-1/3">{t('step3.docRegistration')}</label>
-                                    <div className="flex-1 flex flex-col @@7xl:flex-row items-start @@7xl:items-center gap-4">
+                                <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
+                                    <label className="text-sm font-medium text-gray-700 w-full @3xl:w-1/3">{t('step3.docRegistration')}</label>
+                                    <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
                                         <select
-                                            className="form-input py-1.5 text-sm w-full @@7xl:w-48 bg-white"
+                                            className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
                                             value={store.registrationCertificateStatus || ''}
                                             onChange={e => store.updateField('registrationCertificateStatus', e.target.value as any)}
                                         >
@@ -697,7 +697,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 ml-0 @@7xl:ml-[33.333%]">
+                                <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
                                         <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'fzScheinImages')} className="hidden" /></label>
@@ -721,11 +721,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
 
                             {/* Service Booklet */}
                             <div className="space-y-3">
-                                <div className="flex flex-col @@7xl:flex-row @@7xl:items-center justify-between gap-4">
-                                    <label className="text-sm font-medium text-gray-700 w-full @@7xl:w-1/3">{t('step3.docServiceBook')}</label>
-                                    <div className="flex-1 flex flex-col @@7xl:flex-row items-start @@7xl:items-center gap-4">
+                                <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
+                                    <label className="text-sm font-medium text-gray-700 w-full @3xl:w-1/3">{t('step3.docServiceBook')}</label>
+                                    <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
                                         <select
-                                            className="form-input py-1.5 text-sm w-full @@7xl:w-48 bg-white"
+                                            className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
                                             value={store.serviceBookletStatus || ''}
                                             onChange={e => store.updateField('serviceBookletStatus', e.target.value as any)}
                                         >
@@ -756,7 +756,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 ml-0 @@7xl:ml-[33.333%]">
+                                <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
                                         <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'serviceheftImages')} className="hidden" /></label>
@@ -780,11 +780,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
 
                             {/* Operating Manual */}
                             <div className="space-y-3">
-                                <div className="flex flex-col @@7xl:flex-row @@7xl:items-center justify-between gap-4">
-                                    <label className="text-sm font-medium text-gray-700 w-full @@7xl:w-1/3">{t('step3.docManual')}</label>
-                                    <div className="flex-1 flex flex-col @@7xl:flex-row items-start @@7xl:items-center gap-4">
+                                <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
+                                    <label className="text-sm font-medium text-gray-700 w-full @3xl:w-1/3">{t('step3.docManual')}</label>
+                                    <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
                                         <select
-                                            className="form-input py-1.5 text-sm w-full @@7xl:w-48 bg-white"
+                                            className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
                                             value={store.operatingManualStatus || ''}
                                             onChange={e => store.updateField('operatingManualStatus', e.target.value as any)}
                                         >
@@ -814,7 +814,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 ml-0 @@7xl:ml-[33.333%]">
+                                <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
                                         <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'bordliteraturImages')} className="hidden" /></label>
@@ -838,11 +838,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
 
                             {/* Environmental Badge */}
                             <div className="space-y-3">
-                                <div className="flex flex-col @@7xl:flex-row @@7xl:items-center justify-between gap-4">
-                                    <label className="text-sm font-medium text-gray-700 w-full @@7xl:w-1/3">{t('step3.docBadge')}</label>
-                                    <div className="flex-1 flex flex-col @@7xl:flex-row items-start @@7xl:items-center gap-4">
+                                <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
+                                    <label className="text-sm font-medium text-gray-700 w-full @3xl:w-1/3">{t('step3.docBadge')}</label>
+                                    <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
                                         <select
-                                            className="form-input py-1.5 text-sm w-full @@7xl:w-48 bg-white"
+                                            className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
                                             value={store.environmentalBadgeStatus || ''}
                                             onChange={e => store.updateField('environmentalBadgeStatus', e.target.value as any)}
                                         >
@@ -874,7 +874,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 ml-0 @@7xl:ml-[33.333%]">
+                                <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
                                         <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'environmentalBadgeImages')} className="hidden" /></label>
@@ -1030,7 +1030,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     )}
                                 </div>
                                 
-                                <div className={`grid grid-cols-1 ${isVehicleEvaluation || store.nextMaintenanceType === 'mileage' ? '' : '@@7xl:grid-cols-2'} gap-4`}>
+                                <div className={`grid grid-cols-1 ${isVehicleEvaluation || store.nextMaintenanceType === 'mileage' ? '' : '@3xl:grid-cols-2'} gap-4`}>
                                     {store.nextMaintenanceType !== 'mileage' && (
                                         <FormInput
                                             name="nextMaintenanceMileage"

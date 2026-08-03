@@ -56,6 +56,10 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
     const localStreamRef = useRef<MediaStream | null>(null);
     const onMessageRef = useRef(onMessage);
 
+    // Set by cleanup() so the resulting socket close is not reported to the UI as an
+    // unexpected drop (the UI uses 'socket-closed' to flush an in-progress recording).
+    const intentionalCloseRef = useRef(false);
+
     useEffect(() => {
         onMessageRef.current = onMessage;
     }, [onMessage]);
@@ -537,7 +541,12 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
                     }
                     break;
                 case 'user-left':
-                    if (data) handleUserLeft(data);
+                    if (data) {
+                        handleUserLeft(data);
+                        // Also surface it to the UI: the host needs it to stop and upload
+                        // the recording when the guest hangs up or drops.
+                        if (onMessageRef.current) onMessageRef.current(message);
+                    }
                     break;
                 case 'offer':
                     if (sender) await handleOffer(data, sender);
@@ -573,6 +582,7 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
         }
 
         console.log(`Initializing WebSocket connection to ${SIGNALING_URL} for room ${roomId}`);
+        intentionalCloseRef.current = false;
         socket.current = new WebSocket(SIGNALING_URL);
 
         socket.current.onopen = () => {
@@ -603,9 +613,20 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
             console.error('WebSocket error:', error);
         };
 
+        const thisSocket = socket.current;
         socket.current.onclose = (event) => {
             console.log('WebSocket closed:', event.code, event.reason);
-            // Don't auto-retry - let the UI handle reconnection if needed
+            // Don't auto-retry - let the UI handle reconnection if needed.
+            // Report unexpected drops so the UI can flush an in-progress recording.
+            // Skip when we closed it ourselves (cleanup) or when this is a stale socket
+            // replaced by a newer init().
+            if (intentionalCloseRef.current || socket.current !== thisSocket) return;
+            if (onMessageRef.current) {
+                onMessageRef.current({
+                    type: 'socket-closed',
+                    data: { code: event.code, reason: event.reason }
+                });
+            }
         };
     }, [processMessageQueue, sendSignal, getAuthToken, getJoinRole]);
 
@@ -622,6 +643,7 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
         pendingIceCandidates.current.clear();
 
         if (socket.current) {
+            intentionalCloseRef.current = true;
             socket.current.close();
             socket.current = null;
         }

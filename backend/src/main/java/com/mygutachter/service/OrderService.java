@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,75 @@ import com.mygutachter.model.OrderStatus;
 public class OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
+    private static final Map<String, String> GERMAN_PART_TRANSLATIONS;
+    static {
+        Map<String, String> m = new HashMap<>();
+        m.put("vehicle_view_front", "Fahrzeugansicht vorne");
+        m.put("vehicle_view_from_the_rear", "Fahrzeugansicht von hinten");
+        m.put("vehicle_photo_right_side", "Fahrzeugfoto rechte Seite");
+        m.put("vehicle_photo_left_side", "Fahrzeugfoto linke Seite");
+        m.put("overview_diagonal_rear_left", "Übersicht diagonal hinten links");
+        m.put("overview_diagonal_rear_right", "Übersicht diagonal hinten rechts");
+        m.put("overview_diagonal_front_right", "Übersicht diagonal vorne rechts");
+        m.put("overview_diagonal_front_left", "Übersicht diagonal vorne links");
+        m.put("front_left_wheel", "Rad vorne links");
+        m.put("front_right_wheel", "Rad vorne rechts");
+        m.put("meter_reading", "Zählerstand");
+        m.put("windshield", "Windschutzscheibe");
+        m.put("left_sill", "Schweller links");
+        m.put("right_sill", "Schweller rechts");
+        m.put("rear_left_door_window", "Fenster Tür hinten links");
+        m.put("rear_left_door", "Tür hinten links");
+        m.put("front_left_door_window", "Fenster Tür vorne links");
+        m.put("left_side_wall", "Seitenwand links");
+        m.put("right_side_wall", "Seitenwand rechts");
+        m.put("rear_left_wheel", "Rad hinten links");
+        m.put("rear_right_wheel", "Rad hinten rechts");
+        m.put("heck", "Heck");
+        m.put("left_rear_light", "Rücklicht links");
+        m.put("taillights_right", "Rücklicht rechts");
+        m.put("rear_bumper", "Stoßstange hinten");
+        m.put("front_left_door", "Tür vorne links");
+        m.put("front_left_fender", "Kotflügel vorne links");
+        m.put("front_bumper", "Stoßstange vorne");
+        m.put("headlight_on_the_left", "Scheinwerfer links");
+        m.put("front", "Front");
+        m.put("headlight_on_the_right", "Scheinwerfer rechts");
+        m.put("bonnet", "Motorhaube");
+        m.put("roof", "Dach");
+        m.put("rear_right_door_window", "Fenster Tür hinten rechts");
+        m.put("rear_right_door", "Tür hinten rechts");
+        m.put("tailgate", "Heckklappe");
+        m.put("rear_window", "Heckscheibe");
+        m.put("left_wing_mirror", "Außenspiegel links");
+        m.put("front_right_door_window", "Fenster Tür vorne rechts");
+        m.put("front_right_door", "Tür vorne rechts");
+        m.put("right_hand_exterior_mirror", "Außenspiegel rechts");
+        m.put("right-hand_exterior_mirror", "Außenspiegel rechts");
+        m.put("front_right_fender", "Kotflügel vorne rechts");
+        m.put("vin_number", "FIN / Typenschild");
+        m.put("roof_frame_right", "Dachrahmen rechts");
+        m.put("dachrahmen_links", "Dachrahmen links");
+        m.put("fuel_cap", "Tankdeckel");
+        m.put("ev_charging_cover", "Ladeabdeckung (EV)");
+        m.put("vehicle_registration_document", "Fahrzeugschein");
+        m.put("left_sill_2", "Schweller links");
+        m.put("right_sill_2", "Schweller rechts");
+        m.put("additional_images", "Zusätzliche Bilder");
+        GERMAN_PART_TRANSLATIONS = Collections.unmodifiableMap(m);
+    }
+
+    private String translatePartIdToGerman(String cleanPartId) {
+        if (cleanPartId == null) {
+            return "";
+        }
+        String key = cleanPartId.toLowerCase().trim();
+        if (GERMAN_PART_TRANSLATIONS.containsKey(key)) {
+            return GERMAN_PART_TRANSLATIONS.get(key);
+        }
+        return cleanPartId.replace("_", " ");
+    }
 
     private final MongoCollection<Document> collection;
     private final ObjectMapper objectMapper;
@@ -228,9 +298,14 @@ public class OrderService {
 
         // Union the app mode into `modes` (VIDEO_EXPERT / VEHICLE_REPORT). Importing the same
         // order into the second app adds its mode without removing the first (Decision Q2).
+        // Decision Q2 adjustment: VIDEO_EXPERT mode orders are also imported into VEHICLE_REPORT mode automatically.
         String mode = trimToNull(order.getMode());
         if (mode != null && OrderMode.isValid(mode)) {
-            update.append("$addToSet", new Document("modes", mode));
+            if (OrderMode.VIDEO_EXPERT.name().equals(mode)) {
+                update.append("$addToSet", new Document("modes", new Document("$each", List.of(OrderMode.VIDEO_EXPERT.name(), OrderMode.VEHICLE_REPORT.name()))));
+            } else {
+                update.append("$addToSet", new Document("modes", mode));
+            }
         }
 
         collection.updateOne(filter, update, new UpdateOptions().upsert(true));
@@ -281,7 +356,11 @@ public class OrderService {
             appMode = OrderMode.VEHICLE_REPORT.name();
         }
         if (appMode != null) {
-            collection.updateOne(filter, Updates.addToSet("modes", appMode));
+            if (OrderMode.VIDEO_EXPERT.name().equals(appMode)) {
+                collection.updateOne(filter, Updates.addEachToSet("modes", List.of(OrderMode.VIDEO_EXPERT.name(), OrderMode.VEHICLE_REPORT.name())));
+            } else {
+                collection.updateOne(filter, Updates.addToSet("modes", appMode));
+            }
         }
         return true;
     }
@@ -474,7 +553,7 @@ public class OrderService {
                 break;
 
             default:
-                String label = cleanPartId.replace("_", " ");
+                String label = translatePartIdToGerman(cleanPartId);
                 addAdditionalPhoto(doc, label, url, filename);
                 break;
         }
@@ -722,10 +801,16 @@ public class OrderService {
         return null;
     }
 
-    /** Append a recording S3 key to the order's {@code videoRecordingKeys} array. */
-    public void addVideoRecordingKey(String caseNumber, String key) {
-        collection.updateOne(Filters.eq("caseNumber", caseNumber),
-                Updates.push("videoRecordingKeys", key));
+    /**
+     * Append a recording S3 key to the order's {@code videoRecordingKeys} array.
+     *
+     * @return {@code true} if an order with that {@code caseNumber} existed and was
+     *         updated; {@code false} means the key was orphaned (uploaded to S3 but
+     *         attached to no order) and the caller should log it.
+     */
+    public boolean addVideoRecordingKey(String caseNumber, String key) {
+        return collection.updateOne(Filters.eq("caseNumber", caseNumber),
+                Updates.push("videoRecordingKeys", key)).getMatchedCount() > 0;
     }
 
     /** The order's recording S3 keys (with backward-compat for a legacy single {@code videoRecordingKey}). */

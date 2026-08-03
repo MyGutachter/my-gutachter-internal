@@ -165,6 +165,10 @@ export const VideoCall = () => {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingFinishedRef = useRef(false);
+    // In-flight stop+upload, shared by concurrent callers (see stopRecordingAndUpload).
+    const stopInFlightRef = useRef<Promise<void> | null>(null);
+    // 'guest-left' and the server's 'user-left' can both arrive for the same hangup.
+    const guestLeftHandledRef = useRef(false);
 
     // Screenshot Selection Mode
     const [savedScreenshots, setSavedScreenshots] = useState<Record<string, string>>({});
@@ -259,49 +263,135 @@ export const VideoCall = () => {
         }
     };
 
+    /**
+     * Stop the recorder and upload the captured video. Called from every path that can
+     * end a call (End call button, guest hangup/drop, socket close, unmount), so it must
+     * be safe to call more than once and from two paths at the same time: concurrent
+     * callers share the single in-flight promise, later calls resolve immediately.
+     */
     const stopRecordingAndUpload = (): Promise<void> => {
+        if (stopInFlightRef.current) return stopInFlightRef.current;
+
         // Immediately mark as finished to prevent useEffect from restarting
         recordingFinishedRef.current = true;
 
-        return new Promise((resolve) => {
+        const promise = new Promise<void>((resolve) => {
+            // Build the blob from whatever was buffered and upload it. Shared by the
+            // normal stop path and the "recorder already inactive" path below.
+            const uploadBufferedChunks = () => {
+                mediaRecorderRef.current = null;
+                setIsRecording(false);
+
+                const chunkCount = recordedChunksRef.current.length;
+                const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+                console.log('[Recording] Stop: blob size =', (blob.size / (1024 * 1024)).toFixed(2), 'MB, chunks:', chunkCount);
+                recordedChunksRef.current = [];
+
+                if (blob.size === 0) {
+                    console.warn('[Recording] Empty blob (chunks:', chunkCount, '), skipping upload');
+                    resolve();
+                    return;
+                }
+
+                setIsUploadingVideo(true);
+
+                // Upload the raw WebM blob directly
+                uploadRecording(blob, roomId).then(() => {
+                    console.log('[Recording] Upload successful');
+                    setIsUploadingVideo(false);
+                    resolve();
+                }).catch(err => {
+                    console.error('[Recording] Upload failed:', err);
+                    setIsUploadingVideo(false);
+                    resolve();
+                });
+            };
+
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 const recorder = mediaRecorderRef.current;
+                recorder.onstop = uploadBufferedChunks;
 
-                recorder.onstop = () => {
-                    // Now it's safe to clean up refs
-                    mediaRecorderRef.current = null;
-                    setIsRecording(false);
-
-                    const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-                    console.log('[Recording] Stop: blob size =', (blob.size / (1024 * 1024)).toFixed(2), 'MB, chunks:', recordedChunksRef.current.length);
-
-                    if (blob.size === 0) {
-                        console.warn('[Recording] Empty blob, skipping upload');
-                        resolve();
-                        return;
-                    }
-
-                    setIsUploadingVideo(true);
-
-                    // Upload the raw WebM blob directly
-                    uploadRecording(blob, roomId).then(() => {
-                        console.log('[Recording] Upload successful');
-                        setIsUploadingVideo(false);
-                        resolve();
-                    }).catch(err => {
-                        console.error('[Recording] Upload failed:', err);
-                        setIsUploadingVideo(false);
-                        resolve();
-                    });
-                };
-
+                // Flush the trailing partial timeslice before stopping, otherwise the
+                // last <1s of video is dropped.
+                try {
+                    if (recorder.state === 'recording') recorder.requestData();
+                } catch (e) {
+                    console.warn('[Recording] requestData failed:', e);
+                }
                 recorder.stop();
+            } else if (recordedChunksRef.current.length > 0) {
+                // The recorder already stopped on its own - the browser auto-stops a
+                // MediaRecorder once every track of its stream ends, which is exactly
+                // what happens the moment the customer hangs up. The chunks captured so
+                // far are still buffered and must be uploaded.
+                console.log('[Recording] Recorder already inactive, uploading buffered chunks');
+                uploadBufferedChunks();
             } else {
                 mediaRecorderRef.current = null;
                 setIsRecording(false);
                 resolve();
             }
         });
+
+        // Release the guard once done, so a later segment (guest rejoined) can stop too.
+        stopInFlightRef.current = promise;
+        promise.finally(() => {
+            if (stopInFlightRef.current === promise) stopInFlightRef.current = null;
+        });
+        return promise;
+    };
+
+    // Always-current reference to stopRecordingAndUpload so unload/unmount handlers
+    // (registered with an empty dep array) never call a stale closure.
+    const stopRecordingAndUploadRef = useRef(stopRecordingAndUpload);
+    stopRecordingAndUploadRef.current = stopRecordingAndUpload;
+
+    /**
+     * The call ended by some path other than the host pressing "End call"
+     * (guest dropped, signaling socket died). Only the host holds a recorder, so this
+     * flushes and uploads whatever was captured. Idempotent: a no-op once the recording
+     * has already been finished/uploaded.
+     */
+    const handleCallEndedRemotely = async (reason: string) => {
+        if (isGuest) return;
+        if (!mediaRecorderRef.current) return;
+        console.log('[Recording] Ending recording early, reason:', reason);
+        await stopRecordingAndUpload();
+    };
+
+    /**
+     * The customer hung up (explicit 'guest-left' or the server's 'user-left'). Tell the
+     * expert what happened, save the recording, then end the call on this side too.
+     */
+    const handleGuestLeft = async (reason: string) => {
+        if (isGuest || guestLeftHandledRef.current) return;
+        guestLeftHandledRef.current = true;
+
+        console.log('[VideoCall] Customer left the call, reason:', reason);
+        showNotification(t('videoCall.customerLeftSaving', {
+            defaultValue: 'The customer left the call. Saving the recording…'
+        }));
+
+        // Let the expert actually read the message before the full-screen "Saving
+        // Video…" overlay takes over (the overlay hides the notification toast).
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Upload next - the teardown below closes the socket and unmounts the view.
+        await stopRecordingAndUpload();
+
+        showNotification(t('videoCall.customerLeftSaved', {
+            defaultValue: 'Recording saved. Ending the call…'
+        }));
+
+        // Release the room server-side so the case can be re-opened later.
+        sendMessage('end-meeting', {});
+        setTimeout(() => {
+            cleanup();
+            setIsJoined(false);
+            setIsMuted(false);
+            setIsVideoEnabled(true);
+            navigate('/video');
+        }, 1500);
     };
 
     const handleAcceptRecording = () => {
@@ -508,6 +598,11 @@ export const VideoCall = () => {
                 if (code === 'MEETING_ENDED') {
                     if (!isGuest) {
                         showNotification(t('videoCall.restartingMeeting', { defaultValue: 'Restarting meeting…' }));
+                        // Save whatever was recorded before the room was torn down; the
+                        // rejoin below records a fresh segment.
+                        await handleCallEndedRemotely('MEETING_ENDED');
+                        recordingFinishedRef.current = false;
+                        guestLeftHandledRef.current = false;
                         cleanup();
                         setTimeout(() => {
                             handleJoin(roomId);
@@ -600,6 +695,14 @@ export const VideoCall = () => {
                         return next;
                     });
                 }
+            } else if (type === 'user-left' || type === 'guest-left') {
+                // Customer hung up, closed the tab or dropped off the network. Both the
+                // explicit 'guest-left' and the server's 'user-left' can arrive; the
+                // second one is a no-op.
+                await handleGuestLeft(type);
+            } else if (type === 'socket-closed') {
+                // Signaling connection died unexpectedly - don't lose the recording.
+                await handleCallEndedRemotely('socket-closed');
             } else if (type === 'end-meeting') {
                 showNotification(t('videoCall.hostEndedMeeting'));
                 setTimeout(() => {
@@ -953,11 +1056,59 @@ export const VideoCall = () => {
 
     // Handle recording start when consent is accepted and stream is available
     useEffect(() => {
-        if (!isGuest && isGuestConsentAccepted && !recordingFinishedRef.current && remoteStreams.size > 0 && !isRecording && !mediaRecorderRef.current) {
-            const firstRemoteStream = Array.from(remoteStreams.values())[0];
-            startRecording(firstRemoteStream);
+        if (isGuest || !isGuestConsentAccepted || isRecording || mediaRecorderRef.current) return;
+        if (remoteStreams.size === 0) return;
+
+        // A previous segment finished (guest left and rejoined, or the meeting was
+        // restarted). Once its upload has settled, allow a new segment - each one is
+        // stored as its own S3 key.
+        if (recordingFinishedRef.current) {
+            if (isUploadingVideo) return;
+            recordingFinishedRef.current = false;
         }
-    }, [isGuest, isGuestConsentAccepted, remoteStreams.size, isRecording]);
+
+        const firstRemoteStream = Array.from(remoteStreams.values())[0];
+        startRecording(firstRemoteStream);
+    }, [isGuest, isGuestConsentAccepted, remoteStreams.size, isRecording, isUploadingVideo]);
+
+    // Safety nets: never leave a recording buffered in memory with no upload.
+    useEffect(() => {
+        // In-app navigation / component unmount.
+        return () => {
+            void stopRecordingAndUploadRef.current();
+        };
+    }, []);
+
+    useEffect(() => {
+        // Guard the upload window too, not just the recording window: after the guest
+        // leaves, isRecording is already false while the upload is still in flight, and
+        // the host closing the tab then would still lose the file.
+        if (isGuest || (!isRecording && !isUploadingVideo)) return;
+
+        // A multi-MB blob cannot be sent from an unload handler (sendBeacon and
+        // fetch(keepalive) are capped at ~64KB), so the only reliable protection is to
+        // warn the host before the page goes away.
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+            return '';
+        };
+        // Best effort: finalise the chunks if the page is only being frozen (bfcache).
+        const handlePageHide = () => {
+            try {
+                mediaRecorderRef.current?.stop();
+            } catch (err) {
+                console.warn('[Recording] pagehide stop failed:', err);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        window.addEventListener('pagehide', handlePageHide);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener('pagehide', handlePageHide);
+        };
+    }, [isGuest, isRecording, isUploadingVideo]);
 
     // Periodic capability broadcast
     useEffect(() => {
@@ -1066,6 +1217,10 @@ export const VideoCall = () => {
                 navigate('/video');
             }, 100);
         } else {
+            // Tell the host immediately so it can flush the recording. The server's
+            // 'user-left' broadcast is the fallback, but on a flaky mobile network the
+            // socket close can take tens of seconds to be detected.
+            sendMessage('guest-left', {});
             cleanup();
             setIsJoined(false);
             setIsMuted(false);
@@ -2186,8 +2341,10 @@ export const VideoCall = () => {
                     isOpen={showUvvModal}
                     onClose={() => setShowUvvModal(false)}
                     onComplete={() => {
-                        sendMessage('end-meeting', {});
+                        // Stop/upload first: 'end-meeting' makes the server close every
+                        // session in the room, which would race the upload path.
                         stopRecordingAndUpload().then(() => {
+                            sendMessage('end-meeting', {});
                             cleanup();
                             setIsJoined(false);
                             navigate('/video');

@@ -752,7 +752,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         )}
                     </div>
 
-                    <div className="flex flex-col @@7xl:flex-row gap-3 @@7xl:items-end">
+                    <div className="flex flex-col @3xl:flex-row gap-3 @3xl:items-end">
                         <div className="flex-1 w-full">
                             <FormInput
                                 name="vin"
@@ -846,7 +846,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     <div className="border-b border-gray-100 pb-2 mb-4 flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-gray-700">{t('step2.manualEntry')}</h3>
                     </div>
-                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 @3xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
                         <GermanDatePickerInput
                             name="firstRegistration"
                             error={getFieldError('firstRegistration')}
@@ -1003,7 +1003,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 @@7xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 @3xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
                             {/* Target Keys — manually editable */}
                             <FormInput
                                 label={t('step2.targetKeysCount')}
@@ -1080,7 +1080,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         <h3 className="text-sm font-semibold text-gray-700">{t('step2.vehicleData')}</h3>
                     </div>
 
-                    <div className="grid grid-cols-1 @@7xl:grid-cols-2 @3xl:grid-cols-3 gap-x-6 gap-y-2">
+                    <div className="grid grid-cols-1 @xl:grid-cols-2 @3xl:grid-cols-3 gap-x-6 gap-y-2">
                         <FormInput
                             name="manufacturer"
                             error={getFieldError('manufacturer')}
@@ -1334,7 +1334,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                 <div className="space-y-6">
                     {/* Add Equipment Form & Search Bar */}
                     <div className="flex flex-col gap-4 bg-gray-50/80 p-4 rounded-2xl border border-gray-100">
-                        <div className="flex flex-col @@7xl:flex-row gap-3 items-end">
+                        <div className="flex flex-col @3xl:flex-row gap-3 items-end">
                             <div className="flex-1 w-full">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                                     {t('step2.addEquipmentItem')}

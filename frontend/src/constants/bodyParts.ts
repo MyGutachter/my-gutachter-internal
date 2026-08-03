@@ -48,7 +48,31 @@ export const BODY_PARTS: BodyPartDefinition[] = [
     { id: 'rear_light_left', labelDe: 'Heckleuchte links', labelEn: 'Left rear light', side: 'left', svgX: 80, svgY: 430, svgWidth: 40, svgHeight: 20 },
     { id: 'rear_light_right', labelDe: 'Heckleuchte rechts', labelEn: 'Right rear light', side: 'right', svgX: 320, svgY: 430, svgWidth: 40, svgHeight: 20 },
 
+    // VideoXpert overview / general shots (no SVG coords needed, used for photo labelling)
+    { id: 'vehicle_view_front', labelDe: 'Fahrzeugansicht vorne', labelEn: 'Vehicle view front', side: 'front', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'vehicle_view_from_the_rear', labelDe: 'Fahrzeugansicht von hinten', labelEn: 'Vehicle view from the rear', side: 'rear', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'vehicle_photo_right_side', labelDe: 'Fahrzeugfoto rechte Seite', labelEn: 'Vehicle picture right side', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'vehicle_photo_left_side', labelDe: 'Fahrzeugfoto linke Seite', labelEn: 'Vehicle picture left side', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'overview_diagonal_front_left', labelDe: 'Übersicht diagonal vorne links', labelEn: 'Overview diagonal front left', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'overview_diagonal_front_right', labelDe: 'Übersicht diagonal vorne rechts', labelEn: 'Overview diagonal front right', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'overview_diagonal_rear_left', labelDe: 'Übersicht diagonal hinten links', labelEn: 'Overview diagonal rear left', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'overview_diagonal_rear_right', labelDe: 'Übersicht diagonal hinten rechts', labelEn: 'Overview diagonal rear right', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'left_side_wall', labelDe: 'Seitenwand links', labelEn: 'Left side wall', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'right_side_wall', labelDe: 'Seitenwand rechts', labelEn: 'Right side wall', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'heck', labelDe: 'Heck', labelEn: 'Rear end', side: 'rear', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'front', labelDe: 'Front', labelEn: 'Front', side: 'front', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'rear_left_door_window', labelDe: 'Fenster hinten links', labelEn: 'Rear left door window', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'rear_right_door_window', labelDe: 'Fenster hinten rechts', labelEn: 'Rear right door window', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'front_left_door_window', labelDe: 'Fenster vorne links', labelEn: 'Front left door window', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'front_right_door_window', labelDe: 'Fenster vorne rechts', labelEn: 'Front right door window', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'rear_window', labelDe: 'Heckscheibe', labelEn: 'Rear window', side: 'rear', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'vin_number', labelDe: 'FIN / Typenschild', labelEn: 'VIN Number / Type plate', side: 'center', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'fuel_cap', labelDe: 'Tankdeckel', labelEn: 'Fuel cap', side: 'center', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'ev_charging_cover', labelDe: 'Ladeabdeckung (EV)', labelEn: 'EV charging cover', side: 'center', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'meter_reading', labelDe: 'Kilometerstand / Zählerstand', labelEn: 'Meter reading / Mileage', side: 'center', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'dachrahmen_links', labelDe: 'Dachrahmen links', labelEn: 'Roof frame left', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
 ];
+
 
 export interface InteriorPartDefinition {
     id: string;
@@ -98,28 +122,68 @@ export function getBodyPartLabel(id: string, lang: 'de' | 'en' = 'de'): string {
         'steeringwheel': 'steering_wheel',
         'steering_wheel_label': 'steering_wheel',
         'dashboard_label': 'dashboard',
+        // bumper / bonnet / trunk synonyms
         'front_bumper': 'bumper_front',
         'rear_bumper': 'bumper_rear',
         'bonnet': 'hood',
         'trunk': 'tailgate',
+        'tailgate': 'tailgate',
+        // fender synonyms
         'front_left_fender': 'fender_front_left',
         'front_right_fender': 'fender_front_right',
         'rear_left_fender': 'quarter_panel_left',
         'rear_right_fender': 'quarter_panel_right',
+        // door synonyms
         'left_front_door': 'door_front_left',
         'right_front_door': 'door_front_right',
         'left_rear_door': 'door_rear_left',
         'right_rear_door': 'door_rear_right',
+        'front_left_door': 'door_front_left',
+        'front_right_door': 'door_front_right',
+        'rear_left_door': 'door_rear_left',
+        'rear_right_door': 'door_rear_right',
+        // sill synonyms
         'left_sill': 'sill_left',
         'right_sill': 'sill_right',
+        // roof frame synonyms
         'left_roof_frame': 'roof_frame_left',
         'right_roof_frame': 'roof_frame_right',
+        'roof_frame_right': 'roof_frame_right',
+        'dachrahmen_links': 'dachrahmen_links',
+        // mirror synonyms
         'left_wing_mirror': 'mirror_left',
         'right_wing_mirror': 'mirror_right',
+        'right_hand_exterior_mirror': 'mirror_right',
+        'right-hand_exterior_mirror': 'mirror_right',
+        // headlight synonyms
         'headlight_on_the_left': 'headlight_left',
         'headlight_on_the_right': 'headlight_right',
+        // tail light synonyms
         'left_rear_light': 'rear_light_left',
         'taillights_right': 'rear_light_right',
+        // VideoXpert overview shots -> direct BODY_PARTS entries
+        'vehicle_view_from_the_rear': 'vehicle_view_from_the_rear',
+        'vehicle_view_front': 'vehicle_view_front',
+        'vehicle_photo_right_side': 'vehicle_photo_right_side',
+        'vehicle_photo_left_side': 'vehicle_photo_left_side',
+        'overview_diagonal_front_left': 'overview_diagonal_front_left',
+        'overview_diagonal_front_right': 'overview_diagonal_front_right',
+        'overview_diagonal_rear_left': 'overview_diagonal_rear_left',
+        'overview_diagonal_rear_right': 'overview_diagonal_rear_right',
+        'left_side_wall': 'left_side_wall',
+        'right_side_wall': 'right_side_wall',
+        'heck': 'heck',
+        'front': 'front',
+        'rear_left_door_window': 'rear_left_door_window',
+        'rear_right_door_window': 'rear_right_door_window',
+        'front_left_door_window': 'front_left_door_window',
+        'front_right_door_window': 'front_right_door_window',
+        'rear_window': 'rear_window',
+        'vin_number': 'vin_number',
+        'fuel_cap': 'fuel_cap',
+        'ev_charging_cover': 'ev_charging_cover',
+        'meter_reading': 'meter_reading',
+        'roof': 'roof',
     };
 
     if (synonymMap[normId]) {

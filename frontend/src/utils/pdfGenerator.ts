@@ -132,6 +132,127 @@ interface PDFReportData {
   globalConfig?: any;
 }
 
+const PART_TRANSLATIONS: Record<'de' | 'en', Record<string, string>> = {
+  de: {
+    'roof': 'Dach',
+    'rear left door': 'Tür hinten links',
+    'front right door': 'Tür vorne rechts',
+    'tailgate': 'Heckklappe',
+    'windshield': 'Windschutzscheibe',
+    'bonnet': 'Motorhaube',
+    'heck': 'Heck',
+    'front left door': 'Tür vorne links',
+    'rear right door': 'Tür hinten rechts',
+    // Door windows
+    'front left door window': 'Fenster vorne links',
+    'rear left door window': 'Fenster hinten links',
+    'front right door window': 'Fenster vorne rechts',
+    'rear right door window': 'Fenster hinten rechts',
+    'front left wheel': 'Rad vorne links',
+    'front right wheel': 'Rad vorne rechts',
+    'rear left wheel': 'Rad hinten links',
+    'rear right wheel': 'Rad hinten rechts',
+    'left sill': 'Schweller links',
+    'right sill': 'Schweller rechts',
+    'rear window': 'Heckscheibe',
+    'vehicle view front': 'Fahrzeugansicht vorne',
+    'vehicle view from the rear': 'Fahrzeugansicht von hinten',
+    'vehicle photo right side': 'Fahrzeugfoto rechte Seite',
+    'vehicle photo left side': 'Fahrzeugfoto linke Seite',
+    'overview diagonal front left': 'Übersicht diagonal vorne links',
+    'overview diagonal front right': 'Übersicht diagonal vorne rechts',
+    'overview diagonal rear left': 'Übersicht diagonal hinten links',
+    'overview diagonal rear right': 'Übersicht diagonal hinten rechts',
+    'front left fender': 'Kotflügel vorne links',
+    'front right fender': 'Kotflügel vorne rechts',
+    'left side wall': 'Seitenwand links',
+    'right side wall': 'Seitenwand rechts',
+    'left rear light': 'Rücklicht links',
+    'taillights right': 'Rücklicht rechts',
+    'rear bumper': 'Stoßstange hinten',
+    'front bumper': 'Stoßstange vorne',
+    'headlight on the left': 'Scheinwerfer links',
+    'headlight on the right': 'Scheinwerfer rechts',
+    'left wing mirror': 'Außenspiegel links',
+    'right-hand exterior mirror': 'Außenspiegel rechts',
+    'right hand exterior mirror': 'Außenspiegel rechts',
+    'vin number': 'FIN / Typenschild',
+    'roof frame right': 'Dachrahmen rechts',
+    'roof frame left': 'Dachrahmen links',
+    'dachrahmen links': 'Dachrahmen links',
+    'fuel cap': 'Tankdeckel',
+    'ev charging cover': 'Ladeabdeckung (EV)',
+    'vehicle registration document': 'Fahrzeugschein',
+    'additional images': 'Zusätzliche Bilder',
+    'meter reading': 'Zählerstand',
+    'front': 'Front',
+  },
+  en: {
+    'roof': 'Roof',
+    'rear left door': 'Rear left door',
+    'front right door': 'Front right door',
+    'tailgate': 'Tailgate',
+    'windshield': 'Windshield',
+    'bonnet': 'Bonnet',
+    'heck': 'Rear end',
+    'front left door': 'Front left door',
+    'rear right door': 'Rear right door',
+    // Door windows
+    'front left door window': 'Front left door window',
+    'rear left door window': 'Rear left door window',
+    'front right door window': 'Front right door window',
+    'rear right door window': 'Rear right door window',
+    'front left wheel': 'Front left wheel',
+    'front right wheel': 'Front right wheel',
+    'rear left wheel': 'Rear left wheel',
+    'rear right wheel': 'Rear right wheel',
+    'left sill': 'Left sill',
+    'right sill': 'Right sill',
+    'rear window': 'Rear window',
+    'vehicle view front': 'Vehicle view front',
+    'vehicle view from the rear': 'Vehicle view from the rear',
+    'vehicle photo right side': 'Vehicle picture right side',
+    'vehicle photo left side': 'Vehicle picture left side',
+    'overview diagonal front left': 'Overview diagonal front left',
+    'overview diagonal front right': 'Overview diagonal front right',
+    'overview diagonal rear left': 'Overview diagonal rear left',
+    'overview diagonal rear right': 'Overview diagonal rear right',
+    'front left fender': 'Front left fender',
+    'front right fender': 'Front right fender',
+    'left side wall': 'Left side wall',
+    'right side wall': 'Right side wall',
+    'left rear light': 'Left rear light',
+    'taillights right': 'Right rear light',
+    'rear bumper': 'Rear bumper',
+    'front bumper': 'Front bumper',
+    'headlight on the left': 'Headlight on the left',
+    'headlight on the right': 'Headlight on the right',
+    'left wing mirror': 'Left wing mirror',
+    'right-hand exterior mirror': 'Right-hand exterior mirror',
+    'right hand exterior mirror': 'Right-hand exterior mirror',
+    'vin number': 'VIN Number / Type plate',
+    'roof frame right': 'Roof frame right',
+    'roof frame left': 'Roof frame left',
+    'dachrahmen links': 'Roof frame left',
+    'fuel cap': 'Fuel cap',
+    'ev charging cover': 'EV charging cover',
+    'vehicle registration document': 'Vehicle registration document',
+    'additional images': 'Additional images',
+    'meter reading': 'Meter reading',
+    'front': 'Front',
+  }
+};
+
+const translateLabel = (label: string, lang: 'de' | 'en'): string => {
+  if (!label) return '';
+  const key = label.toLowerCase().trim().replace(/_/g, ' ');
+  const dict = PART_TRANSLATIONS[lang];
+  if (dict && dict[key]) {
+    return dict[key];
+  }
+  return label;
+};
+
 const PDF_LABELS = {
   de: {
     reportTitle: 'Gutachten',
@@ -1638,7 +1759,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
         </div>
         <div style="margin-top: 2mm; min-height: 8mm; line-height: normal;">
           <p style="font-size: 10pt; text-align: left; line-height: 1.3; margin: 0; color: ${THEME}">
-            <strong style="color: ${THEME}">${L.photoLabel} ${i + 1}:</strong> ${p.label}${p.caption ? ` &mdash; <span style="font-style: italic; color: #555;">${p.caption}</span>` : ''}
+            <strong style="color: ${THEME}">${L.photoLabel} ${i + 1}:</strong> ${translateLabel(p.label, lang)}${p.caption ? ` &mdash; <span style="font-style: italic; color: #555;">${p.caption}</span>` : ''}
           </p>
         </div>
       </div>`);

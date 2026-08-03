@@ -545,7 +545,7 @@ const ReportFormPage: React.FC = () => {
             <AppHeader />
             <StepIndicator />
 
-            <main className="flex-1 container mx-auto px-4 @@7xl:px-6 @5xl:px-8 py-4">
+            <main className="flex-1 container mx-auto px-4 @7xl:px-6 @5xl:px-8 py-4">
                 <div className="flex gap-4">
                     {/* Main content */}
                     <div className="flex-1 min-w-0">

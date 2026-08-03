@@ -45,15 +45,27 @@ public class RecordingController {
     @PostMapping("/{meetingId}")
     public ResponseEntity<String> uploadRecording(@PathVariable String meetingId,
             @RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            log.warn("Empty recording upload for meeting {}, ignoring", meetingId);
+            return ResponseEntity.badRequest().body("Recording file is empty");
+        }
         try {
             log.info("Uploading recording for meeting {}, size: {} bytes", meetingId, file.getSize());
             String key = "recordings/" + meetingId + "/" + System.currentTimeMillis() + ".webm";
             s3Service.uploadFile(key, file.getBytes(), "video/webm");
-            orderService.addVideoRecordingKey(meetingId, key);
-            log.info("Recording saved for meeting {}: {}", meetingId, key);
+            if (orderService.addVideoRecordingKey(meetingId, key)) {
+                log.info("Recording saved for meeting {}: {}", meetingId, key);
+            } else {
+                // The bytes are safe in S3, but no order references them - almost always
+                // a wrong meetingId/caseNumber. Return 200 so the client does not retry.
+                log.error("Recording {} uploaded but no order matched caseNumber {}", key, meetingId);
+            }
             return ResponseEntity.ok(key);
         } catch (IOException e) {
-            log.error("Failed to upload recording for meeting {}", meetingId, e);
+            log.error("Failed to read recording upload for meeting {}", meetingId, e);
+            return ResponseEntity.status(500).body("Failed to upload recording");
+        } catch (Exception e) {
+            log.error("Failed to store recording for meeting {}", meetingId, e);
             return ResponseEntity.status(500).body("Failed to upload recording");
         }
     }
