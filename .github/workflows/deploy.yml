@@ -106,6 +106,9 @@ jobs:
             echo "🔌 Remote User: $(whoami)"
             echo "📁 Navigating to repository ($GIT_DIR)..."
             cd "$GIT_DIR"
+            echo "🔍 Current Directory: $(pwd)"
+            echo "🔍 Directory Contents & Permissions:"
+            ls -la
             
             echo "Branch: $BRANCH"
             echo "📥 Fetching and pulling latest changes from origin/$BRANCH..."
