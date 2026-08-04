@@ -97,16 +97,18 @@ jobs:
           key: ${{ env.DEPLOY_KEY }}
           envs: BACKEND_CHANGED,FRONTEND_CHANGED,GIT_DIR,COMPOSE_DIR,COMPOSE_CMD,DOCKER_CMD,BRANCH
           script: |
+            set -e
             echo "=================================================="
-            echo "📁 Navigating to repository..."
+            echo "📁 Navigating to repository ($GIT_DIR)..."
             cd "$GIT_DIR"
             
+            echo "Branch: $BRANCH"
             echo "📥 Fetching and pulling latest changes from origin/$BRANCH..."
             git fetch origin
             git reset --hard origin/$BRANCH
             echo "=================================================="
             
-            echo "🐳 Navigating to Docker Compose directory..."
+            echo "🐳 Navigating to Docker Compose directory ($COMPOSE_DIR)..."
             cd "$COMPOSE_DIR"
             
             if [ "$BACKEND_CHANGED" = "true" ] && [ "$FRONTEND_CHANGED" = "true" ]; then
