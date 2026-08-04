@@ -91,14 +91,19 @@ jobs:
           COMPOSE_CMD: ${{ steps.server.outputs.compose_cmd }}
           DOCKER_CMD: ${{ steps.server.outputs.docker_cmd }}
           BRANCH: ${{ steps.server.outputs.branch }}
+          DEPLOY_HOST: ${{ env.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ env.DEPLOY_USER }}
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_KEY }}
-          envs: BACKEND_CHANGED,FRONTEND_CHANGED,GIT_DIR,COMPOSE_DIR,COMPOSE_CMD,DOCKER_CMD,BRANCH
+          envs: BACKEND_CHANGED,FRONTEND_CHANGED,GIT_DIR,COMPOSE_DIR,COMPOSE_CMD,DOCKER_CMD,BRANCH,DEPLOY_HOST,DEPLOY_USER
           script: |
             set -e
             echo "=================================================="
+            echo "🔌 Deploying to $DEPLOY_HOST as $DEPLOY_USER..."
+            echo "🔌 Remote Hostname: $(hostname)"
+            echo "🔌 Remote User: $(whoami)"
             echo "📁 Navigating to repository ($GIT_DIR)..."
             cd "$GIT_DIR"
             
