@@ -122,33 +122,37 @@ const OrderCard = ({ order }: OrderCardProps) => {
 
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--color-primary-orange)] to-[var(--color-primary-orange-light)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-            <div className="flex justify-between items-center px-4 py-3 border-b border-[var(--color-border-subtle)]">
-                <div className="flex items-center space-x-2">
-                    <span className="text-[var(--color-primary-orange)] font-black text-sm">#</span>
-                    <div className="flex flex-col">
-                        <span className="text-[8px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest leading-none mb-0.5">{t('order.number', { defaultValue: 'Order No.' })}</span>
-                        <span className="font-bold text-xs text-[var(--color-text-primary)] tracking-tight">
+            <div className="flex flex-col gap-2 px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                <div className="flex items-center space-x-2 min-w-0">
+                    <span className="text-[var(--color-primary-orange)] font-black text-sm shrink-0">#</span>
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-[8px] font-bold text-[var(--color-text-secondary)] uppercase tracking-widest leading-none mb-0.5">{t('order.number', { defaultValue: 'Order No.' })}</span>
+                        <span className="font-bold text-xs text-[var(--color-text-primary)] tracking-tight truncate">
                             {order.source && order.source !== 'MANUAL' && order.auftragsnummer
                                 ? `${order.source.replace('-', '_')}_${order.auftragsnummer}`
                                 : (order.auftragsnummer || order.dispatchOrOrderNo || 'N/A')}
                         </span>
                     </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                     {order.source && (
-                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full border uppercase tracking-wider ${order.source === 'OMT' ? 'bg-blue-100/50 text-blue-600 border-blue-200/50' :
-                            order.source === 'OMT-DEV' ? 'bg-purple-100/50 text-purple-600 border-purple-200/50' :
-                                'bg-gray-100/50 text-gray-600 border-gray-200/50'
+                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full border uppercase tracking-wider whitespace-nowrap ${order.source === 'OMT'
+                            ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/25 dark:text-blue-300 dark:border-blue-400/40'
+                            : order.source === 'OMT-DEV'
+                                ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/25 dark:text-purple-300 dark:border-purple-400/40'
+                                : 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/25 dark:text-gray-300 dark:border-gray-400/40'
                             }`}>
                             {order.source}
                         </span>
                     )}
                     {order.claimType && (
-                        <span className="px-2 py-0.5 bg-[var(--color-primary-orange)]/10 text-[var(--color-primary-orange)] text-[9px] font-bold rounded-full border border-[var(--color-primary-orange)]/20 uppercase tracking-wider">
+                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-500/25 dark:text-orange-300 dark:border-orange-400/40 text-[9px] font-bold rounded-full uppercase tracking-wider max-w-full truncate" title={order.claimType}>
                             {order.claimType}
                         </span>
                     )}
-                    <span className="px-2 py-0.5 bg-green-100/50 text-green-600 text-[9px] font-bold rounded-full border border-green-200/50 uppercase tracking-wider">{order.status ? t(`common.${order.status.toLowerCase()}`, { defaultValue: order.status }) : t('common.active', { defaultValue: 'Active' })}</span>
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 border border-green-200 dark:bg-green-500/25 dark:text-green-300 dark:border-green-400/40 text-[9px] font-bold rounded-full uppercase tracking-wider whitespace-nowrap">
+                        {order.status ? t(`common.${order.status.toLowerCase()}`, { defaultValue: order.status }) : t('common.active', { defaultValue: 'Active' })}
+                    </span>
                 </div>
             </div>
 
@@ -162,11 +166,11 @@ const OrderCard = ({ order }: OrderCardProps) => {
             <div className="p-3 bg-[var(--color-bg-card)] border-t border-[var(--color-border-subtle)] flex justify-between items-center">
                 <button
                     onClick={() => navigate(`/video/meeting-summary/${order.id}`)}
-                    className="text-[var(--color-text-muted)] hover:text-[var(--color-primary-orange)] transition-colors text-[10px] font-bold uppercase tracking-wider flex items-center cursor-pointer"
+                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-orange)] transition-colors text-[10px] font-bold uppercase tracking-wider flex items-center cursor-pointer"
                 >
                     {t('order.viewDetails', { defaultValue: 'View Details' })}
                 </button>
-                <Video onClick={handleVideoClick} className="cursor-pointer w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-primary-orange)] transition-colors" />
+                <Video onClick={handleVideoClick} className="cursor-pointer w-5 h-5 text-[var(--color-text-secondary)] group-hover:text-[var(--color-primary-orange)] transition-colors" />
             </div>
 
             {isModalOpen && createPortal(

@@ -49,6 +49,8 @@ public class Order {
 
     // ===== contact / vehicle basics =====
     private String clientName;
+    /** OMT Firmenname (Intranet Name1 / contractor Alias / FullName). */
+    private String companyName;
     private String contactPersonName;
     private String contactPersonMobile;
     private String contactPersonEmail;
@@ -118,6 +120,9 @@ public class Order {
 
     public String getClientName() { return clientName; }
     public void setClientName(String clientName) { this.clientName = clientName; }
+
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
 
     public String getContactPersonName() { return contactPersonName; }
     public void setContactPersonName(String contactPersonName) { this.contactPersonName = contactPersonName; }

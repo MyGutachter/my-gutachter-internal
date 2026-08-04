@@ -197,7 +197,7 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
         }
         return (
             <div className="flex flex-col xl:flex-row xl:justify-between xl:items-start border-b border-[var(--color-border-primary)]/60 pb-2 last:border-0 group hover:border-[var(--color-border-secondary)] transition-colors gap-1 xl:gap-0">
-                <dt className="text-[var(--color-text-muted)] w-full xl:w-[40%] text-[10px] font-bold uppercase tracking-wider mt-0.5 pr-2 leading-tight break-words">{label}</dt>
+                <dt className="text-[var(--color-text-secondary)] w-full xl:w-[40%] text-[10px] font-bold uppercase tracking-wider mt-0.5 pr-2 leading-tight break-words">{label}</dt>
                 <dd className={`text-[var(--color-text-primary)] w-full xl:w-[60%] text-[11px] font-semibold flex items-center justify-between overflow-hidden ${isEmail ? 'text-[var(--color-primary-orange)] cursor-pointer hover:underline' : ''}`}>
                     <span className="truncate mr-2 block w-full" title={String(displayValue)}>{displayValue}</span>
                     {icon && (
@@ -220,7 +220,7 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                             onClick={() => setActiveTab(tab.id)}
                             className={`pb-2 text-[10px] sm:text-[11px] font-bold flex items-center transition-all duration-300 relative whitespace-nowrap cursor-pointer ${activeTab === tab.id
                                 ? 'text-[var(--color-primary-orange)] border-b-2 border-[var(--color-primary-orange)]'
-                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+                                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                                 }`}
                         >
                             <tab.icon size={15} className={`transition-transform duration-300 ${activeTab === tab.id ? 'scale-110 mr-1.5 sm:mr-2' : 'mr-0 sm:mr-2'}`} />
@@ -242,11 +242,11 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                         <div className="h-3.5 w-3.5 border-2 border-[var(--color-border-secondary)] rounded peer-checked:bg-[var(--color-primary-orange)] peer-checked:border-[var(--color-primary-orange)] transition-colors"></div>
                         <CheckSquare size={10} className="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" />
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-text-muted)] group-hover:text-[var(--color-primary-orange)] transition-colors whitespace-nowrap">{t('order.markCompleted', { defaultValue: 'Mark Completed' })}</span>
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-text-secondary)] group-hover:text-[var(--color-primary-orange)] transition-colors whitespace-nowrap">{t('order.markCompleted', { defaultValue: 'Mark Completed' })}</span>
                 </label>
             </div>
 
-            <div className={`flex-1 overflow-y-auto custom-scrollbar bg-[var(--color-bg-card)] ${activeTab === '2d' ? 'overflow-hidden p-0' : 'p-4'}`}>
+            <div className={`flex-1 min-h-0 bg-[var(--color-bg-card)] ${activeTab === '2d' ? 'overflow-hidden p-0' : 'overflow-y-auto custom-scrollbar p-4'}`}>
 
                 {activeTab === 'details' && (
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
@@ -268,7 +268,7 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                                 {t('order.contactDetails', { defaultValue: 'Contact Details' })}
                             </h3>
                             <dl className="space-y-2 text-[11px]">
-                                {renderRow(t('order.fields.repairer', { defaultValue: 'Repairer' }), order.clientName)}
+                                {renderRow(t('order.fields.repairer', { defaultValue: 'Company name' }), order.companyName)}
                                 {renderRow(t('order.fields.contactPerson', { defaultValue: 'Contact Person' }), order.contactPersonName)}
                                 {renderRow(t('order.fields.mobile', { defaultValue: 'Mobile' }), order.contactPersonMobile, false, <MessageSquare size={14} />)}
                                 {renderRow(t('order.fields.email', { defaultValue: 'Email' }), order.contactPersonEmail, true)}
@@ -298,7 +298,7 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                 )}
 
                 {activeTab === '2d' && (
-                    <div className="h-full w-full flex flex-col items-center justify-center relative">
+                    <div className="h-full w-full min-h-[240px] relative overflow-hidden">
                         {isLoading && (
                             <div className="absolute inset-0 bg-[var(--color-bg-card)]/80 backdrop-blur-sm z-50 flex items-center justify-center">
                                 <CarInspectionLoader size="md" />
@@ -311,30 +311,33 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                                 </span>
                             </div>
                         )}
-                        <CarOverlay
-                            onPartSelected={handlePartClick}
-                            selectedParts={selectedParts}
-                            savedScreenshots={savedScreenshots}
-                            onViewScreenshot={(filename) => {
-                                const partId = Object.keys(meetingImages).find((key) => meetingImages[key] === filename);
-                                if (partId) {
-                                    const cleanPartId = getPartIdFromKey(partId);
-                                    setPopupState({
-                                        isOpen: true,
-                                        imageUrl: getImageUrl(partId, filename),
-                                        title: t(`carParts.${cleanPartId}`, { defaultValue: cleanPartId.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') }),
-                                    });
-                                } else if (filename) {
-                                    setPopupState({
-                                        isOpen: true,
-                                        imageUrl: getPartImageSrc(filename),
-                                        title: t('common.screenshot', { defaultValue: 'Screenshot' }),
-                                    });
-                                }
-                            }}
-                            hideSelectedList={true}
-                            readOnly={!hasMeetingData}
-                        />
+                        <div className="absolute inset-0">
+                            <CarOverlay
+                                onPartSelected={handlePartClick}
+                                selectedParts={selectedParts}
+                                savedScreenshots={savedScreenshots}
+                                onViewScreenshot={(filename) => {
+                                    const partId = Object.keys(meetingImages).find((key) => meetingImages[key] === filename);
+                                    if (partId) {
+                                        const cleanPartId = getPartIdFromKey(partId);
+                                        setPopupState({
+                                            isOpen: true,
+                                            imageUrl: getImageUrl(partId, filename),
+                                            title: t(`carParts.${cleanPartId}`, { defaultValue: cleanPartId.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') }),
+                                        });
+                                    } else if (filename) {
+                                        setPopupState({
+                                            isOpen: true,
+                                            imageUrl: getPartImageSrc(filename),
+                                            title: t('common.screenshot', { defaultValue: 'Screenshot' }),
+                                        });
+                                    }
+                                }}
+                                hideSelectedList={true}
+                                readOnly={!hasMeetingData}
+                                svgContainerStyle={{ width: '100%', height: '100%' }}
+                            />
+                        </div>
                     </div>
                 )}
 
@@ -362,11 +365,11 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
 
                             <div className="grid grid-cols-2 gap-4 text-[11px]">
                                 <div className="p-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] rounded-lg">
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Prüfer</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1">Prüfer</span>
                                     <span className="font-semibold text-[var(--color-text-primary)]">{order.vehicleExpertName || '-'}</span>
                                 </div>
                                 <div className="p-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] rounded-lg">
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Prüfdatum</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1">Prüfdatum</span>
                                     <span className="font-semibold text-[var(--color-text-primary)]">
                                         {order.uvvInspectionDate ? new Date(order.uvvInspectionDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
                                     </span>

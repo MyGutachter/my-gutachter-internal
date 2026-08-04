@@ -9,6 +9,8 @@ export interface Order {
     numberOfPhotos?: number;
     // Contact
     clientName?: string;
+    /** OMT Firmenname (Intranet Name1 / contractor Alias / FullName). */
+    companyName?: string;
     contactPersonName?: string;
     contactPersonMobile?: string;
     contactPersonEmail?: string;

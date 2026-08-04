@@ -1782,7 +1782,7 @@ export const VideoCall = () => {
                 {(!isGuest) && (
                     <div className={clsx(
                         "transition-all duration-300 ease-in-out flex flex-col bg-[var(--color-bg-card)] shadow-xl overflow-hidden",
-                        isMobile ? (showMobileCarOverlay ? "fixed inset-0 z-50 rounded-none w-full h-full" : "hidden") : "hidden lg:block w-full lg:w-1/3 h-auto rounded-2xl"
+                        isMobile ? (showMobileCarOverlay ? "fixed inset-0 z-50 rounded-none w-full h-full" : "hidden") : "hidden lg:flex w-full lg:w-1/3 h-full min-h-0 rounded-2xl"
                     )}>
                         {isMobile && (
                             <div className="flex justify-between items-center p-4 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-primary)]">
@@ -1855,37 +1855,45 @@ export const VideoCall = () => {
                             </button>
                         </div>
 
-                        <div className="max-h-[100%] flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className={clsx(
+                            "flex-1 min-h-0 flex flex-col",
+                            expertSideTab === '2d' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'
+                        )}>
                             {expertSideTab === '2d' ? (
-                                <CarOverlay
-                                    onPartSelected={(partName: string | null) => {
-                                        if (partName) {
-                                            if (remoteStreams.size > 1) {
-                                                setPendingCapturePart(partName);
-                                            } else {
-                                                sendMessage('part-update', { partId: partName, action: 'add' });
-                                                setSelectedParts(prev => [...prev, partName]);
-
-                                                if (remoteStreams.size > 0) {
-                                                    const [firstUserId] = remoteStreams.keys();
-                                                    const videoEl = document.getElementById(`video-${firstUserId}`) as HTMLVideoElement;
-                                                    if (videoEl) {
-                                                        captureScreenshot(videoEl, partName, firstUserId);
+                                <div className="flex-1 min-h-0 relative w-full">
+                                    <div className="absolute inset-0">
+                                        <CarOverlay
+                                            onPartSelected={(partName: string | null) => {
+                                                if (partName) {
+                                                    if (remoteStreams.size > 1) {
+                                                        setPendingCapturePart(partName);
                                                     } else {
-                                                        handleCaptureFailure(partName, t('videoCall.videoNotFound'));
+                                                        sendMessage('part-update', { partId: partName, action: 'add' });
+                                                        setSelectedParts(prev => [...prev, partName]);
+
+                                                        if (remoteStreams.size > 0) {
+                                                            const [firstUserId] = remoteStreams.keys();
+                                                            const videoEl = document.getElementById(`video-${firstUserId}`) as HTMLVideoElement;
+                                                            if (videoEl) {
+                                                                captureScreenshot(videoEl, partName, firstUserId);
+                                                            } else {
+                                                                handleCaptureFailure(partName, t('videoCall.videoNotFound'));
+                                                            }
+                                                        } else {
+                                                            handleCaptureFailure(partName, t('videoCall.waiting'));
+                                                        }
                                                     }
-                                                } else {
-                                                    handleCaptureFailure(partName, t('videoCall.waiting'));
                                                 }
-                                            }
-                                        }
-                                    }}
-                                    onPartHover={setHoveredPart}
-                                    selectedParts={selectedParts}
-                                    savedScreenshots={savedScreenshots}
-                                    onViewScreenshot={(filename) => setViewingScreenshot(filename)}
-                                    svgContainerStyle={{ width: '85%', height: '85%' }}
-                                />
+                                            }}
+                                            onPartHover={setHoveredPart}
+                                            selectedParts={selectedParts}
+                                            savedScreenshots={savedScreenshots}
+                                            onViewScreenshot={(filename) => setViewingScreenshot(filename)}
+                                            hideSelectedList={true}
+                                            svgContainerStyle={{ width: '100%', height: '100%' }}
+                                        />
+                                    </div>
+                                </div>
                             ) : expertSideTab === 'slots' ? (
                                 <VehicleReportStepsPanel
                                     order={order}

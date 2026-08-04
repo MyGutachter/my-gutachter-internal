@@ -1,5 +1,5 @@
-import { Eye } from 'lucide-react';
-import React, { useMemo, useRef, useState } from 'react';
+import { Eye, RotateCcw, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DamageItem } from '../../types/parts';
 
@@ -12,6 +12,8 @@ interface CarOverlayProps {
     readOnly?: boolean;
     onPartHover?: (part: { id: string; name: string } | null) => void;
     svgContainerStyle?: React.CSSProperties;
+    /** Zoom/rotate toolbar. Default true. */
+    showControls?: boolean;
 }
 
 const COLOR_PALETTE = [
@@ -27,12 +29,104 @@ const getColorForDamageId = (damageId: number | undefined): string => {
 };
 
 const SELECTED_COLOR = '#FF6B35';
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.5;
+const ZOOM_STEP = 0.1;
+const ZOOM_DEFAULT = 1;
+const ROTATE_STEP = 90;
+
+const parsePercent = (value: string | number | undefined, fallback: number): number => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+        const match = value.trim().match(/^([\d.]+)%?$/);
+        if (match) return parseFloat(match[1]);
+    }
+    return fallback;
+};
+
+const clampZoom = (value: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 10) / 10));
 
 export const CarOverlay: React.FC<CarOverlayProps> = (props) => {
     const { t } = useTranslation();
-    const { selectedParts, onPartSelected, savedScreenshots, onViewScreenshot, readOnly, onPartHover } = props;
+    const { selectedParts, onPartSelected, savedScreenshots, onViewScreenshot, readOnly, onPartHover, showControls = true } = props;
     const [hoveredPart, setHoveredPart] = useState<{ id: string; name: string; x: number; y: number } | null>(null);
+    const [zoom, setZoom] = useState(ZOOM_DEFAULT);
+    const [rotation, setRotation] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const didDragRef = useRef(false);
+    const panPendingRef = useRef(false);
+    const dragStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+
+    const baseWidth = parsePercent(props.svgContainerStyle?.width as string | number | undefined, 100);
+    const baseHeight = parsePercent(props.svgContainerStyle?.height as string | number | undefined, 100);
+
+    const adjustZoom = (delta: number) => {
+        setZoom((prev) => clampZoom(prev + delta));
+    };
+
+    const adjustRotation = (delta: number) => {
+        setRotation((prev) => ((prev + delta) % 360 + 360) % 360);
+    };
+
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        // Pan only when zoomed — keep default click/capture behavior at 1x
+        if (zoom <= 1) return;
+        if (e.button !== 0) return;
+        if ((e.target as HTMLElement).closest('button')) return;
+
+        const el = scrollContainerRef.current;
+        if (!el) return;
+        didDragRef.current = false;
+        panPendingRef.current = true;
+        dragStartRef.current = {
+            x: e.clientX,
+            y: e.clientY,
+            scrollLeft: el.scrollLeft,
+            scrollTop: el.scrollTop,
+        };
+    };
+
+    const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!panPendingRef.current && !isDragging) return;
+        const el = scrollContainerRef.current;
+        if (!el) return;
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        if (Math.abs(dx) <= 3 && Math.abs(dy) <= 3) return;
+
+        if (!isDragging) {
+            setIsDragging(true);
+            try {
+                el.setPointerCapture(e.pointerId);
+            } catch {
+                // ignore
+            }
+        }
+        didDragRef.current = true;
+        el.scrollLeft = dragStartRef.current.scrollLeft - dx;
+        el.scrollTop = dragStartRef.current.scrollTop - dy;
+    };
+
+    const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+        panPendingRef.current = false;
+        const el = scrollContainerRef.current;
+        if (el?.hasPointerCapture(e.pointerId)) {
+            el.releasePointerCapture(e.pointerId);
+        }
+        setIsDragging(false);
+        requestAnimationFrame(() => {
+            didDragRef.current = false;
+        });
+    };
+
+    useLayoutEffect(() => {
+        const el = scrollContainerRef.current;
+        if (!el) return;
+        el.scrollLeft = Math.max(0, (el.scrollWidth - el.clientWidth) / 2);
+        el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2);
+    }, [zoom, rotation]);
 
     const isAdd = true;
 
@@ -128,7 +222,7 @@ export const CarOverlay: React.FC<CarOverlayProps> = (props) => {
     };
 
     const handlePartClick = (partId: string, _partName?: string) => {
-        if (readOnly) return;
+        if (readOnly || didDragRef.current) return;
         onPartSelected(partId);
     };
 
@@ -162,6 +256,7 @@ export const CarOverlay: React.FC<CarOverlayProps> = (props) => {
                 stroke="transparent"
                 strokeWidth="8"
                 onClick={() => handlePartClick(partId)}
+                onPointerDown={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
                 onMouseEnter={(e) => handlePartMouseEnter(partId, partName, e)}
                 onMouseLeave={handlePartMouseLeave}
@@ -180,6 +275,7 @@ export const CarOverlay: React.FC<CarOverlayProps> = (props) => {
             viewBox="10 30 540.9 820"
             width="100%"
             height="100%"
+            preserveAspectRatio="xMidYMid meet"
             xmlns="http://www.w3.org/2000/svg"
         >
             <style>{`
@@ -737,22 +833,93 @@ export const CarOverlay: React.FC<CarOverlayProps> = (props) => {
         </svg>
     );
 
+    const canvasSize = Math.max(zoom, 1) * 100;
+    const carSizeRatio = zoom / Math.max(zoom, 1);
+    const carWidthPercent = carSizeRatio * baseWidth;
+    const carHeightPercent = carSizeRatio * baseHeight;
+
     return (
-        <div className="w-full h-full">
-            <div className={`w-full h-full bg-[var(--color-bg-primary)] rounded-lg border-[var(--color-border-primary)] relative overflow-auto custom-scrollbar ${readOnly ? 'p-0 border-0' : 'border-2'}`}>
+        <div className="w-full h-full min-h-[240px] relative overflow-hidden">
+            {showControls && (
+            <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        adjustZoom(ZOOM_STEP);
+                    }}
+                    disabled={zoom >= ZOOM_MAX}
+                    title={t('carOverlay.zoomIn', { defaultValue: 'Zoom in' })}
+                    className="p-1.5 rounded-lg bg-[var(--color-bg-card)]/90 backdrop-blur-sm border border-[var(--color-border-primary)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-orange)] hover:border-[var(--color-primary-orange)]/50 shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-secondary)] disabled:hover:border-[var(--color-border-primary)] cursor-pointer"
+                >
+                    <ZoomIn size={16} />
+                </button>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        adjustZoom(-ZOOM_STEP);
+                    }}
+                    disabled={zoom <= ZOOM_MIN}
+                    title={t('carOverlay.zoomOut', { defaultValue: 'Zoom out' })}
+                    className="p-1.5 rounded-lg bg-[var(--color-bg-card)]/90 backdrop-blur-sm border border-[var(--color-border-primary)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-orange)] hover:border-[var(--color-primary-orange)]/50 shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-secondary)] disabled:hover:border-[var(--color-border-primary)] cursor-pointer"
+                >
+                    <ZoomOut size={16} />
+                </button>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        adjustRotation(ROTATE_STEP);
+                    }}
+                    title={t('carOverlay.rotateCw', { defaultValue: 'Rotate right' })}
+                    className="p-1.5 rounded-lg bg-[var(--color-bg-card)]/90 backdrop-blur-sm border border-[var(--color-border-primary)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-orange)] hover:border-[var(--color-primary-orange)]/50 shadow-sm transition-colors cursor-pointer"
+                >
+                    <RotateCw size={16} />
+                </button>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        adjustRotation(-ROTATE_STEP);
+                    }}
+                    title={t('carOverlay.rotateCcw', { defaultValue: 'Rotate left' })}
+                    className="p-1.5 rounded-lg bg-[var(--color-bg-card)]/90 backdrop-blur-sm border border-[var(--color-border-primary)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-orange)] hover:border-[var(--color-primary-orange)]/50 shadow-sm transition-colors cursor-pointer"
+                >
+                    <RotateCcw size={16} />
+                </button>
+            </div>
+            )}
+            <div
+                ref={scrollContainerRef}
+                onPointerDown={zoom > 1 ? handlePointerDown : undefined}
+                onPointerMove={zoom > 1 ? handlePointerMove : undefined}
+                onPointerUp={zoom > 1 ? handlePointerUp : undefined}
+                onPointerCancel={zoom > 1 ? handlePointerUp : undefined}
+                className={`absolute inset-0 bg-[var(--color-bg-primary)] rounded-lg border-[var(--color-border-primary)] ${zoom > 1 ? 'overflow-auto custom-scrollbar' : 'overflow-hidden'} ${readOnly ? 'p-0 border-0' : 'border-2'} ${zoom > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+            >
                 <div
                     ref={containerRef}
-                    className="w-full min-h-full flex items-center justify-center p-0"
-                    style={{ userSelect: 'none' }}
+                    className="flex items-center justify-center p-2 box-border"
+                    style={{
+                        userSelect: 'none',
+                        width: `${canvasSize}%`,
+                        height: `${canvasSize}%`,
+                        minWidth: '100%',
+                        minHeight: '100%',
+                    }}
                 >
                     <div
                         style={{
-                            width: '120%',
-                            height: '120%',
+                            ...props.svgContainerStyle,
+                            width: `${carWidthPercent}%`,
+                            height: `${carHeightPercent}%`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            ...props.svgContainerStyle
+                            transform: `rotate(${rotation}deg)`,
+                            transformOrigin: 'center center',
+                            transition: isDragging ? 'none' : 'transform 0.2s ease',
                         }}
                     >
                         {renderCarView()}

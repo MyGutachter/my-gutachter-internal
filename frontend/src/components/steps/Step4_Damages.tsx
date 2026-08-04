@@ -926,18 +926,23 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
             {/* Unified Damage & Depreciation Assessment */}
             <SectionTitle>{t('minderwert.title')}</SectionTitle>
             <Card>
-                {/* Car Diagram */}
+                {/* Car Diagram — portrait aspect matches SVG viewBox (~541×820) so full car fills width */}
                 <div className="flex justify-center mb-8">
                     <div className="w-full max-w-md @5xl:max-w-lg">
-                        <CarOverlay
-                            selectedParts={selectedParts}
-                            onPartSelected={handlePartClick}
-                            savedScreenshots={{}}
-                            onViewScreenshot={() => { }}
-                            hideSelectedList
-                            readOnly={false}
-                            svgContainerStyle={{ width: '100%', height: 'auto' }}
-                        />
+                        <div className="relative aspect-[541/820] w-full">
+                            <div className="absolute inset-0">
+                                <CarOverlay
+                                    selectedParts={selectedParts}
+                                    onPartSelected={handlePartClick}
+                                    savedScreenshots={{}}
+                                    onViewScreenshot={() => { }}
+                                    hideSelectedList
+                                    readOnly={false}
+                                    showControls={false}
+                                    svgContainerStyle={{ width: '100%', height: '100%' }}
+                                />
+                            </div>
+                        </div>
                         <p className="text-xs text-gray-500 mt-2 text-center italic">{t('step3.clickPartDiagram')}</p>
                     </div>
                 </div>

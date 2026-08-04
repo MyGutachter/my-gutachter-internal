@@ -82,9 +82,9 @@ const STEPS = [
 
 const FieldRow = ({ label, value }: { label: string; value?: string | number | null }) => (
     <div className="flex items-start gap-2 py-2 border-b border-[var(--color-border-primary)] last:border-0">
-        <span className="text-[10px] font-bold text-[var(--color-text-muted)] w-28 flex-shrink-0 leading-snug">{label}</span>
+        <span className="text-[10px] font-bold text-[var(--color-text-secondary)] w-28 flex-shrink-0 leading-snug">{label}</span>
         <span className="text-[10px] text-[var(--color-text-primary)] flex-1 leading-snug break-words">
-            {value || <span className="text-[var(--color-text-muted)] italic">—</span>}
+            {value || <span className="text-[var(--color-text-secondary)] italic">—</span>}
         </span>
     </div>
 );
@@ -127,7 +127,7 @@ const SlotRow = ({
                     <span className="text-[10px] font-bold text-[var(--color-text-primary)] truncate">{slot.label}</span>
                     {filename && <CheckCircle size={9} className="text-green-500 flex-shrink-0 animate-scale-in" />}
                 </div>
-                <span className="text-[9px] text-[var(--color-text-muted)] truncate block">{slot.labelEn}</span>
+                <span className="text-[9px] text-[var(--color-text-secondary)] truncate block">{slot.labelEn}</span>
             </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -230,7 +230,7 @@ const StepAccordion: React.FC<{
                             <FieldRow label="Modell" value={order?.vehicleModel} />
                             <FieldRow label="Kilometerstand" value={order?.mileage ? `${order.mileage.toLocaleString('de-DE')} km` : null} />
                             <FieldRow label="Erstzulassung" value={order?.lastVehicleInspectionDate} />
-                            <FieldRow label="Auftraggeber" value={order?.clientName} />
+                            <FieldRow label="Firmenname" value={order?.companyName} />
                             <FieldRow label="Ansprechpartner" value={order?.contactPersonName} />
                             <FieldRow label="Auftragsnummer" value={order?.auftragsnummer || order?.caseNumber} />
                         </div>
@@ -265,7 +265,7 @@ const StepAccordion: React.FC<{
                                 order?.uvvCertificateAvailable ? '📄 Zertifikat verfügbar' : 'Kein Zertifikat'
                             } />
                             {!order?.uvvResult && (
-                                <p className="text-[9px] text-[var(--color-text-muted)] italic pt-2">
+                                <p className="text-[9px] text-[var(--color-text-secondary)] italic pt-2">
                                     Wechseln Sie zum Tab „UVV Liste" um die Prüfung abzuschließen.
                                 </p>
                             )}
@@ -316,7 +316,7 @@ export const VehicleReportStepsPanel: React.FC<VehicleReportStepsPanelProps> = (
             <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-primary)] flex-shrink-0">
                 <div>
                     <h4 className="text-xs font-bold text-[var(--color-text-primary)]">Fahrzeugbericht</h4>
-                    <p className="text-[9px] text-[var(--color-text-muted)] leading-tight">5-Schritte Bericht parallel zum Video-Call</p>
+                    <p className="text-[9px] text-[var(--color-text-secondary)] leading-tight">5-Schritte Bericht parallel zum Video-Call</p>
                 </div>
                 {/* Photo progress badge */}
                 <div className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full ${

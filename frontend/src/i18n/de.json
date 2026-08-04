@@ -743,7 +743,11 @@
         "results": "Ergebnisse"
     },
     "carOverlay": {
-        "selectedPartsTitle": "Ausgewählte Teile"
+        "selectedPartsTitle": "Ausgewählte Teile",
+        "zoomIn": "Vergrößern",
+        "zoomOut": "Verkleinern",
+        "rotateCw": "Nach rechts drehen",
+        "rotateCcw": "Nach links drehen"
     },
     "carParts": {
         "vehicle_view_front": "Fahrzeugansicht vorne",
@@ -1339,7 +1343,7 @@
             "images": "Bilder"
         },
         "fields": {
-            "repairer": "Auftraggeber",
+            "repairer": "Firmenname",
             "contactPerson": "Ansprechpartner",
             "mobile": "Mobil",
             "email": "E-Mail",

@@ -343,6 +343,11 @@ public class VideoOrderController {
         o.put("source", d.getString("source"));
         o.put("claimType", d.getString("claimType"));
         o.put("clientName", d.getString("clientName"));
+        // Firmenname: prefer dedicated companyName; fall back for legacy imports.
+        o.put("companyName", firstNonNull(
+                d.getString("companyName"),
+                d.getString("concernCompany"),
+                d.getString("clientName")));
         o.put("contactPersonName", d.getString("contactPersonName"));
         o.put("contactPersonMobile", d.getString("contactPersonMobile"));
         o.put("contactPersonEmail", d.getString("contactPersonEmail"));
