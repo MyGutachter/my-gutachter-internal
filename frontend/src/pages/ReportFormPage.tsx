@@ -122,6 +122,7 @@ const ReportFormPage: React.FC = () => {
     const prevStepRef = useRef(currentStep);
     const debouncedSaveRef = useRef<DebouncedFunction<(step: number) => void> | null>(null);
     const lastFieldsStateRef = useRef<Record<string, any>>({});
+    const [initializedCaseNumber, setInitializedCaseNumber] = React.useState<string | null>(null);
 
     // Fetch the latest config from backend and recalculate valuation
     const fetchLatestConfig = useCallback(async () => {
@@ -383,10 +384,18 @@ const ReportFormPage: React.FC = () => {
         if (currentStoreCase !== caseNumberParam) {
             useReportStore.getState().resetAll();
             useReportStore.getState().updateField('caseNumber', caseNumberParam);
+            useUIStore.getState().setCurrentStep(1);
         }
 
         refetchReport();
     }, [caseNumberParam, refetchReport, navigate, t]);
+
+    // Reset currentStep to 1 synchronously when opening/switching orders to prevent visual flash
+    React.useLayoutEffect(() => {
+        if (!uiHydrated) return;
+        setCurrentStep(1);
+        setInitializedCaseNumber(caseNumberParam);
+    }, [caseNumberParam, uiHydrated, setCurrentStep]);
 
     // ───── Scroll to top when step changes ─────
     React.useEffect(() => {
@@ -539,6 +548,14 @@ const ReportFormPage: React.FC = () => {
             default: return <Step1_OrderInfo />;
         }
     };
+
+    if (!uiHydrated || !reportHydrated || initializedCaseNumber !== caseNumberParam) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-light-gray">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex flex-col bg-light-gray @container">
