@@ -142,7 +142,7 @@ const SlotRow = ({
                     </button>
                     <button
                         onClick={() => onDelete(filename)}
-                        className="p-1.5 bg-red-950/30 hover:bg-red-600 text-red-400 hover:text-white rounded-lg transition-all cursor-pointer border border-red-950/50 hover:border-red-600"
+                        className="p-1.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white dark:bg-red-950/30 dark:hover:bg-red-600 dark:text-red-400 dark:hover:text-white rounded-lg transition-all cursor-pointer border border-red-100 hover:border-red-600 dark:border-red-950/50 dark:hover:border-red-600"
                         title="Löschen"
                     >
                         <Trash2 size={11} />
@@ -202,12 +202,12 @@ const StepAccordion: React.FC<{
                 <Icon size={14} className="text-[var(--color-primary-orange)] flex-shrink-0" />
                 <span className="text-[11px] font-bold text-[var(--color-text-primary)] flex-1">{step.label}</span>
                 {step.type === 'slots' && totalSlots > 0 && (
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
                         capturedCount === totalSlots
-                            ? 'bg-green-900/50 text-green-400'
+                            ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/30'
                             : capturedCount > 0
-                                ? 'bg-yellow-900/50 text-yellow-400'
-                                : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)]'
+                                ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30'
+                                : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)] border-transparent'
                     }`}>
                         {capturedCount}/{totalSlots}
                     </span>
@@ -319,10 +319,10 @@ export const VehicleReportStepsPanel: React.FC<VehicleReportStepsPanelProps> = (
                     <p className="text-[9px] text-[var(--color-text-secondary)] leading-tight">5-Schritte Bericht parallel zum Video-Call</p>
                 </div>
                 {/* Photo progress badge */}
-                <div className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full ${
+                <div className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full border ${
                     capturedPhotos === totalPhotos && totalPhotos > 0
-                        ? 'bg-green-900/50 text-green-400'
-                        : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)]'
+                        ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/30'
+                        : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)] border-transparent'
                 }`}>
                     <Camera size={10} />
                     <span>{capturedPhotos}/{totalPhotos} Fotos</span>

@@ -1629,6 +1629,21 @@
         "Roof_frame_right": "Roof frame right",
         "Dachrahmen_links": "Roof frame left",
         "Fuel_cap": "Fuel cap",
-        "EV_charging_cover": "EV charging cover"
+        "EV_charging_cover": "EV charging cover",
+        "left_side_wall": "Left side wall",
+        "Left side wall": "Left side wall",
+        "right_side_wall": "Right side wall",
+        "Right side wall": "Right side wall",
+        "roof": "Roof",
+        "front_left_wheel": "Front left wheel",
+        "front_right_wheel": "Front right wheel",
+        "rear_left_wheel": "Rear left wheel",
+        "rear_right_wheel": "Rear right wheel",
+        "left_sill_2": "Left sill",
+        "right_sill_2": "Right sill",
+        "additional_images": "Additional images",
+        "vehicle_registration_document": "Vehicle registration document",
+        "mileage_photo": "Meter reading / Mileage",
+        "vin_photo": "VIN Number / Type plate"
     }
 }

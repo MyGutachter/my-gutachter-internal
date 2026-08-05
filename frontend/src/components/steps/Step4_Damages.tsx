@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
-import { BODY_PARTS, INTERIOR_PARTS } from '../../constants/bodyParts';
+import { BODY_PARTS, INTERIOR_PARTS, getBodyPartLabel } from '../../constants/bodyParts';
 import { ANRECHNUNG_OPTIONS, DAMAGE_TYPES } from '../../constants/damageTypes';
 import { ESTIMATE_REPAIR_CODE_IDS, ESTIMATE_REPAIR_CODE_LABELS, lookupEstimatePrice } from '../../constants/estimateRepairCodes';
 import { useReportStore } from '../../store/reportStore';
@@ -63,83 +63,9 @@ interface Props {
     onToggleRequired?: (fieldName: string) => Promise<void>;
 }
 
-const translatePhotoLabel = (label: string, t: any) => {
+const translatePhotoLabel = (label: string, t: any, lang: 'de' | 'en' = 'de') => {
     if (!label) return '';
-    const normalizedKey = label.trim().replace(/ /g, '_');
-    const knownKeys: Record<string, string> = {
-        // Roof / bonnet / hood
-        'roof': 'Roof',
-        'bonnet': 'bonnet',
-        // Doors
-        'rear_left_door': 'Rear_left_door',
-        'front_right_door': 'Front_right_door',
-        'front_left_door': 'Front_left_door',
-        'rear_right_door': 'Rear_right_door',
-        // Door windows
-        'front_left_door_window': 'Front_left_door_window',
-        'rear_left_door_window': 'Rear_left_door_window',
-        'front_right_door_window': 'Front_right_door_window',
-        'rear_right_door_window': 'rear_right_door_window',
-        // Tailgate / rear
-        'tailgate': 'Tailgate',
-        'heck': 'Heck',
-        // Windshield / windows
-        'windshield': 'windshield',
-        'rear_window': 'rear_window',
-        // Wheels
-        'front_left_wheel': 'front_left_wheel',
-        'front_right_wheel': 'front_right_wheel',
-        'rear_left_wheel': 'rear_left_wheel',
-        'rear_right_wheel': 'rear_right_wheel',
-        // Sills
-        'left_sill': 'left_sill',
-        'right_sill': 'Right_sill',
-        // Vehicle overview shots
-        'vehicle_view_front': 'vehicle_view_front',
-        'vehicle_view_from_the_rear': 'Vehicle_view_from_the_rear',
-        'vehicle_photo_right_side': 'vehicle_photo_right_side',
-        'vehicle_photo_left_side': 'vehicle_photo_left_side',
-        // Overview diagonal shots
-        'overview_diagonal_front_left': 'Overview_diagonal_front_left',
-        'overview_diagonal_front_right': 'Overview_diagonal_front_right',
-        'overview_diagonal_rear_left': 'Overview_diagonal_rear_left',
-        'overview_diagonal_rear_right': 'Overview_diagonal_rear_right',
-        // Fenders
-        'front_left_fender': 'Front_left_fender',
-        'front_right_fender': 'front_right_fender',
-        // Side walls
-        'left_side_wall': 'Left_side_wall',
-        'right_side_wall': 'Right_side_wall',
-        // Lights
-        'left_rear_light': 'Left_rear_light',
-        'taillights_right': 'Taillights_right',
-        // Bumpers
-        'rear_bumper': 'rear_bumper',
-        'front_bumper': 'front_bumper',
-        // Headlights
-        'headlight_on_the_left': 'Headlight_on_the_left',
-        'headlight_on_the_right': 'Headlight_on_the_right',
-        // Mirrors
-        'left_wing_mirror': 'Left_wing_mirror',
-        'right-hand_exterior_mirror': 'Right_hand_exterior_mirror',
-        'right_hand_exterior_mirror': 'Right_hand_exterior_mirror',
-        // VIN / misc
-        'vin_number': 'vin_number',
-        'roof_frame_right': 'Roof_frame_right',
-        'roof_frame_left': 'Dachrahmen_links',
-        'dachrahmen_links': 'Dachrahmen_links',
-        'fuel_cap': 'Fuel_cap',
-        'ev_charging_cover': 'EV_charging_cover',
-        'meter_reading': 'Meter_reading',
-        'vehicle_registration_document': 'vehicle_registration_document',
-        'additional_images': 'additional_images',
-    };
-
-    const key = knownKeys[normalizedKey.toLowerCase()];
-    if (key) {
-        return t(`carParts.${key}`, { defaultValue: label });
-    }
-    return label;
+    return getBodyPartLabel(label, lang) || label;
 };
 
 
@@ -819,8 +745,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 <Card key={p.id} className="flex flex-col border-2 border-gray-200 bg-white shadow-sm hover:shadow-md transition-all">
                                     <div className="px-2.5 py-1.5 border-b flex justify-between items-center bg-gray-50">
                                         <div className="flex flex-col truncate pr-2">
-                                            <span className="text-[11px] font-bold text-gray-800 truncate" title={translatePhotoLabel(p.label, t) || `${t('step4.customOverview', 'Zusätzliche Übersicht')} ${idx + 1}`}>
-                                                {p.label && p.label !== t('step4.customOverview', 'Zusätzliche Übersicht') ? translatePhotoLabel(p.label, t) : `${t('step4.customOverview', 'Zusätzliche Übersicht')} ${idx + 1}`}
+                                            <span className="text-[11px] font-bold text-gray-800 truncate" title={translatePhotoLabel(p.label, t, lang) || `${t('step4.customOverview', 'Zusätzliche Übersicht')} ${idx + 1}`}>
+                                                {p.label && p.label !== t('step4.customOverview', 'Zusätzliche Übersicht') ? translatePhotoLabel(p.label, t, lang) : `${t('step4.customOverview', 'Zusätzliche Übersicht')} ${idx + 1}`}
                                             </span>
                                         </div>
                                         <div className="bg-green-100 text-green-700 p-1 rounded-full flex-shrink-0">
@@ -843,7 +769,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <div className="relative flex items-center bg-gray-50 border border-gray-200 rounded-md hover:border-gray-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary focus-within:bg-white transition-all px-2 py-1">
                                                     <input
                                                         className="w-full bg-transparent border-none p-0 text-[11px] text-gray-800 font-semibold focus:ring-0 outline-none placeholder-gray-500"
-                                                        value={translatePhotoLabel(p.label, t)}
+                                                        value={translatePhotoLabel(p.label, t, lang)}
                                                         onChange={e => store.updatePhoto(p.id, { label: e.target.value })}
                                                         onKeyDown={(e) => e.stopPropagation()}
                                                         placeholder={t('step4.photoPlaceholder', 'Titel...')}
@@ -2075,12 +2001,12 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
 
                                         <div className="px-0.5 mt-2 pt-2 border-t border-gray-100 space-y-1.5">
                                             {isVirtual ? (
-                                                <div className="py-0.5 text-[10px] font-semibold text-gray-500 italic truncate">{translatePhotoLabel(p.label, t)}</div>
+                                                <div className="py-0.5 text-[10px] font-semibold text-gray-500 italic truncate">{translatePhotoLabel(p.label, t, lang)}</div>
                                             ) : (
                                                 <>
                                                     <div className="relative flex items-center bg-gray-50 border border-gray-200 rounded hover:border-gray-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary focus-within:bg-white transition-all px-1.5 py-0.5">
                                                         <input className="w-full bg-transparent border-none p-0 text-[10px] text-gray-800 font-bold placeholder-gray-500 focus:ring-0 truncate outline-none"
-                                                            value={translatePhotoLabel(p.label, t)}
+                                                            value={translatePhotoLabel(p.label, t, lang)}
                                                             onChange={e => store.updatePhoto(p.id, { label: e.target.value })}
                                                             onKeyDown={(e) => e.stopPropagation()}
                                                             placeholder={t('step4.photoPlaceholder', 'Titel...')} />

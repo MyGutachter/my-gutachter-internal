@@ -71,6 +71,14 @@ export const BODY_PARTS: BodyPartDefinition[] = [
     { id: 'ev_charging_cover', labelDe: 'Ladeabdeckung (EV)', labelEn: 'EV charging cover', side: 'center', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
     { id: 'meter_reading', labelDe: 'Kilometerstand / Zählerstand', labelEn: 'Meter reading / Mileage', side: 'center', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
     { id: 'dachrahmen_links', labelDe: 'Dachrahmen links', labelEn: 'Roof frame left', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'front_left_wheel', labelDe: 'Rad vorne links', labelEn: 'Front left wheel', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'front_right_wheel', labelDe: 'Rad vorne rechts', labelEn: 'Front right wheel', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'rear_left_wheel', labelDe: 'Rad hinten links', labelEn: 'Rear left wheel', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'rear_right_wheel', labelDe: 'Rad hinten rechts', labelEn: 'Rear right wheel', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'left_sill_2', labelDe: 'Schweller links', labelEn: 'Left sill', side: 'left', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'right_sill_2', labelDe: 'Schweller rechts', labelEn: 'Right sill', side: 'right', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'additional_images', labelDe: 'Zusätzliche Bilder', labelEn: 'Additional images', side: 'center', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
+    { id: 'vehicle_registration_document', labelDe: 'Fahrzeugschein', labelEn: 'Vehicle registration document', side: 'center', svgX: 0, svgY: 0, svgWidth: 0, svgHeight: 0 },
 ];
 
 
@@ -184,6 +192,16 @@ export function getBodyPartLabel(id: string, lang: 'de' | 'en' = 'de'): string {
         'ev_charging_cover': 'ev_charging_cover',
         'meter_reading': 'meter_reading',
         'roof': 'roof',
+        'front_left_wheel': 'front_left_wheel',
+        'front_right_wheel': 'front_right_wheel',
+        'rear_left_wheel': 'rear_left_wheel',
+        'rear_right_wheel': 'rear_right_wheel',
+        'left_sill_2': 'sill_left',
+        'right_sill_2': 'sill_right',
+        'additional_images': 'additional_images',
+        'vehicle_registration_document': 'vehicle_registration_document',
+        'vin_photo': 'vin_number',
+        'mileage_photo': 'meter_reading',
     };
 
     if (synonymMap[normId]) {

@@ -2,6 +2,7 @@ import { Eye, RotateCcw, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DamageItem } from '../../types/parts';
+import { getBodyPartLabel } from '../../constants/bodyParts';
 
 interface CarOverlayProps {
     onPartSelected: (partName: string | null) => void;
@@ -47,7 +48,7 @@ const parsePercent = (value: string | number | undefined, fallback: number): num
 const clampZoom = (value: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 10) / 10));
 
 export const CarOverlay: React.FC<CarOverlayProps> = (props) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { selectedParts, onPartSelected, savedScreenshots, onViewScreenshot, readOnly, onPartHover, showControls = true } = props;
     const [hoveredPart, setHoveredPart] = useState<{ id: string; name: string; x: number; y: number } | null>(null);
     const [zoom, setZoom] = useState(ZOOM_DEFAULT);
@@ -228,13 +229,15 @@ export const CarOverlay: React.FC<CarOverlayProps> = (props) => {
 
     const handlePartMouseEnter = (partId: string, partName: string, e?: React.MouseEvent) => {
         const rect = containerRef.current?.getBoundingClientRect();
+        const currentLang = i18n.language || 'de';
+        const localizedName = getBodyPartLabel(partId, currentLang as any) || t(`carParts.${partId}`, { defaultValue: partName });
         setHoveredPart({
             id: partId,
-            name: t(`carParts.${partId}`, { defaultValue: partName }),
+            name: localizedName,
             x: rect ? e?.clientX || rect.left + rect.width / 2 : 0,
             y: (e?.clientY || 0) - 30
         });
-        onPartHover?.({ id: partId, name: t(`carParts.${partId}`, { defaultValue: partName }) });
+        onPartHover?.({ id: partId, name: localizedName });
     };
 
     const handlePartMouseLeave = () => {
@@ -947,7 +950,7 @@ export const CarOverlay: React.FC<CarOverlayProps> = (props) => {
                     <div className="flex flex-wrap gap-2">
                         {selectedParts.map((partId) => (
                             <div key={partId} className="flex items-center gap-2 bg-red-500/10 text-red-500 px-3 py-1 rounded-full">
-                                <span className="text-xs font-medium">{t(`carParts.${partId}`, { defaultValue: partId })}</span>
+                                <span className="text-xs font-medium">{getBodyPartLabel(partId, (i18n.language || 'de') as any) || t(`carParts.${partId}`, { defaultValue: partId })}</span>
                                 {savedScreenshots[partId] && (
                                     <button
                                         onClick={(e) => {

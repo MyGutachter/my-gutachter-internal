@@ -97,6 +97,22 @@ public class OrderService {
         m.put("left_sill_2", "Schweller links");
         m.put("right_sill_2", "Schweller rechts");
         m.put("additional_images", "Zusätzliche Bilder");
+        // Synonyms & IDs from BODY_PARTS
+        m.put("hood", "Motorhaube");
+        m.put("sill_left", "Schweller links");
+        m.put("sill_right", "Schweller rechts");
+        m.put("mirror_left", "Außenspiegel links");
+        m.put("mirror_right", "Außenspiegel rechts");
+        m.put("quarter_panel_left", "Seitenwand links");
+        m.put("quarter_panel_right", "Seitenwand rechts");
+        m.put("bumper_front", "Stoßfänger vorne");
+        m.put("bumper_rear", "Stoßfänger hinten");
+        m.put("headlight_left", "Scheinwerfer links");
+        m.put("headlight_right", "Scheinwerfer rechts");
+        m.put("rear_light_left", "Heckleuchte links");
+        m.put("rear_light_right", "Heckleuchte rechts");
+        m.put("vin_photo", "FIN / Typenschild");
+        m.put("mileage_photo", "Zählerstand");
         GERMAN_PART_TRANSLATIONS = Collections.unmodifiableMap(m);
     }
 
@@ -104,7 +120,7 @@ public class OrderService {
         if (cleanPartId == null) {
             return "";
         }
-        String key = cleanPartId.toLowerCase().trim();
+        String key = cleanPartId.toLowerCase().trim().replace(" ", "_").replace("-", "_");
         if (GERMAN_PART_TRANSLATIONS.containsKey(key)) {
             return GERMAN_PART_TRANSLATIONS.get(key);
         }

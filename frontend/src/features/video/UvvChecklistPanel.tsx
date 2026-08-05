@@ -82,8 +82,8 @@ export const UvvChecklistPanel: React.FC<UvvChecklistPanelProps> = ({
                             disabled={isSubmitting}
                             className={`p-5 rounded-xl border flex flex-col items-center justify-center gap-2 text-center transition-all duration-150 cursor-pointer ${
                                 selectedResult === 'PASSED'
-                                    ? 'bg-green-950/60 border-green-600 text-green-400 shadow-md shadow-green-950/20'
-                                    : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)] hover:bg-green-950/30 hover:border-green-700 hover:text-green-400'
+                                    ? 'bg-green-100 border-green-300 text-green-800 dark:bg-green-950/60 dark:border-green-600 dark:text-green-400 shadow-md shadow-green-950/20'
+                                    : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)] hover:bg-green-50 hover:border-green-400 hover:text-green-700 dark:hover:bg-green-950/30 dark:hover:border-green-700 dark:hover:text-green-400'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                             <CheckCircle size={28} />
@@ -101,8 +101,8 @@ export const UvvChecklistPanel: React.FC<UvvChecklistPanelProps> = ({
                             disabled={isSubmitting}
                             className={`p-5 rounded-xl border flex flex-col items-center justify-center gap-2 text-center transition-all duration-150 cursor-pointer ${
                                 selectedResult === 'FAILED'
-                                    ? 'bg-red-950/60 border-red-600 text-red-400 shadow-md shadow-red-950/20'
-                                    : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)] hover:bg-red-950/30 hover:border-red-700 hover:text-red-400'
+                                    ? 'bg-red-100 border-red-300 text-red-800 dark:bg-red-950/60 dark:border-red-600 dark:text-red-400 shadow-md shadow-red-950/20'
+                                    : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)] hover:bg-red-50 hover:border-red-400 hover:text-red-700 dark:hover:bg-red-950/30 dark:hover:border-red-700 dark:hover:text-red-400'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                             <AlertTriangle size={28} />

@@ -358,9 +358,9 @@ export const UvvInlineChecklistPanel: React.FC<UvvInlineChecklistPanelProps> = (
                                         key={nr}
                                         className={`flex items-start gap-2 p-2 rounded-lg border transition-all ${
                                             itemStates[nr] === 'DEFECT' || itemStates[nr] === 'NO'
-                                                ? 'bg-red-950/20 border-red-900/40'
+                                                ? 'bg-red-50 border-red-200/50 dark:bg-red-950/20 dark:border-red-900/40'
                                                 : itemStates[nr] === 'OK' || itemStates[nr] === 'YES'
-                                                    ? 'bg-green-950/15 border-green-900/30'
+                                                    ? 'bg-green-50 border-green-200/50 dark:bg-green-950/15 dark:border-green-900/30'
                                                     : 'bg-[var(--color-bg-secondary)] border-[var(--color-border-primary)]'
                                         }`}
                                     >
@@ -452,8 +452,8 @@ export const UvvInlineChecklistPanel: React.FC<UvvInlineChecklistPanelProps> = (
                 {/* ── Result Banner ── */}
                 <div className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all ${
                     summary.isPassed
-                        ? 'bg-green-950/40 border-green-700 text-green-300'
-                        : 'bg-red-950/40 border-red-700 text-red-300'
+                        ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-700 dark:text-green-300'
+                        : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-700 dark:text-red-300'
                 }`}>
                     {summary.isPassed
                         ? <CheckCircle size={20} className="flex-shrink-0" />

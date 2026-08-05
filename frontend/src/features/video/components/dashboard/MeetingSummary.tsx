@@ -407,8 +407,8 @@ const MeetingSummary = () => {
                         <div className="h-full w-full p-4 sm:p-6 overflow-y-auto custom-scrollbar flex flex-col items-center">
                             <div className="w-full max-w-5xl space-y-4">
                                 <div className={`p-6 rounded-2xl border flex items-center justify-between gap-4 shadow-sm ${order.uvvResult === 'PASSED'
-                                    ? 'bg-green-950/40 border-green-700 text-green-400'
-                                    : 'bg-red-950/40 border-red-700 text-red-400'}`}>
+                                    ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-700 dark:text-green-400'
+                                    : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-700 dark:text-red-400'}`}>
                                     <div className="min-w-0 space-y-1">
                                         <h2 className="text-xl font-bold tracking-wide">
                                             {t('uvv.summary.header', { result: order.uvvResult === 'PASSED' ? t('uvv.summary.passed', { defaultValue: 'PASSED' }) : t('uvv.summary.failed', { defaultValue: 'FAILED' }), defaultValue: 'UVV Inspection' })}
