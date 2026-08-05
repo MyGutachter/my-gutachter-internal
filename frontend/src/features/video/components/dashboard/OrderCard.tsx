@@ -136,11 +136,9 @@ const OrderCard = ({ order }: OrderCardProps) => {
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                     {order.source && (
-                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full border uppercase tracking-wider whitespace-nowrap ${order.source === 'OMT'
+                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full border uppercase tracking-wider whitespace-nowrap ${(order.source === 'OMT' || order.source === 'OMT-DEV')
                             ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/25 dark:text-blue-300 dark:border-blue-400/40'
-                            : order.source === 'OMT-DEV'
-                                ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/25 dark:text-purple-300 dark:border-purple-400/40'
-                                : 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/25 dark:text-gray-300 dark:border-gray-400/40'
+                            : 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/25 dark:text-gray-300 dark:border-gray-400/40'
                             }`}>
                             {order.source}
                         </span>

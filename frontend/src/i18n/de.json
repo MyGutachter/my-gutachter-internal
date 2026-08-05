@@ -1650,6 +1650,21 @@
         "Rear_left_door_window_1783407473968": "Fenster hinten links",
         "Front_left_door_window_1783407473053": "Fenster vorne links",
         "rear_right_door_window_1783407481988": "Fenster hinten rechts",
-        "Front_right_door_window_1783407482353": "Fenster vorne rechts"
+        "Front_right_door_window_1783407482353": "Fenster vorne rechts",
+        "left_side_wall": "Seitenwand links",
+        "Left side wall": "Seitenwand links",
+        "right_side_wall": "Seitenwand rechts",
+        "Right side wall": "Seitenwand rechts",
+        "roof": "Dach",
+        "front_left_wheel": "Rad vorne links",
+        "front_right_wheel": "Rad vorne rechts",
+        "rear_left_wheel": "Rad hinten links",
+        "rear_right_wheel": "Rad hinten rechts",
+        "left_sill_2": "Schweller links",
+        "right_sill_2": "Schweller rechts",
+        "additional_images": "Zusätzliche Bilder",
+        "vehicle_registration_document": "Fahrzeugschein",
+        "mileage_photo": "Kilometerstand / Zählerstand",
+        "vin_photo": "FIN / Typenschild"
     }
 }

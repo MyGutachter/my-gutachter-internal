@@ -345,8 +345,8 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                     <div className="h-full w-full p-4 overflow-y-auto custom-scrollbar flex flex-col items-center">
                         <div className="w-full max-w-2xl space-y-4 text-left pb-10">
                             <div className={`p-4 rounded-xl border flex items-center justify-between shadow-sm ${order.uvvResult === 'PASSED'
-                                ? 'bg-green-950/40 border-green-700 text-green-400'
-                                : 'bg-red-950/40 border-red-700 text-red-400'
+                                ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-700 dark:text-green-400'
+                                : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-700 dark:text-red-400'
                                 }`}>
                                 <div>
                                     <h2 className="text-sm font-bold tracking-wide">

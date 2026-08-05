@@ -245,12 +245,7 @@ const PART_TRANSLATIONS: Record<'de' | 'en', Record<string, string>> = {
 
 const translateLabel = (label: string, lang: 'de' | 'en'): string => {
   if (!label) return '';
-  const key = label.toLowerCase().trim().replace(/_/g, ' ');
-  const dict = PART_TRANSLATIONS[lang];
-  if (dict && dict[key]) {
-    return dict[key];
-  }
-  return label;
+  return getBodyPartLabel(label, lang) || label;
 };
 
 const PDF_LABELS = {
