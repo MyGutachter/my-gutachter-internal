@@ -62,6 +62,7 @@ public class ReportController {
     private final ValuationService valuationService;
     private final S3Service s3;
     private final OrderService orderService;
+    private final String omtApiKey;
 
     private static final List<String> ALLOWED_CLAIM_TYPES = Arrays.asList(
             "Zustandsbericht / Minderwertgutachten",
@@ -81,7 +82,8 @@ public class ReportController {
             OrderService orderService,
             @Value("${mongodb.collections.orders}") String collectionName,
             @Value("${mongodb.collections.rateConfig}") String rateConfigCollName,
-            @Value("${mongodb.collections.users}") String usersCollName) {
+            @Value("${mongodb.collections.users}") String usersCollName,
+            @Value("${omt.api-key:}") String omtApiKey) {
         this.collection = database.getCollection(collectionName);
         this.rateConfigCollection = database.getCollection(rateConfigCollName);
         this.usersCollection = database.getCollection(usersCollName);
@@ -93,6 +95,7 @@ public class ReportController {
         this.valuationService = valuationService;
         this.s3 = s3;
         this.orderService = orderService;
+        this.omtApiKey = omtApiKey;
     }
 
     /** Map a sanitized email + filename to the S3 object key for report photos. */
@@ -785,15 +788,9 @@ public class ReportController {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(401).build();
         }
-        String token = authHeader.substring(7);
-        String externalToken = jwtService.extractExternalToken(token);
-
-        if (externalToken == null) {
-            return ResponseEntity.status(400).body(Map.of("error", "No external OMT token found in session"));
-        }
 
         try {
-            JsonNode contacts = externalOrderService.fetchCustomerContacts(externalToken);
+            JsonNode contacts = externalOrderService.fetchCustomerContacts(omtApiKey);
             return ResponseEntity.ok(contacts);
         } catch (Exception e) {
             System.err.println("Failed to fetch customer contacts: " + e.getMessage());
