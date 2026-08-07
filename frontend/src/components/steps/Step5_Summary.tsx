@@ -510,22 +510,26 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
 
         // Determine safe scale based on page count estimate to prevent exceeding browser canvas height limits
         const estimatedPages = 5 + Math.ceil((reportData.photos?.length || 0) / 2);
+        const pdfScale = estimatedPages > 16 ? 1.5 : 2;
         const displayOrderNumber = store.auftragsnummer || store.caseNumber;
         const fileName = `Gutachten_${displayOrderNumber}.pdf`;
 
         const opt = {
             margin: 0,
             filename: fileName,
-            image: { type: 'jpeg' as const, quality: 0.75 },
+            image: { type: 'jpeg' as const, quality: 0.98 },
             html2canvas: {
-                scale: 1,
+                scale: pdfScale,
                 useCORS: true,
-                logging: true,
+                logging: false,
                 backgroundColor: '#ffffff',
                 letterRendering: true,
                 imageTimeout: 15000,
+                dpi: 300,
+                allowTaint: true,
+                windowWidth: 1200,
             },
-            jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+            jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const, compress: true },
             pagebreak: { mode: ['css', 'legacy'] as const },
         };
 
@@ -753,7 +757,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                 <button
                     type="button"
                     onClick={() => setShowActivityLog(true)}
-                    className="btn-outline flex items-center gap-2 px-4 py-2 text-sm bg-white"
+                    className="btn-outline flex items-center gap-2 px-4 py-2 text-sm"
                 >
                     <History className="w-4 h-4" />
                     {t('activityLog.title')}
@@ -884,8 +888,8 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                                 <th className="p-3 text-left font-bold text-gray-700">{t('step5.schadenHeader', 'Schaden')}</th>
                                 {!isVehicleEvaluation ? (
                                     <>
-                                        <th className="p-3 text-right font-bold text-gray-700">{t('step5.minderwertBruttoHeader', 'Minderwert Schaden (brutto)')}</th>
                                         <th className="p-3 text-right font-bold text-gray-700">{t('step5.reparaturBruttoHeader', 'Reparatur (brutto)')}</th>
+                                        <th className="p-3 text-right font-bold text-gray-700">{t('step5.minderwertBruttoHeader', 'Minderwert Schaden (brutto)')}</th>
                                     </>
                                 ) : (
                                     <th className="p-3 text-left font-bold text-gray-700">{t('step5.status')}</th>
@@ -900,8 +904,8 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                                     </td>
                                     {!isVehicleEvaluation ? (
                                         <>
-                                            <td className={`p-3 text-right font-mono ${row.isInfo ? 'line-through decoration-orange-300' : ''}`}>{formatCurrency(row.minderwertBrutto)}</td>
                                             <td className="p-3 text-right font-mono">{formatCurrency(row.repairCostBrutto)}</td>
+                                            <td className={`p-3 text-right font-mono ${row.isInfo ? 'line-through decoration-orange-300' : ''}`}>{formatCurrency(row.minderwertBrutto)}</td>
                                         </>
                                     ) : (
                                         <td className="p-3 text-gray-600">—</td>
@@ -913,8 +917,8 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                             <tfoot>
                                 <tr className="bg-primary/5 font-bold text-base border-t-2 border-primary/20">
                                     <td className="p-4">{t('step5.totalRowHeader', 'Gesamtbetrag / Minderwert')}</td>
-                                    <td className="p-4 text-right font-mono text-primary">{formatCurrency(totalMinderwertBr)}</td>
                                     <td className="p-4 text-right font-mono text-primary">{formatCurrency(store.totalRepairCostBrutto())}</td>
+                                    <td className="p-4 text-right font-mono text-primary">{formatCurrency(totalMinderwertBr)}</td>
                                 </tr>
                             </tfoot>
                         )}
@@ -931,11 +935,11 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                             </div>
                             {!isVehicleEvaluation && (
                                 <div className="flex-shrink-0 text-right">
-                                    <div className={`text-sm font-black font-mono ${item.type === 'auto' || item.type === 'system' ? 'text-orange-600' : 'text-primary'} ${item.isInfo ? 'text-gray-400 line-through' : ''}`}>
-                                        MW: {formatCurrency(item.minderwertBrutto)}
-                                    </div>
-                                    <div className="text-[10px] font-mono text-gray-400">
+                                    <div className="text-sm font-black font-mono text-gray-700">
                                         Rep: {formatCurrency(item.repairCostBrutto)}
+                                    </div>
+                                    <div className={`text-[10px] font-mono ${item.type === 'auto' || item.type === 'system' ? 'text-orange-600' : 'text-primary'} ${item.isInfo ? 'text-gray-400 line-through' : ''}`}>
+                                        MW: {formatCurrency(item.minderwertBrutto)}
                                     </div>
                                 </div>
                             )}
@@ -943,13 +947,13 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                     ))}
                     {!isVehicleEvaluation && (
                         <div className="p-4 bg-primary text-white flex flex-col gap-1">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-black uppercase tracking-wider">{t('step5.totalMinderwert')} (Brutto)</span>
-                                <span className="text-lg font-black font-mono">{formatCurrency(totalMinderwertBr)}</span>
-                            </div>
                             <div className="flex items-center justify-between text-xs opacity-90">
                                 <span>{t('step5.totalRepairCosts')} (Brutto)</span>
                                 <span className="font-mono">{formatCurrency(store.totalRepairCostBrutto())}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-black uppercase tracking-wider">{t('step5.totalMinderwert')} (Brutto)</span>
+                                <span className="text-lg font-black font-mono">{formatCurrency(totalMinderwertBr)}</span>
                             </div>
                         </div>
                     )}
@@ -1228,7 +1232,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
             <Card className="flex justify-end ">
                 <div className="flex flex-col @3xl:flex-row gap-3">
                     {previewing ? (
-                        <button disabled className="btn-outline flex items-center justify-center gap-2 px-5 py-2 text-sm opacity-70 bg-white">
+                        <button disabled className="btn-outline flex items-center justify-center gap-2 px-5 py-2 text-sm opacity-70">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             {t('step5.generatingPdf')}
                         </button>
@@ -1236,7 +1240,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                         <button
                             type="button"
                             onClick={handleShowPreview}
-                            className="btn-outline flex items-center justify-center gap-2 px-5 py-2 text-sm bg-white hover:scale-[1.02] active:scale-95 transition-all"
+                            className="btn-outline flex items-center justify-center gap-2 px-5 py-2 text-sm hover:scale-[1.02] active:scale-95 transition-all"
                         >
                             <Eye className="w-4 h-4" />
                             {t('step5.pdfPreview')}
@@ -1294,7 +1298,7 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                                     type="button"
                                     onClick={handleRetrySync}
                                     disabled={syncing}
-                                    className="btn-outline flex items-center gap-2 px-4 py-2 text-sm bg-white"
+                                    className="btn-outline flex items-center gap-2 px-4 py-2 text-sm"
                                 >
                                     {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                                     {t('step5.retrySync') || 'Retry Sync'}

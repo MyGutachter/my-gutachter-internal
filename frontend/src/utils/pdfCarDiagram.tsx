@@ -12,6 +12,7 @@ export const getCarSvgHtml = (selectedParts: string[]): string => {
             onViewScreenshot={() => { }}
             hideSelectedList
             readOnly
+            showControls={false}
             svgContainerStyle={{ width: '100%', height: '100%' }}
         />
     );

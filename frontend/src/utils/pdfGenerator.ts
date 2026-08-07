@@ -374,10 +374,10 @@ const PDF_LABELS = {
     docStatusYellow: 'Gelb',
     docStatusRed: 'Rot',
     notes: 'Hinweise',
-    notesText: 'Alle Beträge (ausgenommen eines evtl. aufgeführten merkantilen Minderwertes) beinhalten die gesetzliche Mehrwertsteuer. Minderwerte sind brutto und netto ausgewiesen.',
+    notesText: 'Alle Beträge beinhalten die gesetzliche Mehrwertsteuer. Minderwerte sind brutto und netto ausgewiesen.',
     notesText2: 'Alle systemseitig ermittelten Werte können Auf- oder Abrundungen enthalten.',
     theInspector: 'Der Sachverständige',
-    privacyNote: 'Im Rahmen einer Weitergabe oder Veröffentlichung dieses Dokuments, sind die allgemein gültigen datenschutzrechtlichen Grundsätze, insbesondere hinsichtlich der Anonymisierung personenbezogener Daten, zwingend einzuhalten.',
+    // privacyNote: 'Im Rahmen einer Weitergabe oder Veröffentlichung dieses Dokuments, sind die allgemein gültigen datenschutzrechtlichen Grundsätze, insbesondere hinsichtlich der Anonymisierung personenbezogener Daten, zwingend einzuhalten.',
     electronicDoc: 'Dieses Dokument wurde elektronisch gefertigt und ist ohne Unterschrift gültig.',
     sigIntro: 'Die ausgeführte Fahrzeugdokumentation sowie der dokumentierte Fahrzeugzustand wurden von folgenden Personen geprüft und bestätigt.',
     sigDriver: 'Fahrer, der das Fahrzeug abstellt / übergibt / abliefert',
@@ -462,8 +462,8 @@ const PDF_LABELS = {
     additionalNotes: 'Zusätzliche Bemerkungen',
     authorizedPerson: 'Bevollmächtigte Person',
     authorizedPersonName: 'Name der bevollmächtigten Person',
-    authorizedPersonPhoto: 'Foto der bevollmächtigten Person',
-    customerPresent: 'Kunde war bei der Unterzeichnung anwesend',
+    authorizedPersonPhoto: 'Foto Personalausweis der bevollmächtigten Person',
+    customerPresent: 'Kunde war bei der Unterzeichnung nicht anwesend',
     testDriveNotPossible: 'Eine Fahrprobe war nicht möglich.',
     hybridCheckedYes: 'Die Hochvoltbatterie wurde geprüft.',
     vehicleDirtyRemark: 'Das Fahrzeug war stark verschmutzt.',
@@ -1108,13 +1108,13 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
         const issuesList: string[] = [];
         if (r.engineRunNoise && r.engineRunNoise !== 'none') {
           const noiseLbl = r.engineRunNoise === 'knocking' ? (L.engineRunNoiseKnocking || 'Klopfen')
-                          : r.engineRunNoise === 'rattling' ? (L.engineRunNoiseRattling || 'Rasseln')
-                          : r.engineRunNoise === 'whistling' ? (L.engineRunNoiseWhistling || 'Pfeifen')
-                          : r.engineRunNoise === 'squeaking' ? (L.engineRunNoiseSqueaking || 'Quietschen')
-                          : r.engineRunNoise === 'grinding' ? (L.engineRunNoiseGrinding || 'Schleifen')
-                          : r.engineRunNoise === 'vibrations' ? (L.engineRunNoiseVibrations || 'Vibrationen / Dröhnen')
-                          : r.engineRunNoise === 'irregular' ? (L.engineRunNoiseIrregular || 'Unregelmäßige Geräusche')
-                          : r.engineRunNoise;
+            : r.engineRunNoise === 'rattling' ? (L.engineRunNoiseRattling || 'Rasseln')
+              : r.engineRunNoise === 'whistling' ? (L.engineRunNoiseWhistling || 'Pfeifen')
+                : r.engineRunNoise === 'squeaking' ? (L.engineRunNoiseSqueaking || 'Quietschen')
+                  : r.engineRunNoise === 'grinding' ? (L.engineRunNoiseGrinding || 'Schleifen')
+                    : r.engineRunNoise === 'vibrations' ? (L.engineRunNoiseVibrations || 'Vibrationen / Dröhnen')
+                      : r.engineRunNoise === 'irregular' ? (L.engineRunNoiseIrregular || 'Unregelmäßige Geräusche')
+                        : r.engineRunNoise;
           issuesList.push(`${safeLang === 'de' ? 'Geräusche' : 'Noise'}: ${noiseLbl}`);
         }
         if (r.engineRunRoughRunning && r.engineRunRoughRunning !== 'normal') {
@@ -1124,7 +1124,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
         if (r.engineRunWarningLightsActive && r.engineRunWarningLightsActive !== 'no') {
           const warningLightsLbl = safeLang === 'de' ? 'aktiv' : 'active';
           const warningDetails = r.engineRunWarningLightsDetails && r.engineRunWarningLightsDetails.trim()
-                                 ? ` (${r.engineRunWarningLightsDetails.trim()})` : '';
+            ? ` (${r.engineRunWarningLightsDetails.trim()})` : '';
           issuesList.push(`${safeLang === 'de' ? 'Warnleuchten' : 'Warning lights'}: ${warningLightsLbl}${warningDetails}`);
         }
         if (r.engineRunOtherIssues && r.engineRunOtherIssues.trim()) {
@@ -1273,8 +1273,8 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       repairCostBrutto: (
         row.repairCostBrutto != null ? row.repairCostBrutto : Math.round(calcBrutto(row.repairCost) * 100) / 100
       ) + (
-        row.sparePartsBrutto != null ? row.sparePartsBrutto : Math.round(calcBrutto(row.spareParts || 0) * 100) / 100
-      ),
+          row.sparePartsBrutto != null ? row.sparePartsBrutto : Math.round(calcBrutto(row.spareParts || 0) * 100) / 100
+        ),
       anrechnung: row.anrechnung || 'kein',
       minderwertBrutto: row.minderwertBrutto || 0,
       imageRef: '',
@@ -1296,22 +1296,22 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
     ...(r.systemMinderwertRows || [])
       .filter(row => !row.id?.startsWith('sys-equip-'))
       .map(row => {
-      const rcBrutto = (
+        const rcBrutto = (
           row.repairCostBrutto != null ? row.repairCostBrutto : (row.repairCost ? Math.round(calcBrutto(row.repairCost) * 100) / 100 : 0)
-      ) + (
-          row.sparePartsBrutto != null ? row.sparePartsBrutto : (row.spareParts ? Math.round(calcBrutto(row.spareParts) * 100) / 100 : 0)
-      );
-      return {
-        description: row.damage || '',
-        repairCostBrutto: rcBrutto > 0 ? rcBrutto : (row.minderwertBrutto || 0),
-        anrechnung: 'voll',
-        minderwertBrutto: row.minderwertBrutto || 0,
-        imageRef: '',
-        bodyPart: row.bodyPart,
-        repairMethod: 'erneuern',
-        reparaturweg: row.reparaturweg || ''
-      };
-    }),
+        ) + (
+            row.sparePartsBrutto != null ? row.sparePartsBrutto : (row.spareParts ? Math.round(calcBrutto(row.spareParts) * 100) / 100 : 0)
+          );
+        return {
+          description: row.damage || '',
+          repairCostBrutto: rcBrutto > 0 ? rcBrutto : (row.minderwertBrutto || 0),
+          anrechnung: 'voll',
+          minderwertBrutto: row.minderwertBrutto || 0,
+          imageRef: '',
+          bodyPart: row.bodyPart,
+          repairMethod: 'erneuern',
+          reparaturweg: row.reparaturweg || ''
+        };
+      }),
     ...(r.tires || []).filter(t => (t as any).depreciationValue > 0).map(t => ({
       description: L.tireAxleSummary.replace('{{axle}}', t.axle.toString()).replace('{{side}}', t.side === 'links' ? L.tireSideLinks : L.tireSideRechts),
       repairCostBrutto: (t as any).depreciationValue || 0,
@@ -1604,11 +1604,11 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   // Helper for column widths and styles
   const colStyles = [
     `width:35%;text-align:left`, // Description
-    `width:12%;text-align:right;font-family:monospace`, // MW Brutto
-    `width:12%;text-align:right;font-family:monospace`, // MW Netto
     `width:13%;text-align:right;font-family:monospace`, // Repair Brutto
+    `width:13%;text-align:right;font-family:monospace`, // Repair Netto
     `width:13%;text-align:center`, // Allocation
-    `width:15%;text-align:right;font-family:monospace`, // Repair Netto
+    `width:13%;text-align:right;font-family:monospace`, // MW Brutto
+    `width:13%;text-align:right;font-family:monospace`, // MW Netto
   ];
 
   const rowHeightStyle = 'height:auto;min-height:38px;';
@@ -1622,11 +1622,11 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
     return `<tr style="${rowHeightStyle}">
       <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[0]}">${i + 1}. ${descParts}${d.imageRef ? ` (${isNaN(Number(d.imageRef)) ? d.imageRef : `${L.photoLabel} ${d.imageRef}`})` : ''}</td>
-      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[1]}">${fmtCur(Math.abs(d.minderwertBrutto || 0))}</td>
-      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[2]}">${fmtCur(calcNetto(Math.abs(d.minderwertBrutto || 0)))}</td>
-      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[3]}">${fmtCur(Math.abs(d.repairCostBrutto || 0))}</td>
-      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[4]}">${translateAnrechnung(d.anrechnung || 'kein')}</td>
-      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[5]}">${fmtCur(calcNetto(Math.abs(d.repairCostBrutto || 0)))}</td>
+      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[1]}">${fmtCur(Math.abs(d.repairCostBrutto || 0))}</td>
+      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[2]}">${fmtCur(calcNetto(Math.abs(d.repairCostBrutto || 0)))}</td>
+      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[3]}">${translateAnrechnung(d.anrechnung || 'kein')}</td>
+      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[4]}">${fmtCur(Math.abs(d.minderwertBrutto || 0))}</td>
+      <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[5]}">${fmtCur(calcNetto(Math.abs(d.minderwertBrutto || 0)))}</td>
     </tr>`;
   });
 
@@ -1635,20 +1635,20 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
   const totalRowHTML = `<tr style="font-weight:bold;background:#e6ffe6;${rowHeightStyle}">
     <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[0]}">${L.totalRow}</td>
-    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[1]}">${fmtCur(totalMinderwert)}</td>
-    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[2]}">${fmtCur(calcNetto(totalMinderwert))}</td>
-    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[3]}">${fmtCur(totalRepair)}</td>
-    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[4]}">—</td>
-    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[5]}">${fmtCur(calcNetto(totalRepair))}</td>
+    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[1]}">${fmtCur(totalRepair)}</td>
+    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[2]}">${fmtCur(calcNetto(totalRepair))}</td>
+    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[3]}">—</td>
+    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[4]}">${fmtCur(totalMinderwert)}</td>
+    <td style="padding:6px;border:1px solid ${BORDER_COLOR};${colStyles[5]}">${fmtCur(calcNetto(totalMinderwert))}</td>
   </tr>`;
 
   const tableHeaderHTML = `<thead><tr style="${rowHeightStyle}">
     <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[0]}">${L.damageDescCol}</th>
-    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[1]}">${L.dimValueGrossCol}</th>
-    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[2]}">${L.dimValueNetCol}</th>
-    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[3]}">${L.repairCostCol}</th>
-    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[4]}">${L.allocationCol}</th>
-    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[5]}">${L.repairCostNetCol || 'netto'}</th>
+    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[1]}">${L.repairCostCol}</th>
+    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[2]}">${L.repairCostNetCol || 'netto'}</th>
+    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[3]}">${L.allocationCol}</th>
+    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[4]}">${L.dimValueGrossCol}</th>
+    <th style="background:${THEME};color:white;padding:6px;text-align:left;font-weight:600;${colStyles[5]}">${L.dimValueNetCol}</th>
   </tr></thead>`;
 
   // Row limits per page:
@@ -1794,25 +1794,26 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   // NOTE: html2pdf.js uses div.innerHTML to inject this HTML, which strips
   // <!DOCTYPE>, <html>, <head>, <body> tags. The <style> must be inside the
   // content div, and we must use a wrapper class instead of 'body' selector.
-  return `<div class="pdf-root" style="font-family:'Inter','Segoe UI',Arial,Helvetica,sans-serif;color:#1a1a1a;font-size:9.5pt;line-height:1.6;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;">
+  return `<div class="pdf-root" style="font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;font-size:9.5pt;line-height:1.6;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;">
 <style>
   .pdf-root * { box-sizing: border-box; margin: 0; padding: 0; }
-  .pdf-root { font-family: 'Inter', 'Segoe UI', Arial, Helvetica, sans-serif; color: #1a1a1a; font-size: 9.5pt; line-height: 1.6; }
+  .pdf-root { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; font-size: 9.5pt; line-height: 1.6; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   @page { size: A4; margin: 0; }
   .pdf-root p, .pdf-root td, .pdf-root th, .pdf-root li, .pdf-root div, .pdf-root span { word-wrap: break-word; overflow-wrap: break-word; }
-  .pdf-root img { image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
+  .pdf-root img { image-rendering: high-quality; image-rendering: -webkit-optimize-contrast; max-width: 100%; }
+  .pdf-root svg { shape-rendering: geometricPrecision; text-rendering: geometricPrecision; }
 
   /* Premium Table Styling */
   .pdf-root table { width: 100%; border-collapse: collapse; margin-bottom: 12px; table-layout: fixed; }
-  .pdf-root th { font-weight: 600; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.05em; border: 1px solid #e5e7eb; word-wrap: break-word; overflow: hidden; }
-  .pdf-root td { padding: 6px 8px; border: 1px solid #e5e7eb; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; word-wrap: break-word; }
-  .pdf-root .bg-light { background-color: #f9fafb; }
+  .pdf-root th { font-weight: 600; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.05em; border: 1px solid #cbd5e1; word-wrap: break-word; overflow: hidden; background-color: #f8fafc; color: #1e293b; }
+  .pdf-root td { padding: 6px 8px; border: 1px solid #e2e8f0; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; word-wrap: break-word; color: #0f172a; }
+  .pdf-root .bg-light { background-color: #f8fafc; }
   .pdf-root .font-mono { font-family: 'ui-monospace', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace; }
 
   /* Damage Table Specifics */
   .pdf-root .damage-table td {
     word-break: break-word;
-    line-height: 1.3;
+    line-height: 1.35;
     font-size: 8.5pt;
   }
   .pdf-root .damage-table tr {
@@ -2084,7 +2085,7 @@ ${r.claimType !== 'Fahrzeugbewertung' ? `
   ${secHead(L.nonAccepted, true)}
   <!-- Vehicle Diagram -->
   <div style="text-align:center;margin:8px 0 12px 0;">
-    <div style="display:inline-block;width:280px;height:auto;margin:0 auto">
+    <div style="display:inline-block;width:330px;height:395px;margin:0 auto;position:relative;overflow:hidden;">
       ${getCarSvgHtml(r.selectedParts || [])}
     </div>
   </div>
@@ -2132,9 +2133,7 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
   </div>
 
   <p style="font-size:10pt;font-weight:600;margin:16px 0 8px 0">${L.sigIntro}</p>
-  <div style="font-size:7pt;color:#666;line-height:1.5;margin-bottom:12px">
-    <p>${L.privacyNote}</p>
-  </div>
+
 
   <table style="width:100%;border-collapse:collapse;margin-top:16px;table-layout:fixed;">
     <tr>
