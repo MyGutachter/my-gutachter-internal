@@ -40,8 +40,7 @@ public class SignalingHandler extends TextWebSocketHandler {
     private final Map<String, Set<WebSocketSession>> rooms = new ConcurrentHashMap<>();
     // Map<SessionID, RoomID>
     private final Map<String, String> sessionRoomMap = new ConcurrentHashMap<>();
-    // RoomIDs explicitly ended by the organizer (blocks re-join until the organizer restarts).
-    private final Set<String> endedRooms = ConcurrentHashMap.newKeySet();
+
     // Map<RoomID, organizerUsername>
     private final Map<String, String> roomOrganizers = new ConcurrentHashMap<>();
     // Map<SessionID, username>
@@ -174,24 +173,7 @@ public class SignalingHandler extends TextWebSocketHandler {
 
                 Object lock = roomLocks.computeIfAbsent(roomId, k -> new Object());
                 synchronized (lock) {
-                    // Room explicitly ended: only the original organizer may restart it.
-                    if (endedRooms.contains(roomId)) {
-                        boolean isOrganizer = false;
-                        if (username != null) {
-                            String storedOrganizer = roomOrganizers.get(roomId);
-                            if (storedOrganizer == null || storedOrganizer.equals(username)) {
-                                isOrganizer = true;
-                                roomOrganizers.put(roomId, username);
-                            }
-                        }
-                        if (!isOrganizer) {
-                            sendErrorAndClose(session, "MEETING_ENDED", "This meeting has already ended");
-                            return;
-                        }
-                        endedRooms.remove(roomId);
-                        rooms.remove(roomId);
-                        System.out.println("Meeting restarted by organizer: " + roomId);
-                    }
+
 
                     Set<WebSocketSession> roomSessions = rooms.computeIfAbsent(roomId,
                             k -> new CopyOnWriteArraySet<>());
@@ -245,7 +227,6 @@ public class SignalingHandler extends TextWebSocketHandler {
                 if (roomId != null) {
                     Object lock = roomLocks.computeIfAbsent(roomId, k -> new Object());
                     synchronized (lock) {
-                        endedRooms.add(roomId);
                         System.out.println("Room ended by organizer: " + roomId);
 
                         Set<WebSocketSession> roomSessions = rooms.get(roomId);

@@ -659,6 +659,10 @@ export const VideoCall = () => {
                     }, data);
                 }
 
+                if (isGuest && recordingConsent === 'accepted') {
+                    sendMessage('recording-consent-accepted', {}, data);
+                }
+
                 if (!isGuest && placeholderIndex !== -1) {
                     sendMessage('sync-overlay', {
                         visible: overlayVisible,
@@ -1694,6 +1698,27 @@ export const VideoCall = () => {
                                             }}
                                             draggable={false}
                                         />
+                                    </div>
+                                )}
+
+                                {/* Waiting for Organizer Overlay */}
+                                {remoteStreams.size === 0 && (
+                                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                                        <div className="bg-dark-800/90 border border-gray-700/80 p-8 rounded-2xl max-w-md w-full text-center shadow-2xl backdrop-blur-md">
+                                            <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                                                <Video size={32} className="animate-pulse animate-duration-1000" />
+                                            </div>
+                                            <h2 className="text-xl font-bold text-white mb-2">
+                                                {t('videoCall.waitingForOrganizerTitle', { defaultValue: 'Warten auf den Organisator' })}
+                                            </h2>
+                                            <p className="text-gray-300 text-sm mb-6 leading-relaxed">
+                                                {t('videoCall.waitingForOrganizerDesc', { defaultValue: 'Das Meeting startet, sobald der Organisator beitritt. Bitte bleiben Sie auf dieser Seite.' })}
+                                            </p>
+                                            <div className="flex items-center justify-center gap-2 text-xs text-primary font-bold">
+                                                <span className="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+                                                <span>{t('videoCall.connecting', { defaultValue: 'Verbindung wird hergestellt...' })}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
