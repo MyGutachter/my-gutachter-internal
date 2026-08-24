@@ -71,6 +71,13 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [previewing, setPreviewing] = useState(false);
 
+    // Ensure driver signature name defaults to contactPersonName if available and not yet set
+    React.useEffect(() => {
+        if (!store.signatureNames.driver && store.contactPersonName) {
+            store.updateSignatureName('driver', store.contactPersonName);
+        }
+    }, [store.signatureNames.driver, store.contactPersonName]);
+
     const [emailing, setEmailing] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [showEmailModal, setShowEmailModal] = useState(false);

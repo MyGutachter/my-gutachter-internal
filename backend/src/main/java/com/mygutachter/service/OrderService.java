@@ -310,6 +310,27 @@ public class OrderService {
             setFields.put("damages", new java.util.ArrayList<Document>());
         }
 
+        // Initialize signatureNames with contactPersonName as driver if not yet set
+        String contactPerson = trimToNull(order.getContactPersonName());
+        if (contactPerson != null) {
+            boolean needDriverInit = false;
+            if (existingOrder == null || !existingOrder.containsKey("signatureNames") || existingOrder.get("signatureNames") == null) {
+                needDriverInit = true;
+            } else if (existingOrder.get("signatureNames") instanceof Document) {
+                Document existingSigs = existingOrder.get("signatureNames", Document.class);
+                String existingDriver = existingSigs.getString("driver");
+                if (existingDriver == null || existingDriver.trim().isEmpty()) {
+                    needDriverInit = true;
+                }
+            }
+            if (needDriverInit && !setFields.containsKey("signatureNames")) {
+                Document sigNames = new Document("driver", contactPerson)
+                        .append("inspector", "")
+                        .append("receiver", "");
+                setFields.put("signatureNames", sigNames);
+            }
+        }
+
         Document update = new Document("$set", setFields).append("$setOnInsert", onInsert);
 
         // Union the app mode into `modes` (VIDEO_EXPERT / VEHICLE_REPORT). Importing the same

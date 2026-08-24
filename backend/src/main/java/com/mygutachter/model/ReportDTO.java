@@ -28,6 +28,7 @@ public class ReportDTO {
     private String concernType;
     private String concernCompany;
     private String clientName;
+    private String contactPersonName;
     private String clientAddress;
     private String clientStreet;
     private String clientHouseNumber;

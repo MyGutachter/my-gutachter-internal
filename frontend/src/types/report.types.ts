@@ -291,6 +291,7 @@ export interface ReportData {
     clientHouseNumber: string;
     clientZip: string;
     clientCity: string;
+    contactPersonName?: string;
     orderDate: string;
     inspectionDate: string;
     inspectionTime: string;

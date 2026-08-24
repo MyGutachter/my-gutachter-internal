@@ -26,7 +26,7 @@ import { useUIStore } from '../store/uiStore';
 const ORDER_INFO_FIELDS: (keyof ReportData)[] = [
     'caseNumber', 'licensePlate', 'customerNumber', 'contractNumber',
     'claimType', 'concernType', 'concernCompany',
-    'clientName', 'clientAddress', 'clientStreet', 'clientHouseNumber', 'clientZip', 'clientCity',
+    'clientName', 'contactPersonName', 'clientAddress', 'clientStreet', 'clientHouseNumber', 'clientZip', 'clientCity',
     'orderDate', 'inspectionDate', 'inspectionTime', 'inspectionLocation',
     'inspectorName', 'valuationDate', 'userEmail',
 ];

@@ -113,6 +113,7 @@ const initialState: ReportData = {
     clientHouseNumber: '',
     clientZip: '',
     clientCity: '',
+    contactPersonName: '',
     orderDate: todayISO(),
     inspectionDate: todayISO(),
     inspectionTime: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
@@ -1442,6 +1443,18 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
             })),
             setAllData: (data) => set(state => {
                 const migratedData = { ...data };
+
+                // Auto-fill driver signature name from contactPersonName if empty
+                if (migratedData.contactPersonName) {
+                    const currentDriver = migratedData.signatureNames?.driver;
+                    if (!currentDriver || currentDriver.trim() === '') {
+                        migratedData.signatureNames = {
+                            driver: migratedData.contactPersonName,
+                            inspector: migratedData.signatureNames?.inspector || '',
+                            receiver: migratedData.signatureNames?.receiver || '',
+                        };
+                    }
+                }
 
                 // Normalize date inputs (HTML5 inputs expect YYYY-MM-DD)
                 const dateInputs: (keyof ReportData)[] = [
