@@ -112,40 +112,43 @@ public class ReportController {
     }
 
     private boolean canViewAllVehicleValuations(String userEmail, String userRole) {
-        if ("ADMIN".equals(userRole)) {
+        if ("ADMIN".equalsIgnoreCase(userRole)) {
             return true;
         }
         if (userEmail != null) {
             Document userDoc = usersCollection.find(Filters.regex("email", "^" + java.util.regex.Pattern.quote(userEmail) + "$", "i")).first();
-            if (userDoc != null && (Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationViewAll")) || Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationAdministrate")))) {
+            if (userDoc != null && (Boolean.TRUE.equals(userDoc.getBoolean("canViewAllOrders")) || Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationViewAll")) || Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationAdministrate")))) {
                 return true;
             }
         }
         Document globalConfig = rateConfigCollection.find(Filters.eq("type", "global")).first();
         if (globalConfig != null && globalConfig.containsKey("allowedRolesToViewAllOrders")) {
             List<?> allowedRoles = globalConfig.getList("allowedRolesToViewAllOrders", String.class);
-            if (allowedRoles != null && allowedRoles.contains(userRole)) {
-                return true;
+            if (allowedRoles != null) {
+                for (Object r : allowedRoles) {
+                    if (r != null && r.toString().equalsIgnoreCase(userRole)) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
     }
 
     private boolean canViewOwnVehicleValuations(String userEmail, String userRole) {
-        if ("ADMIN".equals(userRole)) {
+        if (userEmail == null || userEmail.trim().isEmpty()) {
+            return false;
+        }
+        if ("ADMIN".equalsIgnoreCase(userRole)) {
             return true;
         }
-        if (userEmail != null) {
-            Document userDoc = usersCollection.find(Filters.regex("email", "^" + java.util.regex.Pattern.quote(userEmail) + "$", "i")).first();
-            if (userDoc != null) {
-                if (Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationViewOwn")) ||
-                    Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationViewAll")) ||
-                    Boolean.TRUE.equals(userDoc.getBoolean("vehicleValuationAdministrate"))) {
-                    return true;
-                }
+        Document userDoc = usersCollection.find(Filters.regex("email", "^" + java.util.regex.Pattern.quote(userEmail) + "$", "i")).first();
+        if (userDoc != null) {
+            if (Boolean.FALSE.equals(userDoc.getBoolean("vehicleValuationViewOwn"))) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     /**
@@ -170,7 +173,7 @@ public class ReportController {
         Document base = new Document();
         if (!canViewAllVehicleValuations(userEmail, userRole)) {
             // Experts only see reports assigned to them (identified by userEmail)
-            base.put("userEmail", userEmail);
+            base.put("userEmail", new Document("$regex", "^" + java.util.regex.Pattern.quote(userEmail) + "$").append("$options", "i"));
         }
 
         // Filter by app mode (T7.4, Decision Q2). Video list: modes contains VIDEO_EXPERT.
@@ -230,7 +233,7 @@ public class ReportController {
             } else {
                 // Experts restricted to their own email
                 report = collection.find(Filters.and(
-                        Filters.eq("userEmail", requesterEmail),
+                        Filters.regex("userEmail", "^" + java.util.regex.Pattern.quote(requesterEmail) + "$", "i"),
                         Filters.eq("caseNumber", caseNumber))).first();
             }
         }
@@ -485,7 +488,7 @@ public class ReportController {
             report = collection.find(Filters.eq("caseNumber", caseNumber)).first();
         } else {
             report = collection.find(Filters.and(
-                    Filters.eq("userEmail", requesterEmail),
+                    Filters.regex("userEmail", "^" + java.util.regex.Pattern.quote(requesterEmail) + "$", "i"),
                     Filters.eq("caseNumber", caseNumber))).first();
         }
 
@@ -570,7 +573,7 @@ public class ReportController {
             report = collection.find(Filters.eq("caseNumber", caseNumber)).first();
         } else {
             report = collection.find(Filters.and(
-                    Filters.eq("userEmail", requesterEmail),
+                    Filters.regex("userEmail", "^" + java.util.regex.Pattern.quote(requesterEmail) + "$", "i"),
                     Filters.eq("caseNumber", caseNumber))).first();
         }
 
@@ -626,7 +629,7 @@ public class ReportController {
             existingDoc = collection.find(Filters.eq("caseNumber", caseNumber)).first();
         } else {
             existingDoc = collection.find(Filters.and(
-                    Filters.eq("userEmail", requesterEmail),
+                    Filters.regex("userEmail", "^" + java.util.regex.Pattern.quote(requesterEmail) + "$", "i"),
                     Filters.eq("caseNumber", caseNumber))).first();
         }
 
@@ -758,9 +761,18 @@ public class ReportController {
             List<JsonNode> filtered = new ArrayList<>();
             if (types.isArray()) {
                 for (JsonNode node : types) {
-                    String label = node.has("label") ? node.get("label").asText() : "";
+                    String label = node.has("label") ? node.get("label").asText() : (node.has("name") ? node.get("name").asText() : "");
                     final String trimmedLabel = label.trim();
-                    boolean isAllowed = ALLOWED_CLAIM_TYPES.stream()
+                    boolean hasVehicleReportRouting = false;
+                    if (node.has("routings") && node.get("routings").isArray()) {
+                        for (JsonNode r : node.get("routings")) {
+                            if (r.asInt() == 2) {
+                                hasVehicleReportRouting = true;
+                                break;
+                            }
+                        }
+                    }
+                    boolean isAllowed = hasVehicleReportRouting || ALLOWED_CLAIM_TYPES.stream()
                             .anyMatch(allowed -> allowed.equalsIgnoreCase(trimmedLabel));
                     if (isAllowed) {
                         filtered.add(node);
@@ -849,7 +861,7 @@ public class ReportController {
             report = collection.find(Filters.eq("caseNumber", caseNumber)).first();
         } else {
             report = collection.find(Filters.and(
-                    Filters.eq("userEmail", requesterEmail),
+                    Filters.regex("userEmail", "^" + java.util.regex.Pattern.quote(requesterEmail) + "$", "i"),
                     Filters.eq("caseNumber", caseNumber))).first();
         }
 

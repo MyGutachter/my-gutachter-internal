@@ -709,8 +709,8 @@ const PDF_LABELS = {
     additionalNotes: 'Additional Remarks',
     authorizedPerson: 'Authorized Person',
     authorizedPersonName: "Authorized Person's Name",
-    authorizedPersonPhoto: "Authorized Person's Photo",
-    customerPresent: 'Customer was present during signing',
+    authorizedPersonPhoto: "Photo ID of Authorized Person",
+    customerPresent: 'Customer was not present during signing',
     testDriveNotPossible: 'A test drive was not possible.',
     hybridCheckedYes: 'The high-voltage battery was checked.',
     vehicleDirtyRemark: 'The vehicle was heavily soiled.',
@@ -1594,6 +1594,12 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
     if (eq?.images) eq.images.forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${lbl} (${L.photoLabel} ${i + 1})` }));
   });
   r.chargingCableImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.chargingCable} (${L.photoLabel} ${i + 1})` }));
+  if (r.authorizedPersonPhoto) {
+    sortedPhotos.push({
+      data: r.authorizedPersonPhoto,
+      label: L.authorizedPersonPhoto || 'Foto Personalausweis der bevollmächtigten Person'
+    });
+  }
 
   // ─────────────────────────────────────────────────────────────────────
   // DAMAGE TABLE PAGINATION
@@ -1787,6 +1793,9 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
   // ═════════════════════════════════════════════════════════════════════
   const contPageLabel = L.nonAccepted + ' ' + L.continued;
+
+  const checkedBoxSvg = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><rect x="0.5" y="0.5" width="13" height="13" rx="1" fill="white" stroke="#333" stroke-width="1"/><polyline points="2.5,7 5.5,10.5 11.5,3.5" fill="none" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  const uncheckedBoxSvg = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><rect x="0.5" y="0.5" width="13" height="13" rx="1" fill="white" stroke="#333" stroke-width="1"/></svg>');
 
   const { remarksText, infoText } = constructBemerkungenParagraph();
 
@@ -2143,16 +2152,10 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
           <td style="padding:0;border:none;vertical-align:middle;text-align:right;">
             <table style="width:auto;border-collapse:collapse;border:none;margin-left:auto;"><tr>
               <td style="padding:0 15px 0 0;border:none;vertical-align:middle;white-space:nowrap;">
-                <img src="${r.expertAssessmentStatus === 'accepted'
-      ? 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><rect x="0.5" y="0.5" width="13" height="13" rx="1" fill="white" stroke="#333" stroke-width="1"/><polyline points="2.5,7 5.5,10.5 11.5,3.5" fill="none" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>')
-      : 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><rect x="0.5" y="0.5" width="13" height="13" rx="1" fill="white" stroke="#333" stroke-width="1"/></svg>')
-    }" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;" /><span style="font-size:9pt;font-weight:normal;color:#333;vertical-align:middle;">${L.gaAccepted}</span>
+                <img src="${r.expertAssessmentStatus === 'accepted' ? checkedBoxSvg : uncheckedBoxSvg}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;" /><span style="font-size:9pt;font-weight:normal;color:#333;vertical-align:middle;">${L.gaAccepted}</span>
               </td>
               <td style="padding:0;border:none;vertical-align:middle;white-space:nowrap;">
-                <img src="${r.expertAssessmentStatus === 'not_accepted'
-      ? 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><rect x="0.5" y="0.5" width="13" height="13" rx="1" fill="white" stroke="#333" stroke-width="1"/><polyline points="2.5,7 5.5,10.5 11.5,3.5" fill="none" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>')
-      : 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><rect x="0.5" y="0.5" width="13" height="13" rx="1" fill="white" stroke="#333" stroke-width="1"/></svg>')
-    }" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;" /><span style="font-size:9pt;font-weight:normal;color:#333;vertical-align:middle;">${L.gaNotAccepted}</span>
+                <img src="${r.expertAssessmentStatus === 'not_accepted' ? checkedBoxSvg : uncheckedBoxSvg}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;" /><span style="font-size:9pt;font-weight:normal;color:#333;vertical-align:middle;">${L.gaNotAccepted}</span>
               </td>
             </tr></table>
           </td>
@@ -2179,6 +2182,56 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
       </td>
     </tr>
   </table>
+
+  <!-- Authorized Person & Customer Absence Section -->
+  <div style="margin-top:14px;border:1px solid #333;background:#fafafa;padding:10px;">
+    <table style="width:100%;border-collapse:collapse;border:none;">
+      <tr>
+        <td style="padding:0;border:none;vertical-align:middle;width:50%;">
+          <table style="width:auto;border-collapse:collapse;border:none;"><tr>
+            <td style="padding:0 6px 0 0;border:none;vertical-align:middle;">
+              <img src="${r.isAuthorizedPerson ? checkedBoxSvg : uncheckedBoxSvg}" style="width:14px;height:14px;vertical-align:middle;" />
+            </td>
+            <td style="padding:0;border:none;vertical-align:middle;">
+              <strong style="font-size:9pt;color:#333;vertical-align:middle;">${L.authorizedPerson}</strong>
+            </td>
+          </tr></table>
+        </td>
+        <td style="padding:0;border:none;vertical-align:middle;width:50%;">
+          <table style="width:auto;border-collapse:collapse;border:none;"><tr>
+            <td style="padding:0 6px 0 0;border:none;vertical-align:middle;">
+              <img src="${r.customerPresent ? checkedBoxSvg : uncheckedBoxSvg}" style="width:14px;height:14px;vertical-align:middle;" />
+            </td>
+            <td style="padding:0;border:none;vertical-align:middle;">
+              <span style="font-size:9pt;color:#333;vertical-align:middle;">${L.customerPresent}</span>
+            </td>
+          </tr></table>
+        </td>
+      </tr>
+      ${(r.isAuthorizedPerson || r.authorizedPersonName || r.authorizedPersonPhoto) ? `
+      <tr>
+        <td colspan="2" style="padding:8px 0 0 0;border-top:1px dashed #ccc;margin-top:6px;vertical-align:top;">
+          <table style="width:100%;border-collapse:collapse;border:none;">
+            <tr>
+              <td style="width:${r.authorizedPersonPhoto ? '60%' : '100%'};vertical-align:middle;padding:0 10px 0 0;border:none;">
+                <div style="font-size:8pt;color:#666;margin-bottom:2px;">${L.authorizedPersonName}:</div>
+                <div style="font-size:9.5pt;font-weight:600;color:#111;">${r.authorizedPersonName || '—'}</div>
+              </td>
+              ${r.authorizedPersonPhoto ? `
+              <td style="width:40%;vertical-align:middle;text-align:right;padding:0;border:none;">
+                <div style="font-size:7.5pt;color:#666;margin-bottom:2px;text-align:right;">${L.authorizedPersonPhoto}</div>
+                <div style="display:inline-block;border:1px solid #ccc;background:#fff;padding:2px;border-radius:4px;text-align:center;">
+                  <img src="${r.authorizedPersonPhoto}" style="max-height:65px;max-width:130px;width:auto;height:auto;object-fit:contain;display:block;" alt="ID Photo" />
+                </div>
+              </td>
+              ` : ''}
+            </tr>
+          </table>
+        </td>
+      </tr>
+      ` : ''}
+    </table>
+  </div>
   </div>
 
 </div>

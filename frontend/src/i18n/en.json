@@ -501,7 +501,7 @@
         "authorizedPerson": "Authorized Person",
         "authorizedPersonName": "Authorized Person's Name",
         "authorizedPersonPhoto": "Authorized Person's Picture",
-        "customerPresent": "Customer was present during signing",
+        "customerPresent": "Customer was not present during signing",
         "newSignature": "New Signature",
         "documentHistory": "Document History",
         "noHistory": "No document history available yet. Generate a PDF to start the history.",

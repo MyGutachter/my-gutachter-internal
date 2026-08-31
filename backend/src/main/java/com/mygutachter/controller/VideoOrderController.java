@@ -286,7 +286,7 @@ public class VideoOrderController {
         List<Document> and = new ArrayList<>();
 
         if (!canViewAllVideoOrders(userEmail, userRole)) {
-            and.add(new Document("userEmail", userEmail));
+            and.add(new Document("userEmail", new Document("$regex", "^" + Pattern.quote(userEmail) + "$").append("$options", "i")));
         }
 
         and.add(new Document("$or", List.of(
@@ -390,40 +390,44 @@ public class VideoOrderController {
     }
 
     private boolean canViewAllVideoOrders(String userEmail, String userRole) {
-        if ("ADMIN".equals(userRole)) {
+        if ("ADMIN".equalsIgnoreCase(userRole)) {
             return true;
         }
         if (userEmail != null) {
             Document userDoc = usersCollection
                     .find(Filters.regex("email", "^" + Pattern.quote(userEmail) + "$", "i")).first();
-            if (userDoc != null && Boolean.TRUE.equals(userDoc.getBoolean("videoXpertViewAll"))) {
+            if (userDoc != null && (Boolean.TRUE.equals(userDoc.getBoolean("videoXpertViewAll")) || Boolean.TRUE.equals(userDoc.getBoolean("canViewAllOrders")))) {
                 return true;
             }
         }
         Document globalConfig = rateConfigCollection.find(Filters.eq("type", "global")).first();
         if (globalConfig != null && globalConfig.containsKey("allowedRolesToViewAllOrders")) {
             List<?> allowedRoles = globalConfig.getList("allowedRolesToViewAllOrders", String.class);
-            if (allowedRoles != null && allowedRoles.contains(userRole)) {
-                return true;
+            if (allowedRoles != null) {
+                for (Object r : allowedRoles) {
+                    if (r != null && r.toString().equalsIgnoreCase(userRole)) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
     }
 
     private boolean canViewOwnVideoOrders(String userEmail, String userRole) {
-        if ("ADMIN".equals(userRole)) {
+        if (userEmail == null || userEmail.trim().isEmpty()) {
+            return false;
+        }
+        if ("ADMIN".equalsIgnoreCase(userRole)) {
             return true;
         }
-        if (userEmail != null) {
-            Document userDoc = usersCollection
-                    .find(Filters.regex("email", "^" + Pattern.quote(userEmail) + "$", "i")).first();
-            if (userDoc != null) {
-                if (Boolean.TRUE.equals(userDoc.getBoolean("videoXpertViewOwn")) ||
-                    Boolean.TRUE.equals(userDoc.getBoolean("videoXpertViewAll"))) {
-                    return true;
-                }
+        Document userDoc = usersCollection
+                .find(Filters.regex("email", "^" + Pattern.quote(userEmail) + "$", "i")).first();
+        if (userDoc != null) {
+            if (Boolean.FALSE.equals(userDoc.getBoolean("videoXpertViewOwn"))) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
 }
