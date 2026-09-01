@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useAuthStore } from '../../store/authStore';
 import { getWebSocketUrl } from './videoConfig';
+import { useAuthStore } from '../../store/authStore';
 
 const SIGNALING_URL = getWebSocketUrl(); // Initial value
 // Enhanced ICE servers with STUN and TURN for reliable NAT traversal
@@ -9,15 +9,21 @@ const ICE_SERVERS = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        // Free TURN servers from Open Relay (reliable for testing/development)
         {
-            urls: [
-                'turn:openrelay.metered.ca:80',
-                'turn:openrelay.metered.ca:80?transport=tcp',
-                'turn:openrelay.metered.ca:443?transport=tcp',
-                'turns:openrelay.metered.ca:443?transport=tcp'
-            ],
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'open',
+            credential: 'open'
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'open',
+            credential: 'open'
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'open',
+            credential: 'open'
         }
     ],
     iceCandidatePoolSize: 10
