@@ -9,6 +9,7 @@ public class PhotoDTO {
     private String damageId;
     private String mandatoryPhotoId;
     private Boolean isExternal;
+    private Boolean includeInPdf;
 
     private String caption;
 
@@ -32,4 +33,6 @@ public class PhotoDTO {
     public void setMandatoryPhotoId(String mandatoryPhotoId) { this.mandatoryPhotoId = mandatoryPhotoId; }
     public Boolean getIsExternal() { return isExternal; }
     public void setIsExternal(Boolean isExternal) { this.isExternal = isExternal; }
+    public Boolean getIncludeInPdf() { return includeInPdf; }
+    public void setIncludeInPdf(Boolean includeInPdf) { this.includeInPdf = includeInPdf; }
 }

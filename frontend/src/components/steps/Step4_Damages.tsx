@@ -617,6 +617,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 key={p.id}
                                                 src={p.data}
                                                 isExternal={p.isExternal || store.videoExpertImages?.includes(p.data)}
+                                                includeInPdf={store.isImageIncludedInPdf(p.data, p)}
+                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(p.data, p.id, incl)}
                                                 onRemove={() => {
                                                     if ((p as any).isVirtual || p.id.startsWith('mileage_v_') || p.id.startsWith('vin_v_')) {
                                                         // Virtual photo — remove from the dedicated field
@@ -757,6 +759,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         <PhotoThumbnail
                                             src={p.data}
                                             isExternal={p.isExternal || store.videoExpertImages?.includes(p.data)}
+                                            includeInPdf={store.isImageIncludedInPdf(p.data, p)}
+                                            onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(p.data, p.id, incl)}
                                             onRemove={() => store.removePhoto(p.id)}
                                             onUpdate={(newSrc) => updatePhoto(p.id, newSrc)}
                                             className="w-full"
@@ -933,6 +937,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                                     key={idx}
                                                                     src={img}
                                                                     isExternal={store.videoExpertImages?.includes(img)}
+                                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                     onRemove={() => store.removeMinderwertPhoto(row.id, idx)}
                                                                     onUpdate={(newSrc) => updateMinderwertPhoto(row.id, idx, newSrc)}
                                                                     className="w-14 h-10"
@@ -1254,6 +1260,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                                     key={idx}
                                                                     src={img}
                                                                     isExternal={store.videoExpertImages?.includes(img)}
+                                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                     onRemove={() => store.removeDamagePhoto(damage.id, idx)}
                                                                     onUpdate={(newSrc) => updateDamagePhoto(damage.id, idx, newSrc)}
                                                                     className="w-14 h-10"
@@ -1816,6 +1824,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                                     key={idx}
                                                                     src={img}
                                                                     isExternal={store.videoExpertImages?.includes(img)}
+                                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                     onRemove={() => !isUserAdded ? store.removeMinderwertPhoto(item.id, idx) : store.removeDamagePhoto(item.id, idx)}
                                                                     onUpdate={(newSrc) => !isUserAdded ? updateMinderwertPhoto(item.id, idx, newSrc) : updateDamagePhoto(item.id, idx, newSrc)}
                                                                     className="w-16 h-12"
@@ -1993,6 +2003,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             <PhotoThumbnail
                                                 src={p.data}
                                                 isExternal={p.isExternal || store.videoExpertImages?.includes(p.data)}
+                                                includeInPdf={store.isImageIncludedInPdf(p.data, p)}
+                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(p.data, p.id, incl)}
                                                 onRemove={() => removePhotoWithSync(p.id)}
                                                 onUpdate={(newSrc) => updatePhoto(p.id, newSrc)}
                                                 className="w-full"

@@ -10,6 +10,7 @@ interface ModalWrapperProps {
     children: React.ReactNode;
     fullScreen?: boolean;
     showTitle?: boolean;
+    headerExtra?: React.ReactNode;
     noPadding?: boolean;
     className?: string;
 }
@@ -21,6 +22,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
     children, 
     fullScreen, 
     showTitle = true, 
+    headerExtra,
     noPadding = false,
     className = ''
 }) => {
@@ -58,11 +60,14 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
                         className={`bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10 w-full border border-white/20 ${fullScreen ? 'max-w-[95vw] h-[95vh]' : 'max-w-2xl max-h-[90vh]'} ${className}`}
                     >
                         {showTitle && (
-                            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm">
-                                <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">{title}</h2>
+                            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm gap-3">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <h2 className="text-xl font-extrabold text-gray-900 tracking-tight truncate">{title}</h2>
+                                    {headerExtra && <div className="flex items-center">{headerExtra}</div>}
+                                </div>
                                 <button 
                                     onClick={onClose} 
-                                    className="p-2.5 bg-white hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-all shadow-sm border border-gray-100 active:scale-90"
+                                    className="p-2.5 bg-white hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-all shadow-sm border border-gray-100 active:scale-90 flex-shrink-0"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>

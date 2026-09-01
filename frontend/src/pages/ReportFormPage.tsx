@@ -40,7 +40,7 @@ const VEHICLE_DATA_FIELDS: (keyof ReportData)[] = [
     'standardEquipment', 'optionalEquipment',
     'lastRegistrationImages', 'mileageImages', 'nextHUImages', 'identificationImages',
     'targetKeysCount', 'actualKeysCount', 'workshopKeysCount', 'remoteControlsCount',
-    'caseNumber', 'userEmail', 'minderwertRows', 'damages',
+    'caseNumber', 'userEmail', 'minderwertRows', 'damages', 'excludedFromPdfImages',
 ];
 
 const CONDITION_AND_DAMAGES_FIELDS: (keyof ReportData)[] = [
@@ -68,14 +68,14 @@ const CONDITION_AND_DAMAGES_FIELDS: (keyof ReportData)[] = [
     'mileageImages', 'identificationImages',
     'photos',
     'isAuthorizedPerson', 'authorizedPersonName', 'authorizedPersonPhoto', 'customerPresent',
-    'caseNumber', 'userEmail',
+    'caseNumber', 'userEmail', 'excludedFromPdfImages',
 ];
 
 const SUMMARY_FIELDS: (keyof ReportData)[] = [
     'signatures', 'signatureNames', 'photos', 'expertAssessmentStatus',
     'mileageImages', 'identificationImages',
     'isAuthorizedPerson', 'authorizedPersonName', 'authorizedPersonPhoto', 'customerPresent',
-    'caseNumber', 'userEmail',
+    'caseNumber', 'userEmail', 'excludedFromPdfImages',
 ];
 
 function pick(obj: Record<string, unknown>, keys: (keyof ReportData)[]): Partial<ReportData> {

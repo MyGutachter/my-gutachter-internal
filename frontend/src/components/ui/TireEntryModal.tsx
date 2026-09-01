@@ -354,6 +354,8 @@ const TireEntryModal: React.FC<TireEntryModalProps> = ({ isOpen, onClose, tireIn
                                 <PhotoThumbnail
                                     key={idx}
                                     src={img}
+                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                     onRemove={() => removeTirePhoto(idx)}
                                     onUpdate={(newSrc) => {
                                         const newImages = [...(tire.images || [])];

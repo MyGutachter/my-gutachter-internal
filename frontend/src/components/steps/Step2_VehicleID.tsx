@@ -742,9 +742,11 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     <PhotoThumbnail
                                         key={idx}
                                         src={img}
+                                        includeInPdf={store.isImageIncludedInPdf(img)}
+                                        onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                         onRemove={() => removeFieldPhoto('identificationImages', idx)}
                                         onUpdate={(newSrc) => updateFieldPhoto('identificationImages', idx, newSrc)}
-                                        className="w-20 h-14"
+                                        className="w-24 h-16 sm:w-28 sm:h-20"
                                         isExternal={store.videoExpertImages?.includes(img)}
                                     />
                                 ))}
@@ -921,9 +923,11 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             <PhotoThumbnail
                                                 key={idx}
                                                 src={img}
+                                                includeInPdf={store.isImageIncludedInPdf(img)}
+                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                 onRemove={() => removeFieldPhoto('mileageImages', idx)}
                                                 onUpdate={(newSrc) => updateFieldPhoto('mileageImages', idx, newSrc)}
-                                                className="w-20 h-14"
+                                                className="w-24 h-16 sm:w-28 sm:h-20"
                                                 isExternal={store.videoExpertImages?.includes(img)}
                                             />
                                         ))}
@@ -961,9 +965,11 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             <PhotoThumbnail
                                                 key={idx}
                                                 src={img}
+                                                includeInPdf={store.isImageIncludedInPdf(img)}
+                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                 onRemove={() => removeFieldPhoto('nextHUImages', idx)}
                                                 onUpdate={(newSrc) => updateFieldPhoto('nextHUImages', idx, newSrc)}
-                                                className="w-20 h-14"
+                                                className="w-24 h-16 sm:w-28 sm:h-20"
                                                 isExternal={store.videoExpertImages?.includes(img)}
                                             />
                                         ))}
@@ -992,9 +998,11 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             <PhotoThumbnail
                                                 key={idx}
                                                 src={img}
+                                                includeInPdf={store.isImageIncludedInPdf(img)}
+                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                 onRemove={() => removeFieldPhoto('keysImages', idx)}
                                                 onUpdate={(newSrc) => updateFieldPhoto('keysImages', idx, newSrc)}
-                                                className="w-20 h-14"
+                                                className="w-24 h-16 sm:w-28 sm:h-20"
                                                 isExternal={store.videoExpertImages?.includes(img)}
                                             />
                                         ))}

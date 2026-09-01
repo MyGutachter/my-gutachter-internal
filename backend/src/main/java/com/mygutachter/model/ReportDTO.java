@@ -188,6 +188,7 @@ public class ReportDTO {
     private Double depreciationMatrixFactor;
     private Double finalVehicleValue;
     private List<String> videoExpertImages;
+    private List<String> excludedFromPdfImages;
 
     public ReportDTO() {
     }
@@ -1455,4 +1456,7 @@ public class ReportDTO {
 
     public List<String> getVideoExpertImages() { return videoExpertImages; }
     public void setVideoExpertImages(List<String> videoExpertImages) { this.videoExpertImages = videoExpertImages; }
+
+    public List<String> getExcludedFromPdfImages() { return excludedFromPdfImages; }
+    public void setExcludedFromPdfImages(List<String> excludedFromPdfImages) { this.excludedFromPdfImages = excludedFromPdfImages; }
 }

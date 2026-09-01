@@ -355,9 +355,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             <PhotoThumbnail
                                                 key={idx}
                                                 src={img}
+                                                includeInPdf={store.isImageIncludedInPdf(img)}
+                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                 onRemove={() => removeFieldPhoto('vehicleConditionImages', idx)}
                                                 onUpdate={(newSrc) => updateFieldPhoto('vehicleConditionImages', idx, newSrc)}
-                                                className="w-20 h-14"
+                                                className="w-24 h-16 sm:w-28 sm:h-20"
                                             />
                                         ))}
                                     </div>
@@ -396,9 +398,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('errorMemoryReadImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('errorMemoryReadImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -453,9 +457,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('equipmentListAvailableImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('equipmentListAvailableImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -489,9 +495,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('deliveryConfirmationAvailableImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('deliveryConfirmationAvailableImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -642,9 +650,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('engineRunPerformedImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('engineRunPerformedImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -709,9 +719,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('fzScheinImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('fzScheinImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -768,9 +780,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('serviceheftImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('serviceheftImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -826,9 +840,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('bordliteraturImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('bordliteraturImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -886,9 +902,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('environmentalBadgeImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('environmentalBadgeImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -1021,9 +1039,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('maintenanceImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('maintenanceImages', idx, newSrc)}
-                                                    className="w-20 h-14"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                 />
                                             ))}
                                         </div>
@@ -1135,9 +1155,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             <PhotoThumbnail
                                                 key={idx}
                                                 src={img}
+                                                includeInPdf={store.isImageIncludedInPdf(img)}
+                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                 onRemove={() => removeFieldPhoto('chargingCableImages', idx)}
                                                 onUpdate={(newSrc) => updateFieldPhoto('chargingCableImages', idx, newSrc)}
-                                                className="w-20 h-14"
+                                                className="w-24 h-16 sm:w-28 sm:h-20"
                                             />
                                         ))}
                                     </div>
@@ -1223,9 +1245,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                                 <PhotoThumbnail
                                                                     key={idx}
                                                                     src={img}
+                                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                     onRemove={() => removePaintPhoto(p.id, idx)}
                                                                     onUpdate={(newSrc) => updatePaintPhoto(p.id, idx, newSrc)}
-                                                                    className="w-20 h-14"
+                                                                    className="w-24 h-16 sm:w-28 sm:h-20"
                                                                 />
                                                             ))}
                                                         </div>
@@ -1393,9 +1417,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                     <PhotoThumbnail
                                                         key={idx}
                                                         src={img}
+                                                        includeInPdf={store.isImageIncludedInPdf(img)}
+                                                        onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                         onRemove={() => removePaintPhoto(p.id, idx)}
                                                         onUpdate={(newSrc) => updatePaintPhoto(p.id, idx, newSrc)}
-                                                        className="w-20 h-14"
+                                                        className="w-24 h-16 sm:w-28 sm:h-20"
                                                     />
                                                 ))}
                                             </div>
@@ -1619,9 +1645,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                             <PhotoThumbnail
                                                                 key={idx}
                                                                 src={img}
+                                                                includeInPdf={store.isImageIncludedInPdf(img)}
+                                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                 onRemove={() => removeTirePhoto(i, idx, false)}
                                                                 onUpdate={(newSrc) => updateTirePhoto(i, idx, newSrc, false)}
-                                                                className="w-20 h-14"
+                                                                className="w-24 h-16 sm:w-28 sm:h-20"
                                                             />
                                                         ))}
                                                     </div>
@@ -1974,9 +2002,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                                         <PhotoThumbnail
                                                                             key={idx}
                                                                             src={img}
+                                                                            includeInPdf={store.isImageIncludedInPdf(img)}
+                                                                            onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                             onRemove={() => removeTirePhoto(i, idx, true)}
                                                                             onUpdate={(newSrc) => updateTirePhoto(i, idx, newSrc, true)}
-                                                                            className="w-20 h-14"
+                                                                            className="w-24 h-16 sm:w-28 sm:h-20"
                                                                         />
                                                                     ))}
                                                                 </div>

@@ -478,6 +478,8 @@ const DamageEntryModal: React.FC<DamageEntryModalProps> = ({ isOpen, onClose, da
                                     <PhotoThumbnail
                                         key={photo.id}
                                         src={photo.data}
+                                        includeInPdf={store.isImageIncludedInPdf(photo.data, photo)}
+                                        onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(photo.data, photo.id, incl)}
                                         onRemove={() => store.removePhoto(photo.id)}
                                         onUpdate={(newSrc) => store.updatePhoto(photo.id, { data: newSrc })}
                                         className="w-16 h-12 rounded-lg"

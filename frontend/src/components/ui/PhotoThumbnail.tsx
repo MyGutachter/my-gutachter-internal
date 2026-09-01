@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RotateCw, RotateCcw, X, AlertTriangle, RefreshCw, Crop, Check, Layout, Square, Maximize } from 'lucide-react';
+import { RotateCw, RotateCcw, X, AlertTriangle, RefreshCw, Crop, Check, Layout, Square, Maximize, Printer, EyeOff } from 'lucide-react';
 import { rotateImage, isPortraitImage } from '../../utils/imageRotation';
 import { cropImage } from '../../utils/imageEdit';
 import { useSecureImage } from '../../hooks/useSecureImage';
@@ -15,6 +15,9 @@ interface PhotoThumbnailProps {
     className?: string;
     aspectRatio?: string; // e.g. "aspect-[4/3]"
     isExternal?: boolean;
+    includeInPdf?: boolean;
+    onToggleIncludeInPdf?: (include: boolean) => void;
+    hidePrintOption?: boolean;
 }
 
 const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
@@ -23,7 +26,10 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
     onUpdate,
     className = "w-24 h-18",
     aspectRatio = "aspect-video",
-    isExternal = false
+    isExternal = false,
+    includeInPdf = true,
+    onToggleIncludeInPdf,
+    hidePrintOption = false,
 }) => {
     const { t } = useTranslation();
     const { secureUrl } = useSecureImage(src);
@@ -220,35 +226,72 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
         >
             <SecureImage src={src} className="w-full h-full object-cover" />
 
-            {/* Click to toggle actions — invisible overlay */}
+            {/* Non-print badge (Visible if marked as tool-only) */}
+            {!hidePrintOption && !includeInPdf && (
+                <div 
+                    className="absolute top-1 left-1 z-20 bg-amber-500/95 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow flex items-center gap-1 backdrop-blur-xs select-none pointer-events-none tracking-tight"
+                    title={t('common.toolOnlyTooltip', 'Nur im Tool (wird nicht im PDF gedruckt)')}
+                >
+                    <EyeOff className="w-2.5 h-2.5 flex-shrink-0" />
+                    <span>{t('common.toolOnlyBadge', 'Nur Tool')}</span>
+                </div>
+            )}
+
+            {/* Click to toggle actions on mobile or open edit modal on desktop */}
             <div
                 className="absolute inset-0 cursor-pointer z-10"
                 onClick={() => setShowMobileActions(!showMobileActions)}
+                onDoubleClick={() => setShowEditModal(true)}
                 title={t('common.clickToEdit', 'Zum Bearbeiten klicken')}
             />
 
             {/* Actions Overlay — visible on mobile tap, or hover on desktop */}
-            <div className={`absolute inset-0 bg-black/30 transition-opacity z-20 pointer-events-none ${showMobileActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-
-            {/* Remove Button (Top Right) */}
-            <button
-                onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                className={`absolute top-1 right-1 z-30 w-8 h-8 flex items-center justify-center bg-red-500/90 text-white rounded-full shadow-md pointer-events-auto hover:bg-red-600 active:scale-95 transition-all ${showMobileActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                title={t('common.remove') || 'Remove'}
-                aria-label={t('common.remove') || 'Remove photo'}
+            <div 
+                className={`absolute inset-0 z-20 flex items-center justify-center p-1 bg-black/35 backdrop-blur-[1px] transition-all duration-150 pointer-events-none ${
+                    showMobileActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
             >
-                <X className="w-4 h-4" />
-            </button>
+                <div className="flex items-center gap-1.5 bg-gray-900/85 backdrop-blur-md px-2 py-1 rounded-xl shadow-xl border border-white/15 pointer-events-auto">
+                    {/* Toggle PDF Print Button */}
+                    {!hidePrintOption && onToggleIncludeInPdf && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onToggleIncludeInPdf(!includeInPdf); }}
+                            className={`w-7 h-7 flex items-center justify-center rounded-lg shadow-sm transition-all active:scale-90 ${
+                                includeInPdf
+                                    ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                                    : 'bg-amber-600 hover:bg-amber-500 text-white'
+                            }`}
+                            title={includeInPdf ? t('common.printInReportTooltip', 'Dieses Bild im PDF-Gutachten drucken') : t('common.toolOnlyTooltip', 'Nur im Tool zur Beweissicherung gespeichert')}
+                            aria-label={t('common.togglePrintTooltip', 'Drucken im PDF-Bericht umschalten')}
+                        >
+                            {includeInPdf ? <Printer className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        </button>
+                    )}
 
-            {/* Edit/Expand Button (Bottom Left) */}
-            <button
-                onClick={(e) => { e.stopPropagation(); setShowEditModal(true); }}
-                className={`absolute bottom-1 left-1 z-30 w-8 h-8 flex items-center justify-center bg-gray-900/80 text-white rounded-full shadow-md pointer-events-auto hover:bg-gray-800 active:scale-95 transition-all ${showMobileActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                title={t('common.edit') || 'Edit'}
-                aria-label={t('common.edit') || 'Edit photo'}
-            >
-                <Maximize2 className="w-4 h-4" />
-            </button>
+                    {/* Edit/Expand Button */}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setShowEditModal(true); }}
+                        className="w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/30 text-white rounded-lg shadow-sm transition-all active:scale-90"
+                        title={t('common.edit') || 'Bild anpassen'}
+                        aria-label={t('common.edit') || 'Edit photo'}
+                    >
+                        <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Remove Button */}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                        className="w-7 h-7 flex items-center justify-center bg-red-600/90 hover:bg-red-500 text-white rounded-lg shadow-sm transition-all active:scale-90"
+                        title={t('common.remove') || 'Entfernen'}
+                        aria-label={t('common.remove') || 'Remove photo'}
+                    >
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            </div>
 
 
             {/* Proper Adjustment Modal */}
@@ -256,6 +299,26 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
                 isOpen={showEditModal}
                 onClose={() => setShowEditModal(false)}
                 title={t('common.editImage', 'Bild anpassen')}
+                headerExtra={!hidePrintOption && onToggleIncludeInPdf ? (
+                    <button
+                        type="button"
+                        onClick={() => onToggleIncludeInPdf(!includeInPdf)}
+                        title={includeInPdf ? t('common.printInReportTooltip', 'Dieses Bild im PDF-Gutachten drucken') : t('common.toolOnlyTooltip', 'Nur im Tool zur Beweissicherung gespeichert')}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shadow-sm select-none active:scale-95 ${
+                            includeInPdf
+                                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                        }`}
+                    >
+                        {includeInPdf ? <Printer className="w-3.5 h-3.5 text-blue-600" /> : <EyeOff className="w-3.5 h-3.5 text-amber-600" />}
+                        <span className="font-semibold text-[11px] sm:text-xs">
+                            {includeInPdf ? t('common.printInReport', 'Im Bericht drucken') : t('common.toolOnlyEvidence', 'Nur im Tool (Beweis)')}
+                        </span>
+                        <div className={`w-7 h-4 rounded-full transition-colors relative flex items-center px-0.5 ${includeInPdf ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                            <div className={`w-3 h-3 rounded-full bg-white transition-transform ${includeInPdf ? 'translate-x-3' : 'translate-x-0'}`} />
+                        </div>
+                    </button>
+                ) : null}
             >
                 <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
                     <div className="relative w-full aspect-[4/3] bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-800 flex items-center justify-center select-none">

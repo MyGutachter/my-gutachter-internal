@@ -442,11 +442,21 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
             systemMinderwertRows: store.systemMinderwertRows || []
         };
 
+        const excludedBase64 = new Set<string>();
+
         const fetchAsBase64 = async (url: string): Promise<string> => {
-            if (!url || url.startsWith('data:')) return url;
+            if (!url) return url;
+            const isExcluded = !store.isImageIncludedInPdf(url);
+            if (url.startsWith('data:')) {
+                if (isExcluded) excludedBase64.add(url);
+                return url;
+            }
             // Accept any URL that looks like an /api/ path or a relative /api/ path
             const apiIndex = url.indexOf('/api/');
-            if (apiIndex === -1) return url;
+            if (apiIndex === -1) {
+                if (isExcluded) excludedBase64.add(url);
+                return url;
+            }
             try {
                 let path = url.substring(apiIndex + 4); // gives /reports/photos/... or /screenshots/...
                 if (path.includes('screenshots/') || path.includes('reports/photos/')) {
@@ -454,13 +464,20 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                     path = `${path}${separator}follow=false`;
                 }
                 const response = await api.get(path, { responseType: 'blob' });
-                return new Promise(resolve => {
+                const base64Result: string = await new Promise(resolve => {
                     const reader = new FileReader();
                     reader.onloadend = () => resolve(reader.result as string);
                     reader.onerror = () => resolve(url);
                     reader.readAsDataURL(response.data);
                 });
-            } catch { return url; }
+                if (isExcluded && base64Result) {
+                    excludedBase64.add(base64Result);
+                }
+                return base64Result;
+            } catch {
+                if (isExcluded) excludedBase64.add(url);
+                return url;
+            }
         };
         const convertImages = async (images?: string[]): Promise<string[]> => {
             if (!images || images.length === 0) return [];
@@ -471,7 +488,12 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
             reportData.photos = await Promise.all(reportData.photos.map(async (p: any) => {
                 // Backend clears `data` and stores the URL in `filePath` — use filePath as fallback
                 const rawUrl = p.data || p.filePath || '';
-                return { ...p, data: await fetchAsBase64(rawUrl) };
+                const base64Data = await fetchAsBase64(rawUrl);
+                const isIncluded = store.isImageIncludedInPdf(rawUrl, p);
+                if (!isIncluded && base64Data) {
+                    excludedBase64.add(base64Data);
+                }
+                return { ...p, data: base64Data, includeInPdf: isIncluded };
             }));
         if (reportData.paintMeasurements?.length > 0)
             reportData.paintMeasurements = await Promise.all(reportData.paintMeasurements.map(async (p: any) => ({ ...p, images: await convertImages(p.images) })));
@@ -507,6 +529,13 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
         if (reportData.authorizedPersonPhoto) {
             reportData.authorizedPersonPhoto = await fetchAsBase64(reportData.authorizedPersonPhoto);
         }
+
+        const currentExcludedInStore = (store.excludedFromPdfImages || []).filter(item => !store.isImageIncludedInPdf(item));
+        reportData.excludedFromPdfImages = Array.from(new Set([
+            ...currentExcludedInStore,
+            ...Array.from(excludedBase64)
+        ]));
+
         return reportData;
     };
 
@@ -1175,6 +1204,8 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
                                     {store.authorizedPersonPhoto ? (
                                         <PhotoThumbnail
                                             src={store.authorizedPersonPhoto}
+                                            includeInPdf={store.isImageIncludedInPdf(store.authorizedPersonPhoto)}
+                                            onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(store.authorizedPersonPhoto, undefined, incl)}
                                             onRemove={() => store.updateField('authorizedPersonPhoto', '')}
                                             onUpdate={(newSrc) => store.updateField('authorizedPersonPhoto', newSrc)}
                                             className="w-32 h-24"

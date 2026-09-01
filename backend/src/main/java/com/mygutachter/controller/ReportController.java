@@ -286,9 +286,11 @@ public class ReportController {
 
         ReportDTO oldReport = objectMapper.convertValue(existingDoc, ReportDTO.class);
 
+        Map<String, String> base64ToPathMap = new HashMap<>();
+
         // Process photos: save base64 data to disk
         if (report.getPhotos() != null && !report.getPhotos().isEmpty()) {
-            processPhotos(report.getPhotos(), userEmail);
+            processPhotos(report.getPhotos(), userEmail, base64ToPathMap);
         }
 
         // Process paint measurement photos
@@ -296,45 +298,45 @@ public class ReportController {
             for (int i = 0; i < report.getPaintMeasurements().size(); i++) {
                 var pm = report.getPaintMeasurements().get(i);
                 if (pm.getImages() != null && !pm.getImages().isEmpty()) {
-                    pm.setImages(processBase64ImageList(pm.getImages(), "paint_" + i + "_" + pm.getId(), userEmail));
+                    pm.setImages(processBase64ImageList(pm.getImages(), "paint_" + i + "_" + pm.getId(), userEmail, base64ToPathMap));
                 }
             }
         }
 
         // Process other image lists
 
-        report.setLastRegistrationImages(processBase64ImageList(report.getLastRegistrationImages(), "lri", userEmail));
-        report.setMileageImages(processBase64ImageList(report.getMileageImages(), "mi", userEmail));
-        report.setNextHUImages(processBase64ImageList(report.getNextHUImages(), "nhui", userEmail));
-        report.setIdentificationImages(processBase64ImageList(report.getIdentificationImages(), "ident", userEmail));
-        report.setServiceheftImages(processBase64ImageList(report.getServiceheftImages(), "shi", userEmail));
-        report.setBordliteraturImages(processBase64ImageList(report.getBordliteraturImages(), "bli", userEmail));
-        report.setKeysImages(processBase64ImageList(report.getKeysImages(), "ki", userEmail));
-        report.setMaintenanceImages(processBase64ImageList(report.getMaintenanceImages(), "maint", userEmail));
-        report.setChargingCableImages(processBase64ImageList(report.getChargingCableImages(), "cci", userEmail));
-        report.setFzScheinImages(processBase64ImageList(report.getFzScheinImages(), "fzs", userEmail));
-        report.setErrorMemoryReadImages(processBase64ImageList(report.getErrorMemoryReadImages(), "emri", userEmail));
+        report.setLastRegistrationImages(processBase64ImageList(report.getLastRegistrationImages(), "lri", userEmail, base64ToPathMap));
+        report.setMileageImages(processBase64ImageList(report.getMileageImages(), "mi", userEmail, base64ToPathMap));
+        report.setNextHUImages(processBase64ImageList(report.getNextHUImages(), "nhui", userEmail, base64ToPathMap));
+        report.setIdentificationImages(processBase64ImageList(report.getIdentificationImages(), "ident", userEmail, base64ToPathMap));
+        report.setServiceheftImages(processBase64ImageList(report.getServiceheftImages(), "shi", userEmail, base64ToPathMap));
+        report.setBordliteraturImages(processBase64ImageList(report.getBordliteraturImages(), "bli", userEmail, base64ToPathMap));
+        report.setKeysImages(processBase64ImageList(report.getKeysImages(), "ki", userEmail, base64ToPathMap));
+        report.setMaintenanceImages(processBase64ImageList(report.getMaintenanceImages(), "maint", userEmail, base64ToPathMap));
+        report.setChargingCableImages(processBase64ImageList(report.getChargingCableImages(), "cci", userEmail, base64ToPathMap));
+        report.setFzScheinImages(processBase64ImageList(report.getFzScheinImages(), "fzs", userEmail, base64ToPathMap));
+        report.setErrorMemoryReadImages(processBase64ImageList(report.getErrorMemoryReadImages(), "emri", userEmail, base64ToPathMap));
         report.setHybridBatteryCheckedImages(
-                processBase64ImageList(report.getHybridBatteryCheckedImages(), "hbci", userEmail));
+                processBase64ImageList(report.getHybridBatteryCheckedImages(), "hbci", userEmail, base64ToPathMap));
         report.setInspectionFromAboveImages(
-                processBase64ImageList(report.getInspectionFromAboveImages(), "ifa", userEmail));
+                processBase64ImageList(report.getInspectionFromAboveImages(), "ifa", userEmail, base64ToPathMap));
         report.setInspectionFromBelowImages(
-                processBase64ImageList(report.getInspectionFromBelowImages(), "ifb", userEmail));
+                processBase64ImageList(report.getInspectionFromBelowImages(), "ifb", userEmail, base64ToPathMap));
         report.setVehicleConditionImages(
-                processBase64ImageList(report.getVehicleConditionImages(), "vcond", userEmail));
+                processBase64ImageList(report.getVehicleConditionImages(), "vcond", userEmail, base64ToPathMap));
         report.setEquipmentListAvailableImages(
-                processBase64ImageList(report.getEquipmentListAvailableImages(), "elai", userEmail));
+                processBase64ImageList(report.getEquipmentListAvailableImages(), "elai", userEmail, base64ToPathMap));
         report.setDeliveryConfirmationAvailableImages(
-                processBase64ImageList(report.getDeliveryConfirmationAvailableImages(), "dcai", userEmail));
+                processBase64ImageList(report.getDeliveryConfirmationAvailableImages(), "dcai", userEmail, base64ToPathMap));
         report.setEngineRunPerformedImages(
-                processBase64ImageList(report.getEngineRunPerformedImages(), "erpi", userEmail));
+                processBase64ImageList(report.getEngineRunPerformedImages(), "erpi", userEmail, base64ToPathMap));
 
         // Process second tires photos
         if (report.getSecondTires() != null) {
             for (int i = 0; i < report.getSecondTires().size(); i++) {
                 var tire = report.getSecondTires().get(i);
                 if (tire.getImages() != null && !tire.getImages().isEmpty()) {
-                    tire.setImages(processBase64ImageList(tire.getImages(), "second_tire_" + i, userEmail));
+                    tire.setImages(processBase64ImageList(tire.getImages(), "second_tire_" + i, userEmail, base64ToPathMap));
                 }
             }
         }
@@ -344,7 +346,7 @@ public class ReportController {
             for (int i = 0; i < report.getTires().size(); i++) {
                 var tire = report.getTires().get(i);
                 if (tire.getImages() != null && !tire.getImages().isEmpty()) {
-                    tire.setImages(processBase64ImageList(tire.getImages(), "tire_" + i, userEmail));
+                    tire.setImages(processBase64ImageList(tire.getImages(), "tire_" + i, userEmail, base64ToPathMap));
                 }
             }
         }
@@ -354,7 +356,7 @@ public class ReportController {
             for (int i = 0; i < report.getMinderwertRows().size(); i++) {
                 var row = report.getMinderwertRows().get(i);
                 if (row.getImages() != null && !row.getImages().isEmpty()) {
-                    row.setImages(processBase64ImageList(row.getImages(), "mw_" + i + "_" + row.getId(), userEmail));
+                    row.setImages(processBase64ImageList(row.getImages(), "mw_" + i + "_" + row.getId(), userEmail, base64ToPathMap));
                 }
             }
         }
@@ -365,7 +367,7 @@ public class ReportController {
                 var damage = report.getDamages().get(i);
                 if (damage.getImages() != null && !damage.getImages().isEmpty()) {
                     damage.setImages(
-                            processBase64ImageList(damage.getImages(), "dmg_" + i + "_" + damage.getId(), userEmail));
+                            processBase64ImageList(damage.getImages(), "dmg_" + i + "_" + damage.getId(), userEmail, base64ToPathMap));
                 }
             }
         }
@@ -373,25 +375,25 @@ public class ReportController {
         // Process spare tire photos
         if (report.getSpareTire() != null && report.getSpareTire().getImages() != null) {
             report.getSpareTire()
-                    .setImages(processBase64ImageList(report.getSpareTire().getImages(), "spare_tire", userEmail));
+                    .setImages(processBase64ImageList(report.getSpareTire().getImages(), "spare_tire", userEmail, base64ToPathMap));
         }
 
         // Process equipment photos
         if (report.getBreakdownKit() != null && report.getBreakdownKit().getImages() != null) {
             report.getBreakdownKit()
-                    .setImages(processBase64ImageList(report.getBreakdownKit().getImages(), "breakdown", userEmail));
+                    .setImages(processBase64ImageList(report.getBreakdownKit().getImages(), "breakdown", userEmail, base64ToPathMap));
         }
         if (report.getFirstAidKit() != null && report.getFirstAidKit().getImages() != null) {
             report.getFirstAidKit()
-                    .setImages(processBase64ImageList(report.getFirstAidKit().getImages(), "firstaid", userEmail));
+                    .setImages(processBase64ImageList(report.getFirstAidKit().getImages(), "firstaid", userEmail, base64ToPathMap));
         }
         if (report.getSafetyVest() != null && report.getSafetyVest().getImages() != null) {
             report.getSafetyVest()
-                    .setImages(processBase64ImageList(report.getSafetyVest().getImages(), "safetyvest", userEmail));
+                    .setImages(processBase64ImageList(report.getSafetyVest().getImages(), "safetyvest", userEmail, base64ToPathMap));
         }
         if (report.getWarningTriangle() != null && report.getWarningTriangle().getImages() != null) {
             report.getWarningTriangle()
-                    .setImages(processBase64ImageList(report.getWarningTriangle().getImages(), "warning", userEmail));
+                    .setImages(processBase64ImageList(report.getWarningTriangle().getImages(), "warning", userEmail, base64ToPathMap));
         }
 
         // Process signatures: save base64 data to disk
@@ -401,8 +403,20 @@ public class ReportController {
 
         // Process authorized person photo
         if (report.getAuthorizedPersonPhoto() != null && report.getAuthorizedPersonPhoto().startsWith("data:image")) {
-            report.setAuthorizedPersonPhoto(
-                    saveSignatureFile(report.getAuthorizedPersonPhoto(), "authorized_person", userEmail));
+            String savedAuthPath = saveSignatureFile(report.getAuthorizedPersonPhoto(), "authorized_person", userEmail);
+            base64ToPathMap.put(report.getAuthorizedPersonPhoto(), savedAuthPath);
+            report.setAuthorizedPersonPhoto(savedAuthPath);
+        }
+
+        // Synchronize any converted base64 references in excludedFromPdfImages
+        if (report.getExcludedFromPdfImages() != null && !base64ToPathMap.isEmpty()) {
+            List<String> updatedExcluded = new ArrayList<>();
+            for (String item : report.getExcludedFromPdfImages()) {
+                if (item != null) {
+                    updatedExcluded.add(base64ToPathMap.getOrDefault(item, item));
+                }
+            }
+            report.setExcludedFromPdfImages(updatedExcluded);
         }
 
         final String lockKey = report.getCaseNumber().intern();
@@ -976,7 +990,7 @@ public class ReportController {
      * Process a list of base64 images, save them to disk, and return a list of file
      * paths.
      */
-    private List<String> processBase64ImageList(List<String> images, String prefix, String userEmail) {
+    private List<String> processBase64ImageList(List<String> images, String prefix, String userEmail, Map<String, String> base64ToPathMap) {
         if (images == null || images.isEmpty())
             return images;
 
@@ -1001,7 +1015,11 @@ public class ReportController {
                     String fileName = prefix + "_" + i + "_" + System.currentTimeMillis() + "." + extension;
                     s3.uploadFile(s3Key(sanitizeEmail(userEmail), fileName), imageBytes, contentType);
 
-                    processed.add("/api/reports/photos/" + sanitizeEmail(userEmail) + "/" + fileName);
+                    String filePath = "/api/reports/photos/" + sanitizeEmail(userEmail) + "/" + fileName;
+                    processed.add(filePath);
+                    if (base64ToPathMap != null) {
+                        base64ToPathMap.put(data, filePath);
+                    }
                 } catch (Exception e) {
                     processed.add(data); // Fallback: keep base64
                 }
@@ -1017,7 +1035,7 @@ public class ReportController {
     /**
      * Save photo base64 data to disk, replace data with filePath in the DTO.
      */
-    private void processPhotos(List<PhotoDTO> photos, String userEmail) {
+    private void processPhotos(List<PhotoDTO> photos, String userEmail, Map<String, String> base64ToPathMap) {
         for (PhotoDTO photo : photos) {
             String data = photo.getData();
             if (data != null && data.startsWith("data:image")) {
@@ -1039,9 +1057,13 @@ public class ReportController {
                     String fileName = photo.getId() + "." + extension;
                     s3.uploadFile(s3Key(sanitizeEmail(userEmail), fileName), imageBytes, contentType);
 
+                    String filePath = "/api/reports/photos/" + sanitizeEmail(userEmail) + "/" + fileName;
                     // Replace base64 data with the file path
-                    photo.setFilePath("/api/reports/photos/" + sanitizeEmail(userEmail) + "/" + fileName);
+                    photo.setFilePath(filePath);
                     photo.setData(null); // Don't store base64 in DB
+                    if (base64ToPathMap != null) {
+                        base64ToPathMap.put(data, filePath);
+                    }
                 } catch (Exception e) {
                     // If saving fails, keep the base64 data in DB as fallback
                     System.err.println("Failed to save photo to S3: " + e.getMessage());

@@ -113,7 +113,8 @@ interface PDFReportData {
   engineRunPerformedImages?: string[];
   equipmentListAvailableImages?: string[];
   deliveryConfirmationAvailableImages?: string[];
-  photos: Array<{ data: string; label: string; caption?: string; mandatoryPhotoId?: string; damageId?: string }>;
+  photos: Array<{ id?: string; data: string; label: string; caption?: string; mandatoryPhotoId?: string; damageId?: string; includeInPdf?: boolean }>;
+  excludedFromPdfImages?: string[];
   selectedParts: string[];
   signatures: { driver: string; inspector: string; receiver: string };
   signatureNames: { driver: string; inspector: string; receiver: string };
@@ -1499,12 +1500,23 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
     return 11;
   };
 
+  const excluded = new Set(r.excludedFromPdfImages || []);
+  const isIncluded = (imgDataOrId?: string, photoObj?: any): boolean => {
+    if (!imgDataOrId && !photoObj) return false;
+    if (photoObj && photoObj.includeInPdf === false) return false;
+    if (imgDataOrId && excluded.has(imgDataOrId)) return false;
+    if (photoObj?.id && excluded.has(photoObj.id)) return false;
+    if (photoObj?.data && excluded.has(photoObj.data)) return false;
+    if (photoObj?.filePath && excluded.has(photoObj.filePath)) return false;
+    return true;
+  };
+
   // Combine all photos from the photos gallery for sorting, but filter out damage-specific photos
   // since they are explicitly appended below with localized titles
-  const basePhotos = (r.photos || []).filter(p => !p.damageId);
+  const basePhotos = (r.photos || []).filter(p => !p.damageId && isIncluded(p.data, p));
 
   // Add ALL dedicated images if not already present, ensuring they are sorted together
-  r.mileageImages?.forEach((img, i) => {
+  r.mileageImages?.filter(img => isIncluded(img)).forEach((img, i) => {
     if (img && !basePhotos.some(p => p.data === img)) {
       basePhotos.push({
         data: img,
@@ -1513,7 +1525,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       });
     }
   });
-  r.identificationImages?.forEach((img, i) => {
+  r.identificationImages?.filter(img => isIncluded(img)).forEach((img, i) => {
     if (img && !basePhotos.some(p => p.data === img)) {
       basePhotos.push({
         data: img,
@@ -1528,7 +1540,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
   r.damages?.forEach(d => {
     const partLabel = getBodyPartLabel(d.bodyPart, safeLang);
-    d.images?.forEach((img, i) => {
+    d.images?.filter(img => isIncluded(img)).forEach((img, i) => {
       sortedPhotos.push({
         data: img,
         label: `${partLabel}: ${translateDamage(d.description) || getRepairMethodLabel(d.repairMethod, safeLang)} (${L.photoLabel} ${i + 1})`
@@ -1538,7 +1550,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
   r.minderwertRows?.forEach(row => {
     const partLabel = getBodyPartLabel(row.bodyPart, safeLang);
-    row.images?.forEach((img, i) => {
+    row.images?.filter(img => isIncluded(img)).forEach((img, i) => {
       sortedPhotos.push({
         data: img,
         label: `${partLabel}: ${translateDamage(row.damage) || getRepairMethodLabel(row.repairMethod, safeLang)} (${L.photoLabel} ${i + 1})`
@@ -1548,41 +1560,41 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
   r.tires?.forEach(t => {
     const sideLbl = getAxleSideLabel(t.axle, t.side);
-    t.images?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.tiresWheels} - ${sideLbl} (${L.photoLabel} ${i + 1})` }));
+    t.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.tiresWheels} - ${sideLbl} (${L.photoLabel} ${i + 1})` }));
   });
   r.secondTires?.forEach(t => {
     const sideLbl = getAxleSideLabel(t.axle, t.side);
-    t.images?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.secondTireSet || 'Zweiter Rädersatz'} - ${sideLbl} (${L.photoLabel} ${i + 1})` }));
+    t.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.secondTireSet || 'Zweiter Rädersatz'} - ${sideLbl} (${L.photoLabel} ${i + 1})` }));
   });
-  r.spareTire?.images?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.tireSpareTire || 'Notrad / Reserverad'} (${L.photoLabel} ${i + 1})` }));
+  r.spareTire?.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.tireSpareTire || 'Notrad / Reserverad'} (${L.photoLabel} ${i + 1})` }));
 
   // Collect images from paint measurements
   r.paintMeasurements?.forEach(pm => {
     const partLabel = getBodyPartLabel(pm.bodyPart, safeLang);
-    pm.images?.forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.paintMeasurementsLabel || 'Lackschichtdicke'} - ${partLabel} (${L.photoLabel} ${i + 1})` }));
+    pm.images?.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.paintMeasurementsLabel || 'Lackschichtdicke'} - ${partLabel} (${L.photoLabel} ${i + 1})` }));
   });
 
   // Common condition images
-  r.lastRegistrationImages?.forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.registrationPaper || 'Fz-Schein'} (${L.photoLabel} ${i + 1})` }));
-  r.nextHUImages?.forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.huLabel || 'HU-Bericht'} (${L.photoLabel} ${i + 1})` }));
+  r.lastRegistrationImages?.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.registrationPaper || 'Fz-Schein'} (${L.photoLabel} ${i + 1})` }));
+  r.nextHUImages?.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.huLabel || 'HU-Bericht'} (${L.photoLabel} ${i + 1})` }));
 
   // Append new general inspection photos
-  r.serviceheftImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docServiceheft || 'Serviceheft'} (${L.photoLabel} ${i + 1})` }));
-  r.bordliteraturImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBedienungsanleitung || 'Bordliteratur'} (${L.photoLabel} ${i + 1})` }));
-  r.keysImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.keys || 'Schlüssel'} (${L.photoLabel} ${i + 1})` }));
-  r.maintenanceImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.maintenanceRecord || 'Wartung'} (${L.photoLabel} ${i + 1})` }));
-  r.fzScheinImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docFzSchein || 'Fz-Schein'} (${L.photoLabel} ${i + 1})` }));
-  r.errorMemoryReadImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.errorMemory || 'Fehlerspeicher'} (${L.photoLabel} ${i + 1})` }));
-  r.hybridBatteryCheckedImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.hybridLabel || 'Hybrid-Batterie'} (${L.photoLabel} ${i + 1})` }));
-  r.environmentalBadgeImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBadge || 'Umweltplakette'} (${L.photoLabel} ${i + 1})` }));
+  r.serviceheftImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docServiceheft || 'Serviceheft'} (${L.photoLabel} ${i + 1})` }));
+  r.bordliteraturImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBedienungsanleitung || 'Bordliteratur'} (${L.photoLabel} ${i + 1})` }));
+  r.keysImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.keys || 'Schlüssel'} (${L.photoLabel} ${i + 1})` }));
+  r.maintenanceImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.maintenanceRecord || 'Wartung'} (${L.photoLabel} ${i + 1})` }));
+  r.fzScheinImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docFzSchein || 'Fz-Schein'} (${L.photoLabel} ${i + 1})` }));
+  r.errorMemoryReadImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.errorMemory || 'Fehlerspeicher'} (${L.photoLabel} ${i + 1})` }));
+  r.hybridBatteryCheckedImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.hybridLabel || 'Hybrid-Batterie'} (${L.photoLabel} ${i + 1})` }));
+  r.environmentalBadgeImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBadge || 'Umweltplakette'} (${L.photoLabel} ${i + 1})` }));
 
-  r.inspectionFromAboveImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.inspectionFromAbove || 'Besichtigung unten'} (${L.photoLabel} ${i + 1})` }));
-  r.inspectionFromBelowImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.inspectionFromBelow || 'Besichtigung oben'} (${L.photoLabel} ${i + 1})` }));
-  r.vehicleConditionImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.vehicleCondition || 'Fahrzeugzustand (Sichtprüfung)'} (${L.photoLabel} ${i + 1})` }));
-  r.engineRunPerformedImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.engineRun || 'Motorlauf'} (${L.photoLabel} ${i + 1})` }));
+  r.inspectionFromAboveImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.inspectionFromAbove || 'Besichtigung unten'} (${L.photoLabel} ${i + 1})` }));
+  r.inspectionFromBelowImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.inspectionFromBelow || 'Besichtigung oben'} (${L.photoLabel} ${i + 1})` }));
+  r.vehicleConditionImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.vehicleCondition || 'Fahrzeugzustand (Sichtprüfung)'} (${L.photoLabel} ${i + 1})` }));
+  r.engineRunPerformedImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.engineRun || 'Motorlauf'} (${L.photoLabel} ${i + 1})` }));
 
-  r.equipmentListAvailableImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.equipmentListAvailable} (${i + 1})` }));
-  r.deliveryConfirmationAvailableImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.deliveryConfirmationAvailable} (${i + 1})` }));
+  r.equipmentListAvailableImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.equipmentListAvailable} (${i + 1})` }));
+  r.deliveryConfirmationAvailableImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.deliveryConfirmationAvailable} (${i + 1})` }));
 
   [
     { key: 'breakdownKit', lbl: L.breakdownKit },
@@ -1591,10 +1603,10 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
     { key: 'warningTriangle', lbl: L.warningTriangleLabel || 'Warndreieck' }
   ].forEach(({ key, lbl }) => {
     const eq = (r as any)[key];
-    if (eq?.images) eq.images.forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${lbl} (${L.photoLabel} ${i + 1})` }));
+    if (eq?.images) eq.images.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${lbl} (${L.photoLabel} ${i + 1})` }));
   });
-  r.chargingCableImages?.forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.chargingCable} (${L.photoLabel} ${i + 1})` }));
-  if (r.authorizedPersonPhoto) {
+  r.chargingCableImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.chargingCable} (${L.photoLabel} ${i + 1})` }));
+  if (r.authorizedPersonPhoto && isIncluded(r.authorizedPersonPhoto)) {
     sortedPhotos.push({
       data: r.authorizedPersonPhoto,
       label: L.authorizedPersonPhoto || 'Foto Personalausweis der bevollmächtigten Person'

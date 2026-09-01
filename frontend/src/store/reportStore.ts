@@ -245,6 +245,7 @@ const initialState: ReportData = {
     priceCategory: '',
     depreciationMatrixFactor: 1,
     finalVehicleValue: 0,
+    excludedFromPdfImages: [],
 };
 
 interface ReportStore extends ReportData {
@@ -268,6 +269,8 @@ interface ReportStore extends ReportData {
     addPhoto: (photo: ReportPhoto) => void;
     removePhoto: (id: string) => void;
     updatePhoto: (id: string, data: Partial<ReportPhoto>) => void;
+    toggleImagePdfInclusion: (imageSrcOrId: string, photoId?: string, forceState?: boolean) => void;
+    isImageIncludedInPdf: (imageSrcOrId: string, photo?: ReportPhoto) => boolean;
     movePhoto: (id: string, direction: 'left' | 'right') => void;
     reorderPhoto: (id: string, newIndex: number) => void;
     setBodyPartDamage: (partId: string, damage?: DamageType, repair?: RepairMethodType) => void;
@@ -1050,6 +1053,80 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                 };
             }),
 
+            toggleImagePdfInclusion: (imageSrcOrId: string, photoId?: string, forceState?: boolean) => set(state => {
+                const excluded = state.excludedFromPdfImages || [];
+                const targetPhoto = state.photos.find(p =>
+                    (photoId && p.id === photoId) ||
+                    (imageSrcOrId && (p.id === imageSrcOrId || p.data === imageSrcOrId || (p as any).filePath === imageSrcOrId))
+                );
+                const currentlyIncluded = targetPhoto?.includeInPdf !== undefined
+                    ? targetPhoto.includeInPdf
+                    : !excluded.includes(imageSrcOrId) && (!photoId || !excluded.includes(photoId)) && (!targetPhoto || (!excluded.includes(targetPhoto.id) && !excluded.includes(targetPhoto.data)));
+
+                const nextIncluded = forceState !== undefined ? forceState : !currentlyIncluded;
+
+                const updatedPhotos = state.photos.map(p => {
+                    if (
+                        (photoId && p.id === photoId) ||
+                        (imageSrcOrId && (p.id === imageSrcOrId || p.data === imageSrcOrId || (p as any).filePath === imageSrcOrId))
+                    ) {
+                        return { ...p, includeInPdf: nextIncluded };
+                    }
+                    return p;
+                });
+
+                let newExcluded = [...excluded];
+                if (nextIncluded) {
+                    newExcluded = newExcluded.filter(x =>
+                        x !== imageSrcOrId &&
+                        (!photoId || x !== photoId) &&
+                        (!targetPhoto || (x !== targetPhoto.id && x !== targetPhoto.data && x !== (targetPhoto as any).filePath))
+                    );
+                } else {
+                    if (imageSrcOrId && !newExcluded.includes(imageSrcOrId)) {
+                        newExcluded.push(imageSrcOrId);
+                    }
+                    if (photoId && !newExcluded.includes(photoId)) {
+                        newExcluded.push(photoId);
+                    }
+                    if (targetPhoto?.data && !newExcluded.includes(targetPhoto.data)) {
+                        newExcluded.push(targetPhoto.data);
+                    }
+                    if (targetPhoto?.id && !newExcluded.includes(targetPhoto.id)) {
+                        newExcluded.push(targetPhoto.id);
+                    }
+                    if ((targetPhoto as any)?.filePath && !newExcluded.includes((targetPhoto as any).filePath)) {
+                        newExcluded.push((targetPhoto as any).filePath);
+                    }
+                }
+
+                return {
+                    photos: updatedPhotos,
+                    excludedFromPdfImages: newExcluded
+                };
+            }),
+
+            isImageIncludedInPdf: (imageSrcOrId: string, photo?: ReportPhoto) => {
+                if (!imageSrcOrId && !photo) return true;
+                const s = get();
+                if (photo && photo.includeInPdf !== undefined) {
+                    return photo.includeInPdf;
+                }
+                const foundPhoto = s.photos.find(p =>
+                    (imageSrcOrId && (p.id === imageSrcOrId || p.data === imageSrcOrId || (p as any).filePath === imageSrcOrId)) ||
+                    (photo?.id && p.id === photo.id)
+                );
+                if (foundPhoto && foundPhoto.includeInPdf !== undefined) {
+                    return foundPhoto.includeInPdf;
+                }
+                const excluded = s.excludedFromPdfImages || [];
+                if (imageSrcOrId && excluded.includes(imageSrcOrId)) return false;
+                if (photo?.id && excluded.includes(photo.id)) return false;
+                if (photo?.data && excluded.includes(photo.data)) return false;
+                if ((photo as any)?.filePath && excluded.includes((photo as any).filePath)) return false;
+                return true;
+            },
+
             movePhoto: (id, direction) => set(state => {
                 const index = state.photos.findIndex(p => p.id === id);
                 if (index === -1) return state;
@@ -1546,6 +1623,9 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                         ...newPhoto,
                         // If backend returns null data but has filePath, use filePath
                         data: newPhoto.data || (newPhoto as any).filePath || existingPhoto?.data || '',
+                        includeInPdf: newPhoto.includeInPdf !== undefined
+                            ? newPhoto.includeInPdf
+                            : (existingPhoto?.includeInPdf !== undefined ? existingPhoto.includeInPdf : true),
                         // Preserve mandatoryPhotoId from client if it was dropped by backend
                         mandatoryPhotoId: recoveredId
                     };
@@ -1559,8 +1639,13 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                     migratedData.secondTires = normalizeTireOrder(migratedData.secondTires);
                 }
 
+                const newExcluded = migratedData.excludedFromPdfImages !== undefined
+                    ? migratedData.excludedFromPdfImages
+                    : (state.excludedFromPdfImages || []);
+
                 const finalData: any = {
                     ...migratedData,
+                    excludedFromPdfImages: newExcluded,
                     ...(newPhotos ? { photos: newPhotos } : {})
                 };
 

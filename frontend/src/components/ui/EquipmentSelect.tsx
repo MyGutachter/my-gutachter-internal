@@ -141,6 +141,8 @@ const EquipmentSelect: React.FC<EquipmentSelectProps> = ({
                             <PhotoThumbnail
                                 key={idx}
                                 src={img}
+                                includeInPdf={useReportStore.getState().isImageIncludedInPdf(img)}
+                                onToggleIncludeInPdf={(incl) => useReportStore.getState().toggleImagePdfInclusion(img, undefined, incl)}
                                 onRemove={() => removePhoto(idx)}
                                 onUpdate={(newSrc) => {
                                     const newImages = [...(value.images || [])];

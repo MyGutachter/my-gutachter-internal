@@ -176,6 +176,7 @@ export interface ReportPhoto {
     mandatoryPhotoId?: string;
     isExternal?: boolean;
     fromVideoExpert?: boolean;
+    includeInPdf?: boolean;
 }
 
 export interface EquipmentItem {
@@ -452,6 +453,7 @@ export interface ReportData {
     depreciationMatrixFactor?: number;
     finalVehicleValue?: number;
     videoExpertImages?: string[];
+    excludedFromPdfImages?: string[];
     meetingData?: Record<string, string>;
     uvvResult?: 'PASSED' | 'FAILED' | '';
     uvvInspectionDate?: string;
