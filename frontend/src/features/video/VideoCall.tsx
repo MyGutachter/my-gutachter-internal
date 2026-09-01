@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import CarInspectionLoader from './CarInspectionLoader';
 import { CarOverlay, getPartIdFromKey } from './CarOverlay';
-import { useWebRTC } from './useWebRTC';
+import { useWebRTC, type StreamQualityInfo } from './useWebRTC';
 import { UvvChecklistPanel } from './UvvChecklistPanel';
 import { UvvInlineChecklistPanel } from './UvvInlineChecklistPanel';
 import { VehicleReportStepsPanel } from './VehicleReportStepsPanel';
@@ -93,8 +93,10 @@ const RemoteVideo = ({
                 />
             </div>
 
-            <div className="absolute top-4 left-4 bg-black/40 px-3 py-1 rounded text-sm text-white font-medium backdrop-blur-sm pointer-events-none z-10">
-                {t('videoCall.user')} {userId.slice(0, 4)} {currentZoom && currentZoom > 1 && `(${currentZoom.toFixed(1)}x)`}
+            <div className="absolute top-4 left-4 flex items-center gap-2 pointer-events-none z-10">
+                <div className="bg-black/50 px-3 py-1 rounded text-sm text-white font-medium backdrop-blur-sm">
+                    {t('videoCall.user')} {userId.slice(0, 4)} {currentZoom && currentZoom > 1 && `(${currentZoom.toFixed(1)}x)`}
+                </div>
             </div>
 
             {selectionMode && (
@@ -131,7 +133,88 @@ const RemoteVideo = ({
     );
 };
 
+const PermissionModal = ({
+    isOpen,
+    errorType,
+    onRetry,
+    onClose
+}: {
+    isOpen: boolean;
+    errorType: 'denied' | 'busy' | 'notfound' | 'general';
+    onRetry: () => void;
+    onClose: () => void;
+}) => {
+    const { t } = useTranslation();
+    if (!isOpen) return null;
 
+    return (
+        <div className="fixed inset-0 z-[10000] bg-black/85 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
+            <div className="bg-dark-800 border border-red-500/30 p-6 md:p-8 rounded-2xl max-w-md w-full shadow-2xl text-center">
+                <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <VideoOff size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                    {t('videoCall.permissionModal.title', { defaultValue: 'Kamerazugriff erforderlich' })}
+                </h3>
+                <p className="text-gray-300 text-sm mb-5 leading-relaxed">
+                    {errorType === 'busy'
+                        ? t('videoCall.permissionModal.busySubtitle', { defaultValue: 'Die Kamera konnte nicht geöffnet werden.' })
+                        : t('videoCall.permissionModal.deniedSubtitle', { defaultValue: 'Der Kamerazugriff wurde im Browser blockiert.' })}
+                </p>
+
+                <div className="bg-dark-900/80 border border-gray-700/60 rounded-xl p-4 text-left text-xs text-gray-300 mb-6 space-y-2.5">
+                    <div className="font-semibold text-white text-xs mb-1">
+                        {errorType === 'busy'
+                            ? t('videoCall.permissionModal.busyStepsTitle', { defaultValue: 'Mögliche Ursachen:' })
+                            : t('videoCall.permissionModal.deniedStepsTitle', { defaultValue: 'So aktivieren Sie die Kamera:' })}
+                    </div>
+                    {errorType === 'busy' ? (
+                        <>
+                            <div className="flex items-start gap-2.5">
+                                <span className="text-primary font-bold">1.</span>
+                                <span>{t('videoCall.permissionModal.busyStep1', { defaultValue: 'Eine andere Anwendung verwendet die Kamera bereits.' })}</span>
+                            </div>
+                            <div className="flex items-start gap-2.5">
+                                <span className="text-primary font-bold">2.</span>
+                                <span>{t('videoCall.permissionModal.busyStep2', { defaultValue: 'Schließen Sie alle anderen Apps und versuchen Sie es erneut.' })}</span>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="flex items-start gap-2.5">
+                                <span className="text-primary font-bold">1.</span>
+                                <span>{t('videoCall.permissionModal.step1', { defaultValue: 'Tippen Sie auf das Schloss- oder Webseiten-Symbol (🔒) in der Adressleiste.' })}</span>
+                            </div>
+                            <div className="flex items-start gap-2.5">
+                                <span className="text-primary font-bold">2.</span>
+                                <span>{t('videoCall.permissionModal.step2', { defaultValue: 'Erlauben Sie den Zugriff auf Kamera und Mikrofon.' })}</span>
+                            </div>
+                            <div className="flex items-start gap-2.5">
+                                <span className="text-primary font-bold">3.</span>
+                                <span>{t('videoCall.permissionModal.step3', { defaultValue: 'Klicken Sie anschließend auf "Erneut versuchen".' })}</span>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={onRetry}
+                        className="flex-1 bg-primary text-white py-3 px-6 rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg hover:shadow-orange-500/20 cursor-pointer"
+                    >
+                        {t('videoCall.permissionModal.retryButton', { defaultValue: 'Erneut versuchen' })}
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="bg-dark-700 text-gray-300 hover:text-white py-3 px-5 rounded-xl font-medium transition-colors cursor-pointer"
+                    >
+                        {t('videoCall.permissionModal.cancelButton', { defaultValue: 'Abbrechen' })}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export const VideoCall = () => {
     const { t } = useTranslation();
@@ -169,6 +252,17 @@ export const VideoCall = () => {
     const stopInFlightRef = useRef<Promise<void> | null>(null);
     // 'guest-left' and the server's 'user-left' can both arrive for the same hangup.
     const guestLeftHandledRef = useRef(false);
+
+    // Permission Error Modal State
+    const [permissionModalState, setPermissionModalState] = useState<{
+        isOpen: boolean;
+        errorType: 'denied' | 'busy' | 'notfound' | 'general';
+        message: string;
+    }>({
+        isOpen: false,
+        errorType: 'general',
+        message: ''
+    });
 
     // Screenshot Selection Mode
     const [savedScreenshots, setSavedScreenshots] = useState<Record<string, string>>({});
@@ -216,6 +310,7 @@ export const VideoCall = () => {
     const [localDeviceInfo, setLocalDeviceInfo] = useState<{ browser: string; os: string; deviceName: string } | null>(null);
     const [localSpeedMbps, setLocalSpeedMbps] = useState<number>(0);
     const [remoteUserDeviceInfo, setRemoteUserDeviceInfo] = useState<Record<string, { browser: string; os: string; deviceName: string; speedMbps: number }>>({});
+    const [remoteUserStreamQuality, setRemoteUserStreamQuality] = useState<Record<string, StreamQualityInfo>>({});
 
     const startRecording = (stream: MediaStream) => {
         if (!stream || mediaRecorderRef.current || recordingFinishedRef.current) return;
@@ -452,7 +547,7 @@ export const VideoCall = () => {
     // Callback ref to avoid circular dependency with useWebRTC
     const signalHandlerRef = useRef<((msg: any) => void | Promise<void>) | null>(null);
 
-    const { localStream, remoteStreams, connectionStates, startLocalStream, init, cleanup, toggleAudio, toggleVideo, switchCamera, sendMessage } = useWebRTC((msg) => {
+    const { localStream, localStreamQuality, remoteStreams, connectionStates, startLocalStream, init, cleanup, toggleAudio, toggleVideo, switchCamera, sendMessage } = useWebRTC((msg) => {
         if (signalHandlerRef.current) {
             signalHandlerRef.current(msg);
         }
@@ -652,6 +747,12 @@ export const VideoCall = () => {
                     }, data);
                 }
 
+                if (localStreamQuality) {
+                    sendMessage('camera-quality-info', {
+                        ...localStreamQuality
+                    }, data);
+                }
+
                 if (isGuest && hasFlashlight) {
                     sendMessage('flashlight-state', {
                         hasFlashlight: true,
@@ -826,6 +927,28 @@ export const VideoCall = () => {
                         [senderId]: facingMode
                     }));
                 }
+            } else if (type === 'user-device-info') {
+                const { browser, os, deviceName, speedMbps, userId } = data || {};
+                const senderId = msg.sender || userId;
+                if (senderId) {
+                    setRemoteUserDeviceInfo(prev => ({
+                        ...prev,
+                        [senderId]: {
+                            browser: browser || 'Unknown',
+                            os: os || 'Unknown',
+                            deviceName: deviceName || 'Device',
+                            speedMbps: typeof speedMbps === 'number' ? speedMbps : 0
+                        }
+                    }));
+                }
+            } else if (type === 'camera-quality-info') {
+                const senderId = msg.sender || data?.userId;
+                if (senderId && data) {
+                    setRemoteUserStreamQuality(prev => ({
+                        ...prev,
+                        [senderId]: data
+                    }));
+                }
             } else if (type === 'sync-overlay') {
                 const { visible, opacity, placeholderIndex: pIdx } = data || {};
                 console.log('[Overlay] Received sync-overlay:', data);
@@ -834,7 +957,7 @@ export const VideoCall = () => {
                 if (pIdx !== undefined) setPlaceholderIndex(pIdx);
             }
         };
-    }, [selectedParts, savedScreenshots, sendMessage, zoomCapabilities, zoomLevel, localStream, localDeviceInfo, localSpeedMbps, isGuest, hasFlashlight, isFlashlightOn, switchCamera, overlayVisible, overlayOpacity, placeholderIndex]);
+    }, [selectedParts, savedScreenshots, sendMessage, zoomCapabilities, zoomLevel, localStream, localStreamQuality, localDeviceInfo, localSpeedMbps, isGuest, hasFlashlight, isFlashlightOn, switchCamera, overlayVisible, overlayOpacity, placeholderIndex]);
 
     const parseUserAgent = useMemo(() => {
         const ua = navigator.userAgent || '';
@@ -897,6 +1020,13 @@ export const VideoCall = () => {
             speedMbps: localSpeedMbps
         });
     }, [isJoined, localDeviceInfo, localSpeedMbps, sendMessage]);
+
+    useEffect(() => {
+        if (!isJoined || !localStreamQuality) return;
+        sendMessage('camera-quality-info', {
+            ...localStreamQuality
+        });
+    }, [isJoined, localStreamQuality, sendMessage]);
 
     // Initial params check
     useEffect(() => {
@@ -1190,15 +1320,49 @@ export const VideoCall = () => {
             return;
         }
 
-        setIsJoined(true);
-
         try {
+            if (isGuest && recordingConsent === 'pending') {
+                setRecordingConsent('accepted');
+                sendMessage('recording-consent-accepted', {});
+            }
+
             await startLocalStream(isGuest);
+            setIsJoined(true);
             init(id);
-        } catch (e) {
-            console.error('[VideoCall] Error joining meeting:', e);
-            showNotification(t('videoCall.cameraMicError'));
+        } catch (e: any) {
+            console.error('[VideoCall] Error joining meeting:', {
+                name: e?.name,
+                message: e?.message,
+                constraint: e?.constraint,
+                stack: e?.stack
+            }, e);
+
+            let errorType: 'denied' | 'busy' | 'notfound' | 'general' = 'general';
+            let errorMsg = t('videoCall.cameraMicError');
+
+            if (e?.name === 'NotAllowedError' || e?.name === 'PermissionDeniedError') {
+                errorType = 'denied';
+                errorMsg = t('videoCall.cameraPermissionDenied');
+            } else if (e?.name === 'NotReadableError' || e?.name === 'TrackStartError') {
+                errorType = 'busy';
+                errorMsg = t('videoCall.cameraBusyError');
+            } else if (e?.name === 'NotFoundError' || e?.name === 'DevicesNotFoundError') {
+                errorType = 'notfound';
+                errorMsg = t('videoCall.cameraNotFoundError');
+            } else if (e?.name === 'TypeError') {
+                errorType = 'denied';
+                errorMsg = t('videoCall.cameraTypeError');
+            } else if (e?.name === 'OverconstrainedError') {
+                errorType = 'busy';
+                errorMsg = t('videoCall.cameraOverconstrainedError');
+            }
+
             setIsJoined(false);
+            setPermissionModalState({
+                isOpen: true,
+                errorType,
+                message: errorMsg
+            });
         }
     };
 
@@ -1540,31 +1704,66 @@ export const VideoCall = () => {
     if (!isJoined) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-dark-900 text-white p-4">
-                <div className="bg-[var(--color-bg-card)] text-[var(--color-text-primary)] p-8 rounded-xl shadow-2xl max-w-md w-full text-center">
-                    <h2 className="text-2xl font-bold mb-6">{t('videoCall.joinMeeting')}</h2>
-
-                    {!roomId ? (
-                        <div className="text-red-500 font-medium mb-6">
-                            {t('videoCall.invalidLink')}
-                        </div>
-                    ) : (
+                <div className="bg-[var(--color-bg-card)] text-[var(--color-text-primary)] p-8 rounded-2xl shadow-2xl max-w-md w-full text-center border border-gray-800 animate-fade-in">
+                    {isGuest ? (
                         <>
-                            <div className="mb-6 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-primary)]">
-                                <span className="text-sm font-semibold text-[var(--color-text-primary)] block mb-1">{t('videoCall.joinWelcome')}</span>
-                                <span className="text-xs text-[var(--color-text-muted)] block">{t('videoCall.joinInstruction')}</span>
+                            <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Video size={32} className="animate-pulse" />
                             </div>
-                            <div className="flex justify-center">
+                            <h2 className="text-2xl font-bold mb-4">{t('videoCall.recordingConsent.title')}</h2>
+                            <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
+                                {t('videoCall.recordingConsent.description')}
+                            </p>
+                            {!roomId ? (
+                                <div className="text-red-500 font-medium mb-4">
+                                    {t('videoCall.invalidLink')}
+                                </div>
+                            ) : (
                                 <button
                                     onClick={() => handleJoin(roomId)}
-                                    className="bg-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-600 transition-all shadow-lg hover:shadow-orange-200 w-full"
+                                    className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg hover:shadow-orange-500/20 w-full cursor-pointer"
                                 >
-                                    {t('videoCall.joinNow')}
+                                    {t('videoCall.recordingConsent.acceptButton')}
                                 </button>
-                            </div>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="text-2xl font-bold mb-6">{t('videoCall.joinMeeting')}</h2>
+                            {!roomId ? (
+                                <div className="text-red-500 font-medium mb-6">
+                                    {t('videoCall.invalidLink')}
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="mb-6 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-primary)]">
+                                        <span className="text-sm font-semibold text-[var(--color-text-primary)] block mb-1">{t('videoCall.joinWelcome')}</span>
+                                        <span className="text-xs text-[var(--color-text-muted)] block">{t('videoCall.joinInstruction')}</span>
+                                    </div>
+                                    <div className="flex justify-center">
+                                        <button
+                                            onClick={() => handleJoin(roomId)}
+                                            className="bg-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-600 transition-all shadow-lg hover:shadow-orange-200 w-full cursor-pointer"
+                                        >
+                                            {t('videoCall.joinNow')}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
                 </div>
-            </div >
+
+                <PermissionModal
+                    isOpen={permissionModalState.isOpen}
+                    errorType={permissionModalState.errorType}
+                    onRetry={() => {
+                        setPermissionModalState({ isOpen: false, errorType: 'general', message: '' });
+                        handleJoin(roomId);
+                    }}
+                    onClose={() => setPermissionModalState({ isOpen: false, errorType: 'general', message: '' })}
+                />
+            </div>
         );
     }
 
@@ -1666,6 +1865,25 @@ export const VideoCall = () => {
                                     }}
                                     muted={false}
                                 />
+
+                                {/* Downgraded Resolution Warning Notice for Expert */}
+                                {remoteUserStreamQuality[primaryRemoteId]?.isDowngraded && (
+                                    <div className="absolute top-16 left-4 right-4 md:left-4 md:right-auto max-w-md bg-amber-950/90 border border-amber-500/50 text-amber-100 px-3.5 py-2.5 rounded-xl text-xs backdrop-blur-md shadow-2xl z-30 flex items-start gap-2.5 animate-fade-in">
+                                        <span className="text-base leading-none text-amber-400">⚠️</span>
+                                        <div className="flex-1 leading-snug">
+                                            <div className="font-bold text-amber-300 mb-0.5 flex items-center gap-1.5">
+                                                <span>{t('videoCall.reducedQualityTitle')}</span>
+                                                <span className="bg-amber-800/80 text-amber-200 text-[10px] px-1.5 py-0.2 rounded font-mono">
+                                                    {remoteUserStreamQuality[primaryRemoteId]?.qualityLabel}
+                                                </span>
+                                            </div>
+                                            <div className="text-[11px] text-amber-200/90 leading-tight">
+                                                {t('videoCall.reducedQualityNotice')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {placeholderIndex !== -1 && overlayVisible && (
                                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8 z-20">
                                         <img
@@ -1685,7 +1903,12 @@ export const VideoCall = () => {
 
                         {isGuest && localStream && (
                             <div className="absolute inset-0">
-                                <RemoteVideo userId="Me" stream={localStream} isHost={false} muted={true} />
+                                <RemoteVideo
+                                    userId="Me"
+                                    stream={localStream}
+                                    isHost={false}
+                                    muted={true}
+                                />
                                 {placeholderIndex !== -1 && overlayVisible && (
                                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8 z-20">
                                         <img
@@ -2330,12 +2553,28 @@ export const VideoCall = () => {
                                 <div className="flex flex-col leading-tight">
                                     <div
                                         className="text-[11px] text-gray-300"
-                                        title={`${t('videoCall.browser')}: ${localDeviceInfo?.browser || '-'}\n${t('videoCall.os')}: ${localDeviceInfo?.os || '-'}\n${t('videoCall.device')}: ${localDeviceInfo?.deviceName || '-'}`}
+                                        title={organiserControlUid && remoteUserDeviceInfo[organiserControlUid]
+                                            ? `Guest: ${remoteUserDeviceInfo[organiserControlUid].browser} • ${remoteUserDeviceInfo[organiserControlUid].os} • ${remoteUserDeviceInfo[organiserControlUid].deviceName}`
+                                            : `${t('videoCall.browser')}: ${localDeviceInfo?.browser || '-'}\n${t('videoCall.os')}: ${localDeviceInfo?.os || '-'}\n${t('videoCall.device')}: ${localDeviceInfo?.deviceName || '-'}`}
                                     >
-                                        {localDeviceInfo ? `${localDeviceInfo.browser} • ${localDeviceInfo.os} • ${localDeviceInfo.deviceName}` : '-'}
+                                        {organiserControlUid && remoteUserDeviceInfo[organiserControlUid]
+                                            ? `${remoteUserDeviceInfo[organiserControlUid].browser} • ${remoteUserDeviceInfo[organiserControlUid].os} • ${remoteUserDeviceInfo[organiserControlUid].deviceName}`
+                                            : localDeviceInfo ? `${localDeviceInfo.browser} • ${localDeviceInfo.os} • ${localDeviceInfo.deviceName}` : '-'}
                                     </div>
-                                    <div className="text-[12px] font-semibold text-white" title={t('videoCall.speed')}>
-                                        {localSpeedMbps.toFixed(2)} Mbps
+                                    <div className="text-[12px] font-semibold text-white flex items-center gap-2" title={t('videoCall.speed')}>
+                                        <span>{((organiserControlUid && remoteUserDeviceInfo[organiserControlUid]?.speedMbps) || localSpeedMbps).toFixed(2)} Mbps</span>
+                                        {organiserControlUid && remoteUserStreamQuality[organiserControlUid] && (
+                                            <span className={clsx(
+                                                "text-[10px] px-1.5 py-0.2 rounded font-mono font-normal",
+                                                remoteUserStreamQuality[organiserControlUid].qualityLabel === '1080p'
+                                                    ? "bg-emerald-900/70 text-emerald-300 border border-emerald-500/30"
+                                                    : remoteUserStreamQuality[organiserControlUid].qualityLabel === '720p'
+                                                        ? "bg-amber-900/70 text-amber-300 border border-amber-500/30"
+                                                        : "bg-red-900/70 text-red-300 border border-red-500/30"
+                                            )}>
+                                                {remoteUserStreamQuality[organiserControlUid].qualityLabel}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -2385,6 +2624,16 @@ export const VideoCall = () => {
                     }}
                 />
             )}
+
+            <PermissionModal
+                isOpen={permissionModalState.isOpen}
+                errorType={permissionModalState.errorType}
+                onRetry={() => {
+                    setPermissionModalState({ isOpen: false, errorType: 'general', message: '' });
+                    handleJoin(roomId);
+                }}
+                onClose={() => setPermissionModalState({ isOpen: false, errorType: 'general', message: '' })}
+            />
         </div>
     );
 };

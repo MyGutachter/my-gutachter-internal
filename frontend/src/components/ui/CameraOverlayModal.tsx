@@ -46,20 +46,41 @@ const CameraOverlayModal: React.FC<CameraOverlayModalProps> = ({
         }
         setCameraError(null);
         setStreaming(false);
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
-                audio: false,
-            });
+
+        const steps: MediaTrackConstraints[] = [
+            { facingMode: { ideal: facing }, width: { ideal: 1920, max: 3840 }, height: { ideal: 1080, max: 2160 } },
+            { facingMode: { ideal: facing }, width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 } },
+            { facingMode: { ideal: facing }, width: { ideal: 640, max: 1280 }, height: { ideal: 480, max: 720 } },
+            { facingMode: { ideal: facing } },
+            {}
+        ];
+
+        let stream: MediaStream | null = null;
+        let lastErr: any = null;
+
+        for (const step of steps) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: step,
+                    audio: false,
+                });
+                if (stream) break;
+            } catch (err: any) {
+                lastErr = err;
+            }
+        }
+
+        if (stream) {
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                videoRef.current.play();
+                videoRef.current.play().catch(() => {});
             }
             setStreaming(true);
-        } catch (err: any) {
+        } else {
+            console.error('[CameraOverlayModal] Camera failed after fallback steps:', lastErr);
             setCameraError(
-                err?.name === 'NotAllowedError'
+                lastErr?.name === 'NotAllowedError'
                     ? t('cameraOverlay.permissionDenied', 'Kamerazugriff verweigert. Bitte Berechtigungen erlauben.')
                     : t('cameraOverlay.cameraError', 'Kamera konnte nicht geöffnet werden.')
             );

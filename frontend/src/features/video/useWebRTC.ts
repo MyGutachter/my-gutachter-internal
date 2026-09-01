@@ -36,8 +36,61 @@ interface SignalMessage {
     target?: string;
 }
 
+export interface StreamQualityInfo {
+    width?: number;
+    height?: number;
+    frameRate?: number;
+    facingMode?: string;
+    stepIndex: number;
+    isDowngraded: boolean;
+    qualityLabel: '1080p' | '720p' | '480p' | 'low';
+}
+
+const VIDEO_FALLBACK_STEPS: { name: string; constraints: MediaTrackConstraints }[] = [
+    // Step 0: 1080p (Full HD / 4K ideal)
+    {
+        name: '1080p Full HD',
+        constraints: {
+            width: { ideal: 1920, max: 3840 },
+            height: { ideal: 1080, max: 2160 },
+            facingMode: { ideal: 'environment' }
+        }
+    },
+    // Step 1: 720p (HD)
+    {
+        name: '720p HD',
+        constraints: {
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            facingMode: { ideal: 'environment' }
+        }
+    },
+    // Step 2: 480p (SD)
+    {
+        name: '480p SD',
+        constraints: {
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 720 },
+            facingMode: { ideal: 'environment' }
+        }
+    },
+    // Step 3: Unconstrained resolution for environment camera
+    {
+        name: 'Environment Camera (Unconstrained)',
+        constraints: {
+            facingMode: { ideal: 'environment' }
+        }
+    },
+    // Step 4: Any available video camera unconstrained
+    {
+        name: 'Any Camera (Unconstrained)',
+        constraints: {}
+    }
+];
+
 export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [localStreamQuality, setLocalStreamQuality] = useState<StreamQualityInfo | null>(null);
     // Map<UserId, MediaStream>
     const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
     // Track connection state for each peer
@@ -54,6 +107,7 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
     // CHANGED: Use a ref for localStream to ensure callbacks (like createPeerConnection)
     // access the latest stream immediately without waiting for re-renders.
     const localStreamRef = useRef<MediaStream | null>(null);
+    const localStreamQualityRef = useRef<StreamQualityInfo | null>(null);
     const onMessageRef = useRef(onMessage);
 
     // Set by cleanup() so the resulting socket close is not reported to the UI as an
@@ -107,31 +161,150 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
         });
     }, [sendSignal]);
 
-    // 1. Acquire Media
+    // Helper to evaluate quality label from track settings
+    const evaluateStreamQuality = useCallback((videoTrack: MediaStreamTrack, stepIndex: number): StreamQualityInfo => {
+        const settings = typeof videoTrack.getSettings === 'function' ? videoTrack.getSettings() : {} as MediaTrackSettings;
+        const w = settings.width || 0;
+        const h = settings.height || 0;
+        const maxDim = Math.max(w, h);
+
+        let qualityLabel: '1080p' | '720p' | '480p' | 'low' = 'low';
+        if (maxDim >= 1800) {
+            qualityLabel = '1080p';
+        } else if (maxDim >= 1200) {
+            qualityLabel = '720p';
+        } else if (maxDim >= 600) {
+            qualityLabel = '480p';
+        } else {
+            qualityLabel = 'low';
+        }
+
+        const isDowngraded = stepIndex > 0 || qualityLabel !== '1080p';
+
+        return {
+            width: w,
+            height: h,
+            frameRate: settings.frameRate,
+            facingMode: settings.facingMode,
+            stepIndex,
+            isDowngraded,
+            qualityLabel
+        };
+    }, []);
+
+    // 1. Acquire Media with Stepped Fallback
     const startLocalStream = useCallback(async (videoEnabled: boolean = true) => {
-        try {
-            if (localStreamRef.current) return localStreamRef.current;
-            console.log(`Acquiring local stream (video=${videoEnabled})...`);
+        if (localStreamRef.current) return localStreamRef.current;
+        console.log(`[WebRTC] Acquiring local stream (videoEnabled=${videoEnabled})...`);
 
-            const constraints: MediaStreamConstraints = {
-                audio: true,
-                video: videoEnabled ? {
-                    // Use ideal constraints instead of exact to allow mobile cameras more flexibility
-                    width: { ideal: 1920, max: 3840 },
-                    height: { ideal: 1080, max: 2160 },
-                    facingMode: 'environment'
-                } : false
-            };
-
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            setLocalStream(stream);
-            localStreamRef.current = stream; // Sync ref
-            return stream;
-        } catch (err) {
-            console.error('Error accessing media', err);
+        if (typeof navigator === 'undefined' || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+            const err = new TypeError('navigator.mediaDevices.getUserMedia is not available. Please ensure the page is served over HTTPS.');
+            console.error('[WebRTC] MediaDevices API unavailable:', err);
             throw err;
         }
-    }, []);
+
+        if (!videoEnabled) {
+            try {
+                const audioOnlyStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                setLocalStream(audioOnlyStream);
+                localStreamRef.current = audioOnlyStream;
+                return audioOnlyStream;
+            } catch (err: any) {
+                console.error('[WebRTC] Error acquiring audio-only stream:', { name: err?.name, message: err?.message }, err);
+                throw err;
+            }
+        }
+
+        let acquiredStream: MediaStream | null = null;
+        let successfulStep = -1;
+        let lastError: any = null;
+
+        // Progressively step down resolution / constraints until camera opens
+        for (let i = 0; i < VIDEO_FALLBACK_STEPS.length; i++) {
+            const step = VIDEO_FALLBACK_STEPS[i];
+            console.log(`[WebRTC] Attempting camera acquisition (Step ${i}: ${step.name})...`);
+
+            try {
+                acquiredStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: step.constraints
+                });
+                successfulStep = i;
+                console.log(`[WebRTC] Camera successfully opened at Step ${i} (${step.name})`);
+                break;
+            } catch (stepErr: any) {
+                lastError = stepErr;
+                console.warn(`[WebRTC] Camera acquisition failed at Step ${i} (${step.name}): [${stepErr?.name}] ${stepErr?.message}`, {
+                    stepIndex: i,
+                    errorName: stepErr?.name,
+                    errorMessage: stepErr?.message,
+                    constraint: stepErr?.constraint
+                });
+            }
+        }
+
+        // If all audio+video steps failed, try once without audio constraint in case audio device blocked it
+        if (!acquiredStream) {
+            console.warn('[WebRTC] All standard audio+video steps failed. Trying video-only fallback...');
+            for (let i = 0; i < VIDEO_FALLBACK_STEPS.length; i++) {
+                const step = VIDEO_FALLBACK_STEPS[i];
+                try {
+                    acquiredStream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: step.constraints
+                    });
+                    successfulStep = i;
+                    console.log(`[WebRTC] Video-only camera opened at Step ${i} (${step.name})`);
+                    break;
+                } catch (vErr: any) {
+                    lastError = vErr;
+                }
+            }
+        }
+
+        if (!acquiredStream) {
+            console.error('[WebRTC] All camera acquisition fallback steps failed. Final error:', {
+                name: lastError?.name,
+                message: lastError?.message,
+                constraint: lastError?.constraint
+            }, lastError);
+            throw lastError || new Error('Could not start video source after all fallback steps');
+        }
+
+        setLocalStream(acquiredStream);
+        localStreamRef.current = acquiredStream;
+
+        const videoTrack = acquiredStream.getVideoTracks()[0];
+        if (videoTrack) {
+            const initialQuality = evaluateStreamQuality(videoTrack, successfulStep);
+            console.log('[WebRTC] Initial stream quality:', initialQuality);
+            setLocalStreamQuality(initialQuality);
+            localStreamQualityRef.current = initialQuality;
+
+            // If a lower step was used (e.g. 720p, 480p, or unconstrained), try non-blockingly
+            // to upgrade resolution via applyConstraints on the active track.
+            if (successfulStep > 0) {
+                setTimeout(async () => {
+                    if (!videoTrack || videoTrack.readyState !== 'live') return;
+                    try {
+                        console.log('[WebRTC] Attempting post-start resolution upgrade to 1080p via applyConstraints...');
+                        await videoTrack.applyConstraints({
+                            width: { ideal: 1920, max: 3840 },
+                            height: { ideal: 1080, max: 2160 }
+                        });
+                        const upgradedQuality = evaluateStreamQuality(videoTrack, 0);
+                        console.log('[WebRTC] Post-start resolution upgrade successful:', upgradedQuality);
+                        setLocalStreamQuality(upgradedQuality);
+                        localStreamQualityRef.current = upgradedQuality;
+                    } catch (upgradeErr: any) {
+                        console.log(`[WebRTC] Post-start resolution upgrade not supported on device (${upgradeErr?.name}): continuing at Step ${successfulStep} resolution.`);
+                    }
+                }, 800);
+            }
+        }
+
+        return acquiredStream;
+    }, [evaluateStreamQuality]);
 
     // 2. Create PC for a specific user
     const createPeerConnection = useCallback((userId: string) => {
@@ -697,28 +870,57 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
             console.log(`[Camera] Switching ${currentFacingModeRef.current} → ${nextFacingMode}`);
 
             // Strategy A: applyConstraints — works on some Android browsers without
-            // needing a new stream. iOS Safari throws here, we fall through to B.
+            // needing a new stream. Try exact first, then ideal.
             let usedApplyConstraints = false;
             try {
                 await currentTrack.applyConstraints({ facingMode: { exact: nextFacingMode } });
                 usedApplyConstraints = true;
-                console.log('[Camera] applyConstraints succeeded.');
+                console.log('[Camera] applyConstraints (exact) succeeded.');
             } catch {
-                console.log('[Camera] applyConstraints not supported — using getUserMedia fallback.');
+                try {
+                    await currentTrack.applyConstraints({ facingMode: { ideal: nextFacingMode } });
+                    usedApplyConstraints = true;
+                    console.log('[Camera] applyConstraints (ideal) succeeded.');
+                } catch {
+                    console.log('[Camera] applyConstraints not supported — using getUserMedia fallback.');
+                }
             }
 
             if (!usedApplyConstraints) {
                 // Strategy B: open new stream BEFORE stopping the old track.
                 // Stopping first marks the sender track as ended; iOS then refuses
                 // replaceTrack() on an ended sender.
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { exact: nextFacingMode },
-                        aspectRatio: { ideal: 16 / 9 },
-                        frameRate: { ideal: 30, max: 60 }
-                    },
-                    audio: false
-                });
+                // Try stepped fallback for switch constraints
+                const switchSteps: MediaTrackConstraints[] = [
+                    { facingMode: { exact: nextFacingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    { facingMode: { ideal: nextFacingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    { facingMode: { ideal: nextFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    { facingMode: { ideal: nextFacingMode } }
+                ];
+
+                let newStream: MediaStream | null = null;
+                let lastSwitchError: any = null;
+
+                for (let s = 0; s < switchSteps.length; s++) {
+                    try {
+                        newStream = await navigator.mediaDevices.getUserMedia({
+                            video: switchSteps[s],
+                            audio: false
+                        });
+                        if (newStream) {
+                            console.log(`[Camera] switchCamera getUserMedia succeeded at step ${s}`);
+                            break;
+                        }
+                    } catch (swErr: any) {
+                        lastSwitchError = swErr;
+                        console.warn(`[Camera] switchCamera getUserMedia step ${s} failed:`, swErr?.name, swErr?.message);
+                    }
+                }
+
+                if (!newStream) {
+                    throw lastSwitchError || new Error('Failed to acquire stream during switchCamera');
+                }
+
                 const newVideoTrack = newStream.getVideoTracks()[0];
 
                 // Replace track in all peer connections FIRST
@@ -737,6 +939,10 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
                 const newLocalStream = new MediaStream([...audioTracks, newVideoTrack]);
                 setLocalStream(newLocalStream);
                 localStreamRef.current = newLocalStream;
+
+                const newQuality = evaluateStreamQuality(newVideoTrack, 0);
+                setLocalStreamQuality(newQuality);
+                localStreamQualityRef.current = newQuality;
             }
 
             currentFacingModeRef.current = nextFacingMode;
@@ -749,10 +955,11 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
         } finally {
             isSwitchingCameraRef.current = false;
         }
-    }, []);
+    }, [evaluateStreamQuality]);
 
     return {
         localStream,
+        localStreamQuality,
         remoteStreams,
         connectionStates,
         startLocalStream,
