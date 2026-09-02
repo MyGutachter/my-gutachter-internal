@@ -1254,6 +1254,8 @@
     },
     "videoCall": {
         "cameraFlip": "Camera Flip",
+        "switchToFrontCamera": "Switch to Front Camera (F)",
+        "switchToBackCamera": "Switch to Back Camera (B)",
         "user": "User",
         "clickToCapture": "Click to Capture",
         "waiting": "Waiting for participants...",

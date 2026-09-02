@@ -302,8 +302,13 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
 
         const videoTrack = acquiredStream.getVideoTracks()[0];
         if (videoTrack) {
+            const initialSettings = typeof videoTrack.getSettings === 'function' ? videoTrack.getSettings() : {} as MediaTrackSettings;
+            if (initialSettings.facingMode === 'user' || initialSettings.facingMode === 'environment') {
+                currentFacingModeRef.current = initialSettings.facingMode;
+            }
+
             const initialQuality = evaluateStreamQuality(videoTrack, successfulStep);
-            console.log('[WebRTC] Initial stream quality:', initialQuality);
+            console.log('[WebRTC] Initial stream quality:', initialQuality, 'facingMode:', currentFacingModeRef.current);
             setLocalStreamQuality(initialQuality);
             localStreamQualityRef.current = initialQuality;
 
@@ -875,118 +880,210 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
     }, []);
 
     // Mutex ref: prevents concurrent switchCamera calls from racing each other.
-    // On iPhone, rapid taps launch parallel getUserMedia calls that corrupt stream state.
     const isSwitchingCameraRef = useRef(false);
 
-    // Tracks the current facing mode explicitly — iOS Safari returns blank deviceId
-    // from enumerateDevices() until each camera has been used, making deviceId-based
-    // toggling always select the same camera. facingMode toggling is the correct approach.
+    // Tracks the current facing mode explicitly
     const currentFacingModeRef = useRef<'user' | 'environment'>('environment');
 
     const switchCamera = useCallback(async (desiredFacingMode?: 'user' | 'environment'): Promise<boolean> => {
-        // Concurrency guard: if a switch is already running, ignore the duplicate.
+        // Concurrency guard: if a switch is already running, ignore duplicate calls
         if (isSwitchingCameraRef.current) {
             console.warn('[Camera] Switch already in progress — ignoring duplicate call.');
             return false;
         }
-        if (!localStreamRef.current) return false;
+        if (!localStreamRef.current) {
+            console.warn('[Camera] No local stream active to switch camera.');
+            return false;
+        }
         const videoTracks = localStreamRef.current.getVideoTracks();
-        if (videoTracks.length === 0) return false;
+        if (videoTracks.length === 0) {
+            console.warn('[Camera] No video tracks found in local stream.');
+            return false;
+        }
 
         isSwitchingCameraRef.current = true;
         try {
             const currentTrack = videoTracks[0];
+            const currentTrackSettings = typeof currentTrack.getSettings === 'function' ? currentTrack.getSettings() : {} as MediaTrackSettings;
+            const currentFacing = (currentTrackSettings.facingMode as 'user' | 'environment') || currentFacingModeRef.current;
+            const currentDeviceId = currentTrackSettings.deviceId;
+
             const nextFacingMode: 'user' | 'environment' = desiredFacingMode
                 ? desiredFacingMode
-                : (currentFacingModeRef.current === 'environment' ? 'user' : 'environment');
+                : (currentFacing === 'environment' ? 'user' : 'environment');
 
-            if (nextFacingMode === currentFacingModeRef.current) {
-                console.log(`[Camera] Requested facingMode already active: ${nextFacingMode}`);
-                return true;
+            console.log(`[Camera] Initiating switch: currentFacing=${currentFacing}, targetFacing=${nextFacingMode}, currentDeviceId=${currentDeviceId}`);
+
+            // 1. Check available video input devices
+            let alternateDeviceId: string | undefined;
+            try {
+                if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.enumerateDevices === 'function') {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    if (videoDevices.length > 1) {
+                        const targetPattern = nextFacingMode === 'user' ? /front|user|facetime|selfie/i : /back|rear|environment/i;
+                        const matchedDevice = videoDevices.find(d => targetPattern.test(d.label));
+                        if (matchedDevice) {
+                            alternateDeviceId = matchedDevice.deviceId;
+                        } else if (currentDeviceId) {
+                            const otherDevice = videoDevices.find(d => d.deviceId !== currentDeviceId);
+                            if (otherDevice) alternateDeviceId = otherDevice.deviceId;
+                        }
+                    }
+                }
+            } catch (enumErr) {
+                console.warn('[Camera] Device enumeration warning:', enumErr);
             }
 
-            console.log(`[Camera] Switching ${currentFacingModeRef.current} → ${nextFacingMode}`);
+            // 2. Build progressive constraints to acquire the new camera
+            const constraintCandidates: MediaTrackConstraints[] = [];
 
-            // Strategy A: applyConstraints — works on some Android browsers without
-            // needing a new stream. Try exact first, then ideal.
-            let usedApplyConstraints = false;
-            try {
-                await currentTrack.applyConstraints({ facingMode: { exact: nextFacingMode } });
-                usedApplyConstraints = true;
-                console.log('[Camera] applyConstraints (exact) succeeded.');
-            } catch {
+            // A. exact facing mode
+            constraintCandidates.push({
+                facingMode: { exact: nextFacingMode },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            });
+            constraintCandidates.push({
+                facingMode: { exact: nextFacingMode }
+            });
+
+            // B. direct deviceId if found
+            if (alternateDeviceId) {
+                constraintCandidates.push({
+                    deviceId: { exact: alternateDeviceId },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                });
+                constraintCandidates.push({
+                    deviceId: { exact: alternateDeviceId }
+                });
+            }
+
+            // C. ideal facing mode fallbacks
+            constraintCandidates.push({
+                facingMode: { ideal: nextFacingMode },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            });
+            constraintCandidates.push({
+                facingMode: { ideal: nextFacingMode },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            });
+            constraintCandidates.push({
+                facingMode: { ideal: nextFacingMode }
+            });
+
+            let newStream: MediaStream | null = null;
+            let lastSwitchError: any = null;
+
+            // Strategy 1: Attempt parallel acquisition (keep old track alive to avoid flicker)
+            for (let i = 0; i < constraintCandidates.length; i++) {
                 try {
-                    await currentTrack.applyConstraints({ facingMode: { ideal: nextFacingMode } });
-                    usedApplyConstraints = true;
-                    console.log('[Camera] applyConstraints (ideal) succeeded.');
-                } catch {
-                    console.log('[Camera] applyConstraints not supported — using getUserMedia fallback.');
+                    newStream = await navigator.mediaDevices.getUserMedia({
+                        video: constraintCandidates[i],
+                        audio: false
+                    });
+                    if (newStream) {
+                        console.log(`[Camera] Parallel camera acquisition succeeded (candidate ${i})`);
+                        break;
+                    }
+                } catch (err: any) {
+                    lastSwitchError = err;
                 }
             }
 
-            if (!usedApplyConstraints) {
-                // Strategy B: open new stream BEFORE stopping the old track.
-                // Stopping first marks the sender track as ended; iOS then refuses
-                // replaceTrack() on an ended sender.
-                // Try stepped fallback for switch constraints
-                const switchSteps: MediaTrackConstraints[] = [
-                    { facingMode: { exact: nextFacingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-                    { facingMode: { ideal: nextFacingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-                    { facingMode: { ideal: nextFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
-                    { facingMode: { ideal: nextFacingMode } }
-                ];
+            // Strategy 2: If parallel acquisition failed (e.g. single-camera hardware lock on mobile),
+            // stop current track first and retry acquisition.
+            if (!newStream) {
+                console.warn('[Camera] Parallel acquisition failed (hardware may be locked). Stopping old track and retrying...');
+                try {
+                    currentTrack.stop();
+                } catch (e) {
+                    /* ignore */
+                }
 
-                let newStream: MediaStream | null = null;
-                let lastSwitchError: any = null;
-
-                for (let s = 0; s < switchSteps.length; s++) {
+                for (let i = 0; i < constraintCandidates.length; i++) {
                     try {
                         newStream = await navigator.mediaDevices.getUserMedia({
-                            video: switchSteps[s],
+                            video: constraintCandidates[i],
                             audio: false
                         });
                         if (newStream) {
-                            console.log(`[Camera] switchCamera getUserMedia succeeded at step ${s}`);
+                            console.log(`[Camera] Post-stop retry succeeded (candidate ${i})`);
                             break;
                         }
-                    } catch (swErr: any) {
-                        lastSwitchError = swErr;
-                        console.warn(`[Camera] switchCamera getUserMedia step ${s} failed:`, swErr?.name, swErr?.message);
+                    } catch (err: any) {
+                        lastSwitchError = err;
+                        console.warn(`[Camera] Post-stop candidate ${i} failed:`, err?.name, err?.message);
                     }
                 }
-
-                if (!newStream) {
-                    throw lastSwitchError || new Error('Failed to acquire stream during switchCamera');
-                }
-
-                const newVideoTrack = newStream.getVideoTracks()[0];
-
-                // Replace track in all peer connections FIRST
-                for (const pc of peerConnections.current.values()) {
-                    const videoSender = pc.getSenders().find(s => s.track?.kind === 'video');
-                    if (videoSender) {
-                        try { await videoSender.replaceTrack(newVideoTrack); }
-                        catch (err) { console.error('[Camera] replaceTrack failed:', err); }
-                    }
-                }
-
-                // Now stop the old track — after all PCs have the new one
-                currentTrack.stop();
-
-                const audioTracks = localStreamRef.current.getAudioTracks();
-                const newLocalStream = new MediaStream([...audioTracks, newVideoTrack]);
-                setLocalStream(newLocalStream);
-                localStreamRef.current = newLocalStream;
-
-                const newQuality = evaluateStreamQuality(newVideoTrack, 0);
-                setLocalStreamQuality(newQuality);
-                localStreamQualityRef.current = newQuality;
             }
 
-            currentFacingModeRef.current = nextFacingMode;
-            console.log(`[Camera] Switch complete. Now facing: ${nextFacingMode}`);
-            return true;
+            if (!newStream) {
+                throw lastSwitchError || new Error('Failed to acquire video stream during switchCamera');
+            }
 
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            if (!newVideoTrack) {
+                throw new Error('New stream does not contain a video track');
+            }
+
+            // Strategy 3: Replace track on all active peer connections
+            for (const pc of peerConnections.current.values()) {
+                if (pc.connectionState === 'closed') continue;
+                const senders = pc.getSenders();
+                let videoSender = senders.find(s => s.track?.kind === 'video');
+
+                if (!videoSender) {
+                    const transceivers = pc.getTransceivers();
+                    const videoTransceiver = transceivers.find(t =>
+                        t.sender.track?.kind === 'video' ||
+                        t.receiver.track?.kind === 'video'
+                    );
+                    if (videoTransceiver) {
+                        videoSender = videoTransceiver.sender;
+                    }
+                }
+
+                if (videoSender) {
+                    try {
+                        await videoSender.replaceTrack(newVideoTrack);
+                        console.log('[Camera] replaceTrack succeeded on peer connection');
+                    } catch (err) {
+                        console.error('[Camera] replaceTrack failed:', err);
+                    }
+                } else {
+                    try {
+                        pc.addTrack(newVideoTrack, newStream);
+                        console.log('[Camera] addTrack succeeded on peer connection');
+                    } catch (err) {
+                        console.error('[Camera] addTrack failed:', err);
+                    }
+                }
+            }
+
+            // Ensure old track is stopped
+            if (currentTrack.readyState === 'live') {
+                currentTrack.stop();
+            }
+
+            const audioTracks = localStreamRef.current ? localStreamRef.current.getAudioTracks() : [];
+            const newLocalStream = new MediaStream([...audioTracks, newVideoTrack]);
+            setLocalStream(newLocalStream);
+            localStreamRef.current = newLocalStream;
+
+            const newSettings = typeof newVideoTrack.getSettings === 'function' ? newVideoTrack.getSettings() : {} as MediaTrackSettings;
+            const actualFacing = (newSettings.facingMode as 'user' | 'environment') || nextFacingMode;
+            currentFacingModeRef.current = actualFacing;
+
+            const newQuality = evaluateStreamQuality(newVideoTrack, 0);
+            setLocalStreamQuality(newQuality);
+            localStreamQualityRef.current = newQuality;
+
+            console.log(`[Camera] Camera switch complete. Now facing: ${actualFacing}`);
+            return true;
         } catch (error) {
             console.error('[Camera] Error switching camera:', error);
             return false;

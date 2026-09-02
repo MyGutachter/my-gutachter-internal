@@ -1276,6 +1276,8 @@
     },
     "videoCall": {
         "cameraFlip": "Kamera umkehren",
+        "switchToFrontCamera": "Auf Frontkamera wechseln (F)",
+        "switchToBackCamera": "Auf Rückkamera wechseln (B)",
         "user": "Benutzer",
         "clickToCapture": "Klicken zum Aufnehmen",
         "waiting": "Warten auf Teilnehmer...",

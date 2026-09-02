@@ -299,6 +299,27 @@ public class SignalingHandler extends TextWebSocketHandler {
                         }
                     }
                 }
+            } else if ("guest-ended-call".equals(type)) {
+                String roomId = sessionRoomMap.get(session.getId());
+                if (roomId != null) {
+                    Set<WebSocketSession> roomSessions = rooms.get(roomId);
+                    if (roomSessions != null) {
+                        for (WebSocketSession s : roomSessions) {
+                            if (s.isOpen() && !s.getId().equals(session.getId())) {
+                                synchronized (s) {
+                                    try {
+                                        ObjectNode node = objectMapper.createObjectNode();
+                                        node.put("type", "guest-ended-call");
+                                        node.put("sender", session.getId());
+                                        s.sendMessage(new TextMessage(
+                                                Objects.requireNonNull(objectMapper.writeValueAsString(node))));
+                                    } catch (Exception ignored) {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             } else {
                 // Relay branch: offer/answer/ice/candidate/etc.
                 JsonNode targetNode = jsonMessage.get("target");

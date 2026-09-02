@@ -93,9 +93,18 @@ const RemoteVideo = ({
                 />
             </div>
 
+            {/* User badge — top-left of video */}
             <div className="absolute top-4 left-4 flex items-center gap-2 pointer-events-none z-10">
-                <div className="bg-black/50 px-3 py-1 rounded text-sm text-white font-medium backdrop-blur-sm">
-                    {t('videoCall.user')} {userId.slice(0, 4)} {currentZoom && currentZoom > 1 && `(${currentZoom.toFixed(1)}x)`}
+                <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-md">
+                    <span className="text-white text-xs font-semibold tracking-tight">
+                        {t('videoCall.user')} {userId.slice(0, 4)}
+                    </span>
+                    {currentZoom && currentZoom > 1 && (
+                        <span className="flex items-center gap-1 text-primary text-[10px] font-mono font-bold border-l border-white/15 pl-1.5 ml-0.5">
+                            <ZoomIn size={10} />
+                            {currentZoom.toFixed(1)}x
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -108,27 +117,7 @@ const RemoteVideo = ({
                 </div>
             )}
 
-            {isHost && capabilities && (
-                <div
-                    className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-md z-30 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <ZoomIn size={14} className="text-white/70" />
-                    <input
-                        type="range"
-                        min={capabilities.min}
-                        max={capabilities.max}
-                        step={capabilities.step}
-                        value={currentZoom || capabilities.min}
-                        onChange={handleZoomChange}
-                        className="w-24 h-1 bg-[var(--color-bg-tertiary)] rounded-lg appearance-none cursor-pointer accent-primary hover:bg-[var(--color-border-secondary)] transition-colors"
-                        title={t('videoCall.zoom')}
-                    />
-                    <span className="text-white/70 text-xs font-mono min-w-[32px]">
-                        {(currentZoom || capabilities.min).toFixed(1)}x
-                    </span>
-                </div>
-            )}
+            {/* Zoom slider moved to bottom bar — next to preset buttons */}
         </div>
     );
 };
@@ -285,6 +274,7 @@ export const VideoCall = () => {
     const [viewingScreenshot, setViewingScreenshot] = useState<string | null>(null);
     const [pendingCapturePart, setPendingCapturePart] = useState<string | null>(null);
     const [isMobile, setIsMobile] = useState(false);
+    const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
 
     // Hardware Zoom State
     const [zoomLevel, setZoomLevel] = useState(1);
@@ -296,7 +286,7 @@ export const VideoCall = () => {
     const [showGallery, setShowGallery] = useState(false);
     const [isSavingScreenshot, setIsSavingScreenshot] = useState(false);
     const [expertSideTab, setExpertSideTab] = useState<'2d' | 'slots' | 'uvv' | 'report'>('2d');
-    
+
     // Auto-fallback from UVV tab if not a Digital UVV claim
     useEffect(() => {
         if (order && order.claimType !== 'Digital UVV' && expertSideTab === 'uvv') {
@@ -388,12 +378,27 @@ export const VideoCall = () => {
     };
 
     const startRecording = (stream: MediaStream) => {
-        if (!stream || mediaRecorderRef.current || recordingFinishedRef.current) return;
+        if (isGuest || recordingFinishedRef.current) return;
+        if (!stream) return;
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            console.log('[Recording] Recorder is already actively recording');
+            return;
+        }
         if (stream.getVideoTracks().length === 0) {
             console.log('[Recording] Stream has no video tracks, waiting for video track...');
             return;
         }
         try {
+            // Clean up any stale recorder
+            if (mediaRecorderRef.current) {
+                try {
+                    if (mediaRecorderRef.current.state !== 'inactive') {
+                        mediaRecorderRef.current.stop();
+                    }
+                } catch (ignored) { }
+                mediaRecorderRef.current = null;
+            }
+
             // Try codecs in order of preference
             const mimeTypes = [
                 'video/webm;codecs=vp8,opus',
@@ -492,12 +497,13 @@ export const VideoCall = () => {
         if (isGuest || guestLeftHandledRef.current) return;
         guestLeftHandledRef.current = true;
 
-        console.log('[VideoCall] Customer disconnected or refreshing, reason:', reason);
-        showNotification(t('videoCall.customerLeftNotice', {
-            defaultValue: 'Customer is reconnecting… The call will resume automatically.'
+        console.log('[VideoCall] Customer disconnected or ended call, reason:', reason);
+        setIsCustomerEndedCall(true);
+        showNotification(t('videoCall.customerEndedCallNotice', {
+            defaultValue: 'The customer ended the call. Saving recording…'
         }));
 
-        // Flush and upload the recorded segment before reload in the background
+        // Flush and upload the recorded segment
         await flushCurrentSegmentAndUpload();
 
         // Reset flag so when the customer rejoins, the next recording segment begins cleanly
@@ -751,6 +757,8 @@ export const VideoCall = () => {
                 if (!isGuest) {
                     setHasGuestJoined(true);
                     setIsCustomerEndedCall(false);
+                    recordingFinishedRef.current = false;
+                    stopInFlightRef.current = null;
                 }
                 if (data) {
                     setRemoteUserCameraErrors(prev => {
@@ -784,6 +792,13 @@ export const VideoCall = () => {
                     sendMessage('camera-quality-info', {
                         ...localStreamQuality
                     }, data);
+                }
+
+                if (localStream) {
+                    const vTrack = localStream.getVideoTracks()[0];
+                    const trackSettings = vTrack?.getSettings?.() || {};
+                    const facing = (trackSettings.facingMode as 'user' | 'environment') || (isGuest ? 'environment' : 'user');
+                    sendMessage('camera-facing-state', { facingMode: facing }, data);
                 }
 
                 if (isGuest && hasFlashlight) {
@@ -825,13 +840,16 @@ export const VideoCall = () => {
             } else if (type === 'recording-consent-accepted') {
                 if (!isGuest) {
                     setIsGuestConsentAccepted(true);
+                    recordingFinishedRef.current = false;
+                    stopInFlightRef.current = null;
                 }
             } else if (type === 'sync-state') {
-                if (data.selectedParts) {
-                    setSelectedParts(prev => Array.from(new Set([...prev, ...data.selectedParts])));
+                const { selectedParts: remoteParts, savedScreenshots: remoteScreenshots } = data;
+                if (remoteParts) {
+                    setSelectedParts(remoteParts);
                 }
-                if (data.savedScreenshots) {
-                    setSavedScreenshots(prev => ({ ...prev, ...data.savedScreenshots }));
+                if (remoteScreenshots) {
+                    setSavedScreenshots(remoteScreenshots);
                 }
             } else if (type === 'part-update') {
                 const { partId, action, filename } = data;
@@ -854,9 +872,9 @@ export const VideoCall = () => {
             } else if (type === 'guest-ended-call') {
                 setIsCustomerEndedCall(true);
                 showNotification(t('videoCall.customerEndedCallNotice', {
-                    defaultValue: 'The customer ended the call. Saving full recording…'
+                    defaultValue: 'The customer ended the call. Saving recording…'
                 }));
-                await stopRecordingAndUpload();
+                await flushCurrentSegmentAndUpload();
             } else if (type === 'user-left' || type === 'guest-left') {
                 if (data) {
                     setRemoteUserCameraErrors(prev => {
@@ -932,20 +950,19 @@ export const VideoCall = () => {
                     }
                 }
             } else if (type === 'flashlight-state') {
-                const { hasFlashlight: remoteHasFlashlight, isOn, userId } = data;
+                const { hasFlashlight: remoteHasFlashlight, isOn: remoteIsOn, userId } = data || {};
                 const senderId = msg.sender || userId;
-
                 if (senderId) {
                     setRemoteUserFlashlightCapabilities(prev => ({
                         ...prev,
                         [senderId]: {
-                            hasFlashlight: remoteHasFlashlight,
-                            isOn: isOn
+                            hasFlashlight: !!remoteHasFlashlight,
+                            isOn: !!remoteIsOn
                         }
                     }));
                 }
             } else if (type === 'flashlight-control') {
-                const { turnOn } = data;
+                const { turnOn } = data || {};
 
                 if (!localStream || !hasFlashlight) {
                     console.warn('[Flashlight] Cannot control flashlight - not available');
@@ -968,17 +985,15 @@ export const VideoCall = () => {
                 }
             } else if (type === 'camera-flip-control') {
                 const { facingMode } = data || {};
-                const desiredFacingMode = (facingMode === 'user' || facingMode === 'environment') ? facingMode : null;
-
-                if (!desiredFacingMode) {
-                    console.warn('[Camera] Invalid camera-flip-control payload:', data);
-                    return;
-                }
+                const desiredFacingMode = (facingMode === 'user' || facingMode === 'environment') ? facingMode : undefined;
 
                 try {
                     const ok = await switchCamera(desiredFacingMode);
                     if (ok) {
-                        sendMessage('camera-facing-state', { facingMode: desiredFacingMode });
+                        const vTrack = localStream?.getVideoTracks()[0];
+                        const trackSettings = vTrack?.getSettings?.() || {};
+                        const actualFacing = (trackSettings.facingMode as 'user' | 'environment') || desiredFacingMode || 'environment';
+                        sendMessage('camera-facing-state', { facingMode: actualFacing });
                     }
                 } catch (err) {
                     console.error('[Camera] Failed to switch camera from remote control:', err);
@@ -1133,6 +1148,13 @@ export const VideoCall = () => {
         if (/android/i.test(userAgent) || /iPad|iPhone|iPod/.test(userAgent)) {
             setIsMobile(true);
         }
+
+        if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.enumerateDevices === 'function') {
+            navigator.mediaDevices.enumerateDevices().then(devices => {
+                const videoInputs = devices.filter(d => d.kind === 'videoinput');
+                setHasMultipleCameras(videoInputs.length > 1);
+            }).catch(() => {});
+        }
     }, [searchParams, isGuest]);
 
     // Real-time tab sync listener
@@ -1197,6 +1219,10 @@ export const VideoCall = () => {
 
                 await checkFlashlightAvailability(videoTrack);
 
+                const trackSettings = videoTrack.getSettings?.() as any;
+                const actualFacing = (trackSettings?.facingMode as 'user' | 'environment') || (isGuest ? 'environment' : 'user');
+                sendMessage('camera-facing-state', { facingMode: actualFacing });
+
                 if ('zoom' in capabilities) {
                     const zoomCap = capabilities.zoom;
 
@@ -1255,14 +1281,40 @@ export const VideoCall = () => {
 
     }, [localStream, sendMessage]);
 
-    // Handle recording start when consent is accepted and stream is available
+    // Handle recording start when stream is available
     useEffect(() => {
-        if (isGuest || !isGuestConsentAccepted || isRecording || mediaRecorderRef.current || recordingFinishedRef.current) return;
+        if (isGuest || recordingFinishedRef.current) return;
         if (remoteStreams.size === 0) return;
 
         const firstRemoteStream = Array.from(remoteStreams.values())[0];
-        startRecording(firstRemoteStream);
-    }, [isGuest, isGuestConsentAccepted, remoteStreams.size, isRecording]);
+        if (!firstRemoteStream) return;
+
+        // Reset customer ended call flag whenever remote streams are present
+        setIsCustomerEndedCall(false);
+
+        const tryStart = () => {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') return;
+            if (firstRemoteStream.getVideoTracks().length > 0) {
+                console.log('[Recording] Remote stream available, starting recording:', firstRemoteStream.id);
+                startRecording(firstRemoteStream);
+            }
+        };
+
+        tryStart();
+
+        firstRemoteStream.onaddtrack = () => {
+            console.log('[Recording] onaddtrack on remote stream:', firstRemoteStream.id);
+            tryStart();
+        };
+
+        const vTrack = firstRemoteStream.getVideoTracks()[0];
+        if (vTrack) {
+            vTrack.onunmute = () => {
+                console.log('[Recording] onunmute on video track:', vTrack.id);
+                tryStart();
+            };
+        }
+    }, [isGuest, remoteStreams, isRecording]);
 
     useEffect(() => {
         if (!isGuest && remoteStreams.size > 0) {
@@ -1490,11 +1542,13 @@ export const VideoCall = () => {
             }
             // Explicit hangup by customer: inform host to finalize and save the full recording
             sendMessage('guest-ended-call', {});
-            cleanup();
-            setIsJoined(false);
-            setIsMuted(false);
-            setIsVideoEnabled(true);
-            setRecordingConsent('pending');
+            setTimeout(() => {
+                cleanup();
+                setIsJoined(false);
+                setIsMuted(false);
+                setIsVideoEnabled(true);
+                setRecordingConsent('pending');
+            }, 100);
         }
     };
 
@@ -2058,7 +2112,24 @@ export const VideoCall = () => {
                                 );
                             }
 
-                            // State 2: WebRTC Connection Failed
+                            // State 2: Customer explicitly ended the call (Red hangup card)
+                            if (isCustomerEndedCall) {
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-dark-900/90 backdrop-blur-md z-20">
+                                        <div className="w-20 h-20 bg-red-500/20 text-red-400 border border-red-500/30 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                                            <Phone size={38} className="rotate-[135deg]" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">
+                                            {t('videoCall.states.customerEndedCallTitle', { defaultValue: 'Gespräch vom Kunden beendet' })}
+                                        </h3>
+                                        <p className="text-gray-300 text-sm max-w-md mb-4 leading-relaxed">
+                                            {t('videoCall.states.customerEndedCallDesc', { defaultValue: 'Der Kunde hat den Videoanruf beendet. Die Aufnahme wurde vollständig gespeichert.' })}
+                                        </p>
+                                    </div>
+                                );
+                            }
+
+                            // State 3: WebRTC Connection Failed
                             if (failedEntry) {
                                 const [failedUserId] = failedEntry;
                                 return (
@@ -2085,7 +2156,7 @@ export const VideoCall = () => {
                                 );
                             }
 
-                            // State 3: Disconnected / Reconnecting
+                            // State 4: Disconnected / Reconnecting
                             if (disconnectedEntry) {
                                 const [discUserId] = disconnectedEntry;
                                 return (
@@ -2106,7 +2177,7 @@ export const VideoCall = () => {
                                 );
                             }
 
-                            // State 4: Connected (Audio Only / No Video)
+                            // State 5: Connected (Audio Only / No Video)
                             const connectedEntry = connectionEntries.find(([, s]) => s === 'connected');
                             if (connectedEntry || audioOnlyEntries.length > 0) {
                                 const connUserId = connectedEntry ? connectedEntry[0] : (audioOnlyEntries[0] ? audioOnlyEntries[0][0] : 'Participant');
@@ -2128,7 +2199,7 @@ export const VideoCall = () => {
                                 );
                             }
 
-                            // State 5: Connecting
+                            // State 6: Connecting
                             if (connectingEntry) {
                                 const [connUserId, connState] = connectingEntry;
                                 return (
@@ -2141,24 +2212,7 @@ export const VideoCall = () => {
                                 );
                             }
 
-                            // State: Customer explicitly ended the call
-                            if (isCustomerEndedCall) {
-                                return (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-dark-900/90 backdrop-blur-md z-20">
-                                        <div className="w-20 h-20 bg-red-500/20 text-red-400 border border-red-500/30 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-                                            <Phone size={38} className="rotate-[135deg]" />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-white mb-2">
-                                            {t('videoCall.states.customerEndedCallTitle', { defaultValue: 'Gespräch vom Kunden beendet' })}
-                                        </h3>
-                                        <p className="text-gray-300 text-sm max-w-md mb-4 leading-relaxed">
-                                            {t('videoCall.states.customerEndedCallDesc', { defaultValue: 'Der Kunde hat den Videoanruf beendet. Die Aufnahme wurde vollständig gespeichert.' })}
-                                        </p>
-                                    </div>
-                                );
-                            }
-
-                            // State 6 & 7: Customer reconnecting/reloading vs initial waiting
+                            // State 7: Customer reconnecting/reloading vs initial waiting
                             const closedEntry = connectionEntries.find(([, s]) => s === 'closed');
                             if (hasGuestJoined || closedEntry) {
                                 return (
@@ -2692,48 +2746,56 @@ export const VideoCall = () => {
                 </div>
             )}
 
-            {/* Participant Info Overlay (Host Only) */}
+            {/* Participant Info Card (Host Only) — covers the RemoteVideo user badge when visible */}
             {!isGuest && (pName || pEmail || pMobile) && (
-                <div className="absolute top-4 left-4 z-50 flex flex-col gap-1 pointer-events-none">
-                    {pName && (
-                        <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 shadow-xl animate-fade-in">
-                            <User size={14} className="text-primary" />
-                            <span className="text-white text-sm font-bold tracking-tight">{pName}</span>
+                <div className="absolute top-4 left-4 z-50 pointer-events-none animate-fade-in">
+                    <div className="bg-dark-900/85 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl overflow-hidden min-w-[190px] max-w-[240px]">
+                        {/* Header: User ID */}
+                        <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-1.5 border-b border-white/8">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                            <span className="text-gray-300 text-[10px] font-mono uppercase tracking-widest">
+                                {t('videoCall.user')} {primaryRemoteId?.slice(0, 8) ?? ''}
+                            </span>
                         </div>
-                    )}
-                    {(pEmail || pMobile) && (
-                        <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex flex-col gap-0.5 shadow-xl animate-fade-in delay-100">
+                        {/* Body: Name / Email / Phone */}
+                        <div className="px-3 py-2.5 flex flex-col gap-2">
+                            {pName && (
+                                <div className="flex items-center gap-2">
+                                    <User size={13} className="text-primary flex-shrink-0" />
+                                    <span className="text-white text-sm font-bold tracking-tight truncate">{pName}</span>
+                                </div>
+                            )}
                             {pEmail && (
                                 <div className="flex items-center gap-2">
-                                    <Mail size={12} className="text-gray-400" />
-                                    <span className="text-gray-200 text-[11px] font-medium">{pEmail}</span>
+                                    <Mail size={11} className="text-gray-500 flex-shrink-0" />
+                                    <span className="text-gray-300 text-[11px] font-medium truncate">{pEmail}</span>
                                 </div>
                             )}
                             {pMobile && (
                                 <div className="flex items-center gap-2">
-                                    <Smartphone size={12} className="text-gray-400" />
-                                    <span className="text-gray-200 text-[11px] font-medium">{pMobile}</span>
+                                    <Smartphone size={11} className="text-gray-500 flex-shrink-0" />
+                                    <span className="text-gray-300 text-[11px] font-medium">{pMobile}</span>
                                 </div>
                             )}
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
 
-            <div className="sticky bottom-0 h-auto pb-2 lg:pb-0 lg:h-20 py-2 bg-dark-900/90 backdrop-blur-md border-t border-gray-800 flex flex-col md:flex-row items-center justify-between px-2 lg:px-8 gap-2 z-40">
-                <div className="flex-1 flex items-center justify-center md:justify-start gap-4 min-w-0 w-full md:w-auto">
+            <div className="sticky bottom-0 h-auto py-3 bg-dark-900/95 backdrop-blur-xl border-t border-white/5 shadow-[0_-4px_24px_rgba(0,0,0,0.4)] flex flex-col md:flex-row items-center justify-between px-3 lg:px-6 gap-3 z-40">
+                <div className="flex-1 flex items-center justify-center md:justify-start gap-3 min-w-0 w-full md:w-auto">
                     {!isGuest && (
-                        <div className="text-white font-medium flex items-center gap-2 min-w-0">
-                            <span className="truncate">{roomId}</span>
-                            <button onClick={copyLink} className="flex-shrink-0 p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors" title={t('videoCall.copyInfo')}>
-                                <Copy size={18} />
+                        <div className="flex items-center gap-2 min-w-0 bg-dark-800/60 border border-white/5 rounded-xl px-3 py-1.5">
+                            <span className="truncate text-sm text-gray-300 font-mono max-w-[160px]">{roomId}</span>
+                            <button onClick={copyLink} className="flex-shrink-0 p-1.5 hover:bg-gray-700 rounded-lg text-gray-500 hover:text-white transition-colors" data-tooltip={t('videoCall.copyInfo')}>
+                                <Copy size={15} />
                             </button>
                         </div>
                     )}
                 </div>
 
                 <div className="w-full md:w-auto flex flex-col items-center justify-center gap-2">
-                    <div className="flex items-center justify-center gap-3 lg:gap-4 flex-wrap">
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
                         {!isGuest && organiserControlUid && (
                             <div className="flex items-center justify-center gap-2 flex-wrap">
                                 {remoteUserFlashlightCapabilities[organiserControlUid]?.hasFlashlight && (
@@ -2745,7 +2807,7 @@ export const VideoCall = () => {
                                                 ? "bg-amber-500 text-white shadow-md"
                                                 : "bg-dark-700 text-gray-200 hover:bg-amber-500/80"
                                         )}
-                                        title={remoteUserFlashlightCapabilities[organiserControlUid]?.isOn ? t('videoCall.turnOffFlashlight') : t('videoCall.turnOnFlashlight')}
+                                        data-tooltip={remoteUserFlashlightCapabilities[organiserControlUid]?.isOn ? t('videoCall.turnOffFlashlight') : t('videoCall.turnOnFlashlight')}
                                     >
                                         {remoteUserFlashlightCapabilities[organiserControlUid]?.isOn ? (
                                             <Zap size={16} className="fill-current" />
@@ -2767,7 +2829,7 @@ export const VideoCall = () => {
                                             ? "bg-primary text-white shadow-md"
                                             : "bg-dark-700 text-gray-200 hover:bg-primary/80"
                                     )}
-                                    title={placeholderIndex !== -1 ? t('videoCall.hideGuides') : t('videoCall.showGuides')}
+                                    data-tooltip={placeholderIndex !== -1 ? t('videoCall.hideGuides') : t('videoCall.showGuides')}
                                 >
                                     <CarFront size={16} />
                                 </button>
@@ -2780,10 +2842,9 @@ export const VideoCall = () => {
                                     const max = caps?.max ?? 1;
 
                                     const cameraFacing = remoteUserCameraFacing[uid];
-                                    const f1Label = cameraFacing === 'user' ? 'B' : 'F';
 
                                     const presets = [
-                                        { label: f1Label, value: 0.5, title: t('videoCall.cameraFlip'), isCameraFlip: true },
+                                        { label: 'flip', value: 0.5, title: t('videoCall.cameraFlip'), isCameraFlip: true },
                                         { label: 'P', value: 1, title: t('videoCall.zoomPresetP') },
                                         { label: 'S1', value: 2, title: t('videoCall.zoomPresetS1') },
                                         { label: 'S2', value: 3, title: t('videoCall.zoomPresetS2') },
@@ -2793,11 +2854,19 @@ export const VideoCall = () => {
                                         { label: 'S6', value: 7, title: t('videoCall.zoomPresetS6') },
                                     ];
 
-                                    return presets.map(({ label, value, title, isCameraFlip }) => {
+                                     return presets.map(({ label, value, title, isCameraFlip }) => {
                                         const isEnabled = isCameraFlip ? true : (hasCaps && value >= min && value <= max);
                                         const isActive = isCameraFlip
                                             ? (cameraFacing === 'user')
                                             : Math.abs((caps?.current ?? min) - value) < 0.1;
+
+                                        const tooltipText = isEnabled
+                                            ? isCameraFlip
+                                                ? cameraFacing === 'user'
+                                                    ? t('videoCall.switchToBackCamera', { defaultValue: 'Auf Rückkamera wechseln' })
+                                                    : t('videoCall.switchToFrontCamera', { defaultValue: 'Auf Frontkamera wechseln' })
+                                                : `${title} (${value.toFixed(1)}x)`
+                                            : t('videoCall.zoomNotSupportedDevice');
 
                                         return (
                                             <button
@@ -2820,6 +2889,7 @@ export const VideoCall = () => {
                                                         }));
                                                     }
                                                 }}
+                                                data-tooltip={tooltipText}
                                                 className={clsx(
                                                     "w-10 h-10 flex items-center justify-center rounded-full text-[11px] font-bold transition-all border border-white/10",
                                                     isEnabled
@@ -2828,38 +2898,100 @@ export const VideoCall = () => {
                                                             : "bg-dark-700 text-gray-200 hover:bg-dark-600 hover:text-white"
                                                         : "bg-black/20 text-white/20 cursor-not-allowed border-transparent"
                                                 )}
-                                                title={isEnabled
-                                                    ? isCameraFlip
-                                                        ? t('videoCall.cameraFlip')
-                                                        : `${title} (${value.toFixed(1)}x)`
-                                                    : t('videoCall.zoomNotSupportedDevice')
-                                                }
                                             >
-                                                {label}
+                                                {isCameraFlip ? <SwitchCamera size={16} /> : label}
                                             </button>
                                         );
                                     });
                                 })()}
+
+                                {/* Zoom slider — synced with preset buttons, progress-filled track */}
+                                {(() => {
+                                    const uid = organiserControlUid;
+                                    const caps = remoteUserCapabilities[uid];
+                                    const hasCaps = !!(caps && typeof caps.min === 'number' && typeof caps.max === 'number' && caps.max > caps.min);
+                                    if (!hasCaps) return null;
+                                    const currentZoom = caps.current ?? caps.min;
+                                    const pct = ((currentZoom - caps.min) / (caps.max - caps.min)) * 100;
+                                    const sliderBg = `linear-gradient(to right, var(--color-primary-orange, #ff6b35) 0%, var(--color-primary-orange, #ff6b35) ${pct}%, rgba(255,255,255,0.12) ${pct}%, rgba(255,255,255,0.12) 100%)`;
+                                    return (
+                                        <div
+                                            className="flex items-center gap-2.5 px-3 py-2 rounded-full bg-dark-700 border border-white/10 ml-1"
+                                            data-tooltip={`${t('videoCall.zoom')}: ${currentZoom.toFixed(1)}x — ${t('videoCall.dragToAdjust', { defaultValue: 'Drag to adjust' })}`}
+                                        >
+                                            <ZoomIn size={15} className="text-primary flex-shrink-0" />
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="range"
+                                                    min={caps.min}
+                                                    max={caps.max}
+                                                    step={caps.step || 0.1}
+                                                    value={currentZoom}
+                                                    onChange={(e) => {
+                                                        const newZoom = parseFloat(e.target.value);
+                                                        sendMessage('zoom-control', { zoom: newZoom }, uid);
+                                                        setRemoteUserCapabilities(prev => ({
+                                                            ...prev,
+                                                            [uid]: { ...prev[uid], current: newZoom }
+                                                        }));
+                                                    }}
+                                                    className="video-zoom-slider w-28 h-1.5 rounded-full appearance-none cursor-pointer"
+                                                    style={{ background: sliderBg }}
+                                                />
+                                            </div>
+                                            <span className="text-white text-[11px] font-mono font-bold min-w-[32px] text-right">
+                                                {currentZoom.toFixed(1)}x
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
 
-                        <button onClick={handleToggleMic} className={clsx("p-3 lg:p-4 rounded-full transition-all duration-200", isMuted ? "bg-red-500 text-white" : "bg-dark-700 text-gray-200")}>
-                            {isMuted ? <MicOff size={20} className="lg:w-6 lg:h-6" /> : <Mic size={20} className="lg:w-6 lg:h-6" />}
+                        <div className="w-px h-8 bg-white/10 mx-1 hidden md:block" />
+
+                        <button
+                            onClick={handleToggleMic}
+                            className={clsx(
+                                "p-3 rounded-full transition-all duration-200 shadow-sm",
+                                isMuted ? "bg-red-500 text-white shadow-red-500/30" : "bg-dark-700 text-gray-200 hover:bg-dark-600 hover:text-white"
+                            )}
+                            data-tooltip={isMuted ? t('videoCall.micOn') : t('videoCall.micOff')}
+                        >
+                            {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
                         </button>
 
                         {isGuest && (
                             <>
-                                <button onClick={handleToggleVideo} className={clsx("p-3 lg:p-4 rounded-full transition-all duration-200", !isVideoEnabled ? "bg-red-500 text-white" : "bg-dark-700 text-gray-200")}>
-                                    {!isVideoEnabled ? <VideoOff size={20} className="lg:w-6 lg:h-6" /> : <Video size={20} className="lg:w-6 lg:h-6" />}
+                                <button
+                                    onClick={handleToggleVideo}
+                                    className={clsx(
+                                        "p-3 rounded-full transition-all duration-200 shadow-sm",
+                                        !isVideoEnabled ? "bg-red-500 text-white shadow-red-500/30" : "bg-dark-700 text-gray-200 hover:bg-dark-600 hover:text-white"
+                                    )}
+                                    data-tooltip={!isVideoEnabled ? t('videoCall.camOn') : t('videoCall.camOff')}
+                                >
+                                    {!isVideoEnabled ? <VideoOff size={20} /> : <Video size={20} />}
                                 </button>
 
-                                {isMobile && (
+                                {(isMobile || hasMultipleCameras) && (
                                     <button
                                         onClick={async () => {
                                             if (isSwitchingLocalCamera) return;
                                             setIsSwitchingLocalCamera(true);
-                                            try { await switchCamera(); }
-                                            finally { setIsSwitchingLocalCamera(false); }
+                                            try {
+                                                const ok = await switchCamera();
+                                                if (ok) {
+                                                    const vTrack = localStream?.getVideoTracks()[0];
+                                                    const trackSettings = vTrack?.getSettings?.() || {};
+                                                    const facing = trackSettings.facingMode as 'user' | 'environment';
+                                                    if (facing) {
+                                                        sendMessage('camera-facing-state', { facingMode: facing });
+                                                    }
+                                                }
+                                            } finally {
+                                                setIsSwitchingLocalCamera(false);
+                                            }
                                         }}
                                         disabled={isSwitchingLocalCamera}
                                         className={clsx(
@@ -2868,6 +3000,7 @@ export const VideoCall = () => {
                                                 ? "bg-dark-700 text-gray-500 opacity-50 cursor-not-allowed"
                                                 : "bg-dark-700 text-gray-200 hover:bg-gray-600"
                                         )}
+                                        data-tooltip={t('videoCall.cameraFlip')}
                                     >
                                         <SwitchCamera size={20} className={isSwitchingLocalCamera ? 'animate-spin' : ''} />
                                     </button>
@@ -2914,8 +3047,12 @@ export const VideoCall = () => {
                             </div>
                         )}
 
-                        <button onClick={handleEndCall} className="p-3 lg:p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-200 w-14 lg:w-16 flex items-center justify-center ml-2">
-                            <Phone size={20} className="rotate-[135deg] lg:w-6 lg:h-6" />
+                        <button
+                            onClick={handleEndCall}
+                            className="p-3 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white transition-all duration-200 w-14 flex items-center justify-center ml-2 shadow-lg shadow-red-600/30"
+                            data-tooltip={t('videoCall.endCall', { defaultValue: 'End call' })}
+                        >
+                            <Phone size={20} className="rotate-[135deg]" />
                         </button>
                     </div>
                 </div>
@@ -2925,14 +3062,14 @@ export const VideoCall = () => {
                         <button
                             onClick={() => setShowGallery(!showGallery)}
                             className={clsx(
-                                "flex items-center gap-2 px-4 py-3 rounded-full transition-colors font-medium",
+                                "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-semibold text-sm border",
                                 showGallery
-                                    ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                    : "bg-dark-700 text-gray-300 hover:bg-dark-600 hover:text-white"
+                                    ? "bg-primary text-white shadow-lg shadow-primary/20 border-primary/50"
+                                    : "bg-dark-700 text-gray-300 hover:bg-dark-600 hover:text-white border-white/5"
                             )}
                         >
-                            <Images size={20} />
-                            <span>{t('videoCall.gallery', { defaultValue: 'Gallery' })}</span>
+                            <Images size={18} />
+                            <span>{t('videoCall.gallery', { defaultValue: 'Meeting-Galerie' })}</span>
                         </button>
                     )}
                 </div>
@@ -2971,3 +3108,6 @@ export const VideoCall = () => {
         </div>
     );
 };
+
+export default VideoCall;
+
