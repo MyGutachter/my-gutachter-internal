@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, Car, Download, Eye, FileText, Image as ImageIcon, Maximize2, RotateCcw, RotateCw, Video as VideoIcon, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Calendar, Car, ChevronDown, ChevronUp, Download, Eye, FileText, Image as ImageIcon, Maximize2, RotateCcw, RotateCw, Video as VideoIcon, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -139,6 +139,7 @@ const MeetingSummary = () => {
     const [mobileView, setMobileView] = useState<'car' | 'parts'>('car');
     const [rotation, setRotation] = useState(0);   // degrees: 0 | 90 | 180 | 270
     const [zoom, setZoom] = useState(1);            // 0.5 – 4.0
+    const [showModalThumbnails, setShowModalThumbnails] = useState(false);
     const pinchStartDistRef = useRef<number | null>(null);
     const [order, setOrder] = useState<Order | null>(null);
 
@@ -625,240 +626,270 @@ const MeetingSummary = () => {
 
             {viewingScreenshot && createPortal(
                 <div
-                    className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
+                    className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-3 md:p-4 bg-black/90 backdrop-blur-md select-none overflow-hidden animate-fade-in"
                     onClick={(e) => {
                         if (e.target === e.currentTarget) setViewingScreenshot(null);
                     }}
                 >
+                    {/* ── 1. Framed Full-Screen Canvas with minor space on every side ── */}
                     <div
-                        className="w-full max-w-5xl h-[84vh] max-h-[820px] flex flex-col gap-2 overflow-hidden bg-neutral-950/95 border border-white/15 rounded-2xl p-2 sm:p-3 shadow-2xl relative"
+                        className="w-full h-full max-w-[99vw] max-h-[98vh] bg-neutral-950/90 rounded-2xl border border-white/15 shadow-2xl relative flex items-center justify-center overflow-hidden group"
                         onClick={(e) => e.stopPropagation()}
+                        onWheel={(e) => {
+                            e.preventDefault();
+                            setZoom(z => Math.min(4, Math.max(0.5, +(z - e.deltaY * 0.001).toFixed(3))));
+                        }}
+                        onTouchStart={(e) => {
+                            if (e.touches.length === 2) {
+                                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                                pinchStartDistRef.current = Math.hypot(dx, dy);
+                            }
+                        }}
+                        onTouchMove={(e) => {
+                            if (e.touches.length === 2 && pinchStartDistRef.current !== null) {
+                                e.preventDefault();
+                                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                                const dist = Math.hypot(dx, dy);
+                                const delta = dist - pinchStartDistRef.current;
+                                pinchStartDistRef.current = dist;
+                                setZoom(z => Math.min(4, Math.max(0.5, +(z + delta * 0.005).toFixed(3))));
+                            }
+                        }}
+                        onTouchEnd={() => { pinchStartDistRef.current = null; }}
                     >
-                        {/* ── Modal Header Row ── */}
-                        <div className="flex items-center justify-between text-white px-2 py-1 shrink-0 border-b border-white/10">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="p-1.5 rounded-lg bg-[var(--color-primary-orange)]/20 text-[var(--color-primary-orange)] shrink-0">
-                                    <ImageIcon size={18} />
+                        <img
+                            src={getScreenshotUrl(roomId || '', viewingScreenshot)}
+                            alt={orderedPhotos[currentPhotoIndex]?.name || t('common.screenshot', { defaultValue: 'Screenshot' })}
+                            className="w-full h-full max-w-full max-h-full object-contain select-none"
+                            style={{
+                                transform: `rotate(${rotation}deg) scale(${zoom})`,
+                                transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transformOrigin: 'center center',
+                            }}
+                            draggable={false}
+                        />
+
+                        {/* ── 2. Top Header Overlay (Title & Counter on Left, Close on Right) ── */}
+                        <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-4 flex items-center justify-between pointer-events-none z-30">
+                            {/* Left: Title Card + Counter Badge */}
+                            <div className="pointer-events-auto flex items-center gap-2 min-w-0">
+                                <div className="flex items-center gap-2.5 bg-neutral-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 shadow-xl min-w-0">
+                                    <div className="p-1.5 rounded-lg bg-[var(--color-primary-orange)]/20 text-[var(--color-primary-orange)] shrink-0">
+                                        <ImageIcon size={18} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="font-bold text-sm sm:text-base text-white truncate leading-tight">
+                                            {orderedPhotos[currentPhotoIndex]?.name || t('meetingSummary.screenshotViewer', { defaultValue: 'Screenshot Viewer' })}
+                                        </h3>
+                                        <p className="text-[10px] text-neutral-400 hidden sm:block truncate">
+                                            {t('meetingSummary.screenshotViewer', { defaultValue: 'Screenshot Viewer' })}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="min-w-0">
-                                    <h3 className="font-bold text-sm sm:text-base text-white truncate leading-tight">
-                                        {orderedPhotos[currentPhotoIndex]?.name || t('meetingSummary.screenshotViewer', { defaultValue: 'Screenshot Viewer' })}
-                                    </h3>
-                                    <p className="text-[11px] text-neutral-400 hidden sm:block truncate">
-                                        {t('meetingSummary.screenshotViewer', { defaultValue: 'Screenshot Viewer' })}
-                                    </p>
-                                </div>
+
+                                {/* Counter Badge on Left */}
+                                {orderedPhotos.length > 1 && (
+                                    <div className="bg-neutral-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-2 rounded-xl border border-white/15 tabular-nums shadow-xl shrink-0">
+                                        {currentPhotoIndex + 1} / {orderedPhotos.length}
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Center Counter */}
-                            {orderedPhotos.length > 1 && (
-                                <div className="bg-white/10 text-neutral-200 text-xs font-semibold px-3 py-1 rounded-full border border-white/15 tabular-nums">
-                                    {currentPhotoIndex + 1} / {orderedPhotos.length}
-                                </div>
-                            )}
-
-                            {/* Close Button */}
+                            {/* Right Close Button */}
                             <button
+                                type="button"
                                 onClick={() => setViewingScreenshot(null)}
-                                className="flex items-center gap-1.5 bg-white/10 hover:bg-red-500 text-white hover:text-white px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer shadow-sm text-xs font-semibold shrink-0"
+                                className="pointer-events-auto flex items-center gap-1.5 bg-neutral-900/85 hover:bg-red-500 text-white px-3 py-2 rounded-xl border border-white/15 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xl text-xs font-semibold shrink-0"
                                 aria-label={t('common.cancel', { defaultValue: 'Close' })}
                                 title="Close (Esc)"
                             >
-                                <X size={16} strokeWidth={2.5} />
+                                <X size={18} strokeWidth={2.5} />
                                 <span className="hidden xs:inline">{t('common.cancel', { defaultValue: 'Close' })}</span>
                             </button>
                         </div>
 
-                        {/* ── Main image canvas ── */}
-                        <div
-                            className="flex-1 bg-black/50 rounded-xl shadow-inner border border-white/10 flex items-center justify-center relative group min-h-0 overflow-hidden"
-                            onWheel={(e) => {
-                                e.preventDefault();
-                                setZoom(z => Math.min(4, Math.max(0.5, +(z - e.deltaY * 0.001).toFixed(3))));
-                            }}
-                            onTouchStart={(e) => {
-                                if (e.touches.length === 2) {
-                                    const dx = e.touches[0].clientX - e.touches[1].clientX;
-                                    const dy = e.touches[0].clientY - e.touches[1].clientY;
-                                    pinchStartDistRef.current = Math.hypot(dx, dy);
-                                }
-                            }}
-                            onTouchMove={(e) => {
-                                if (e.touches.length === 2 && pinchStartDistRef.current !== null) {
-                                    e.preventDefault();
-                                    const dx = e.touches[0].clientX - e.touches[1].clientX;
-                                    const dy = e.touches[0].clientY - e.touches[1].clientY;
-                                    const dist = Math.hypot(dx, dy);
-                                    const delta = dist - pinchStartDistRef.current;
-                                    pinchStartDistRef.current = dist;
-                                    setZoom(z => Math.min(4, Math.max(0.5, +(z + delta * 0.005).toFixed(3))));
-                                }
-                            }}
-                            onTouchEnd={() => { pinchStartDistRef.current = null; }}
-                        >
-                            <img
-                                src={getScreenshotUrl(roomId || '', viewingScreenshot)}
-                                alt={orderedPhotos[currentPhotoIndex]?.name || t('common.screenshot', { defaultValue: 'Screenshot' })}
-                                className="max-w-full max-h-full object-contain select-none"
-                                style={{
-                                    transform: `rotate(${rotation}deg) scale(${zoom})`,
-                                    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    transformOrigin: 'center center',
-                                }}
-                                draggable={false}
-                            />
+                        {/* ── 3. Floating Controls Toolbar (Centered Near Top, Shows on Hover) ── */}
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-neutral-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/20 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30">
+                            <button
+                                title={`${t('common.rotateCCW', { defaultValue: 'Rotate Left' })} ([)`}
+                                onClick={() => setRotation(r => (r - 90 + 360) % 360)}
+                                className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
+                            >
+                                <RotateCcw size={16} />
+                            </button>
+                            <button
+                                title={`${t('common.rotateCW', { defaultValue: 'Rotate Right' })} (])`}
+                                onClick={() => setRotation(r => (r + 90) % 360)}
+                                className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
+                            >
+                                <RotateCw size={16} />
+                            </button>
 
-                            {/* ── Floating Controls Toolbar (Shows on Hover) ── */}
-                            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-neutral-900/85 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                                <button
-                                    title={`${t('common.rotateCCW', { defaultValue: 'Rotate Left' })} ([)`}
-                                    onClick={() => setRotation(r => (r - 90 + 360) % 360)}
-                                    className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
-                                >
-                                    <RotateCcw size={15} />
-                                </button>
-                                <button
-                                    title={`${t('common.rotateCW', { defaultValue: 'Rotate Right' })} (])`}
-                                    onClick={() => setRotation(r => (r + 90) % 360)}
-                                    className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
-                                >
-                                    <RotateCw size={15} />
-                                </button>
+                            <div className="w-px h-4 bg-white/20 mx-1" />
 
-                                <div className="w-px h-4 bg-white/20 mx-1" />
+                            <button
+                                title={`${t('common.zoomOut', { defaultValue: 'Zoom Out' })} (-)`}
+                                onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
+                                className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
+                            >
+                                <ZoomOut size={16} />
+                            </button>
+                            <span className="text-white/80 text-[11px] font-mono w-10 text-center tabular-nums font-semibold select-none">
+                                {Math.round(zoom * 100)}%
+                            </span>
+                            <button
+                                title={`${t('common.zoomIn', { defaultValue: 'Zoom In' })} (+)`}
+                                onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
+                                className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
+                            >
+                                <ZoomIn size={16} />
+                            </button>
 
-                                <button
-                                    title={`${t('common.zoomOut', { defaultValue: 'Zoom Out' })} (-)`}
-                                    onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
-                                    className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
-                                >
-                                    <ZoomOut size={15} />
-                                </button>
-                                <span className="text-white/80 text-[11px] font-mono w-10 text-center tabular-nums font-semibold">
-                                    {Math.round(zoom * 100)}%
-                                </span>
-                                <button
-                                    title={`${t('common.zoomIn', { defaultValue: 'Zoom In' })} (+)`}
-                                    onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
-                                    className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
-                                >
-                                    <ZoomIn size={15} />
-                                </button>
+                            <div className="w-px h-4 bg-white/20 mx-1" />
 
-                                <div className="w-px h-4 bg-white/20 mx-1" />
-
-                                <button
-                                    title={`${t('common.reset', { defaultValue: 'Reset' })} (0)`}
-                                    onClick={() => { setRotation(0); setZoom(1); }}
-                                    className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
-                                >
-                                    <Maximize2 size={15} />
-                                </button>
-                            </div>
-
-                            {/* ── Bottom Information Overlay ── */}
-                            <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-8 sm:pt-14 pointer-events-none flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-                                <div className="min-w-0 max-w-full sm:max-w-[70%]">
-                                    <h2 className="text-white text-sm sm:text-lg font-bold truncate drop-shadow-md">
-                                        {orderedPhotos[currentPhotoIndex]?.name}
-                                    </h2>
-                                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-neutral-300 text-[10px] sm:text-xs mt-1">
-                                        {formatDateFromFilename(viewingScreenshot) && (
-                                            <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10">
-                                                <Calendar size={11} className="text-[var(--color-primary-orange)]" />
-                                                <span>{formatDateFromFilename(viewingScreenshot)}</span>
-                                            </div>
-                                        )}
-                                        {imageSize && (
-                                            <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10">
-                                                <FileText size={11} className="text-[var(--color-primary-orange)]" />
-                                                <span>{imageSize}</span>
-                                            </div>
-                                        )}
-                                        <div className="hidden md:flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 text-neutral-400">
-                                            <span>↕ scroll</span>
-                                            <span>·</span>
-                                            <span>[ ] rotate</span>
-                                            <span>·</span>
-                                            <span>+/- zoom</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Download Button */}
-                                <a
-                                    href={getScreenshotUrl(roomId || '', viewingScreenshot)}
-                                    download
-                                    className="pointer-events-auto shrink-0 inline-flex items-center gap-1.5 bg-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/90 text-white px-3.5 py-1.5 sm:py-2 rounded-xl font-bold shadow-lg text-xs transition-all cursor-pointer"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    <Download size={14} />
-                                    <span>{t('common.downloadImage', { defaultValue: 'Download Image' })}</span>
-                                </a>
-                            </div>
-
-                            {/* ── Navigation Arrows ── */}
-                            {orderedPhotos.length > 1 && (
-                                <>
-                                    <button
-                                        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 bg-black/60 hover:bg-[var(--color-primary-orange)] text-white rounded-full opacity-100 hover:scale-110 transition-all duration-200 backdrop-blur-sm shadow-xl z-20 cursor-pointer"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            const prevIndex = (currentPhotoIndex - 1 + orderedPhotos.length) % orderedPhotos.length;
-                                            setViewingScreenshot(orderedPhotos[prevIndex].filename);
-                                        }}
-                                        aria-label="Previous photo"
-                                    >
-                                        <ArrowLeft size={18} />
-                                    </button>
-                                    <button
-                                        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 bg-black/60 hover:bg-[var(--color-primary-orange)] text-white rounded-full opacity-100 hover:scale-110 transition-all duration-200 backdrop-blur-sm shadow-xl rotate-180 z-20 cursor-pointer"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            const nextIndex = (currentPhotoIndex + 1) % orderedPhotos.length;
-                                            setViewingScreenshot(orderedPhotos[nextIndex].filename);
-                                        }}
-                                        aria-label="Next photo"
-                                    >
-                                        <ArrowLeft size={18} />
-                                    </button>
-                                </>
-                            )}
+                            <button
+                                title={`${t('common.reset', { defaultValue: 'Reset' })} (0)`}
+                                onClick={() => { setRotation(0); setZoom(1); }}
+                                className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer"
+                            >
+                                <Maximize2 size={16} />
+                            </button>
                         </div>
 
-                        {/* ── Thumbnail Strip ── */}
-                        <div className="h-[76px] shrink-0 bg-black/50 border border-white/10 rounded-xl px-2 py-1.5 flex items-center gap-1.5 overflow-x-auto custom-scrollbar backdrop-blur-md">
-                            {orderedPhotos.map((photo, idx) => {
-                                const isSelected = viewingScreenshot === photo.filename;
-                                return (
-                                    <div key={photo.id} id={`thumb-${photo.id}`} className="relative group/thumb h-full aspect-square shrink-0">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setViewingScreenshot(photo.filename);
-                                            }}
-                                            className={`w-full h-full rounded-lg overflow-hidden border-2 transition-all duration-300 cursor-pointer ${isSelected
-                                                    ? 'border-[var(--color-primary-orange)] ring-2 ring-[var(--color-primary-orange)]/40 scale-105 shadow-lg shadow-orange-500/20'
-                                                    : 'border-transparent opacity-50 hover:opacity-100 hover:border-gray-500'
-                                                }`}
-                                        >
-                                            <img
-                                                src={getScreenshotUrl(roomId || '', photo.filename)}
-                                                alt={photo.name}
-                                                className="w-full h-full object-cover"
-                                                loading="lazy"
-                                            />
-                                            <div className="absolute top-0.5 left-0.5 bg-black/75 text-white text-[9px] font-bold px-1 rounded leading-tight">
-                                                {idx + 1}
-                                            </div>
-                                        </button>
-                                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-neutral-900 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover/thumb:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/10 z-30">
-                                            {photo.name}
+                        {/* ── 4. Navigation Arrows (Left/Right) ── */}
+                        {orderedPhotos.length > 1 && (
+                            <>
+                                <button
+                                    className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 p-3.5 bg-black/65 hover:bg-[var(--color-primary-orange)] text-white rounded-full opacity-90 hover:opacity-100 hover:scale-110 transition-all duration-200 backdrop-blur-md shadow-2xl z-30 cursor-pointer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const prevIndex = (currentPhotoIndex - 1 + orderedPhotos.length) % orderedPhotos.length;
+                                        setViewingScreenshot(orderedPhotos[prevIndex].filename);
+                                    }}
+                                    aria-label="Previous photo"
+                                >
+                                    <ArrowLeft size={22} />
+                                </button>
+                                <button
+                                    className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 p-3.5 bg-black/65 hover:bg-[var(--color-primary-orange)] text-white rounded-full opacity-90 hover:opacity-100 hover:scale-110 transition-all duration-200 backdrop-blur-md shadow-2xl rotate-180 z-30 cursor-pointer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const nextIndex = (currentPhotoIndex + 1) % orderedPhotos.length;
+                                        setViewingScreenshot(orderedPhotos[nextIndex].filename);
+                                    }}
+                                    aria-label="Next photo"
+                                >
+                                    <ArrowLeft size={22} />
+                                </button>
+                            </>
+                        )}
+
+                        {/* ── 5. Bottom Metadata & Download Overlay ── */}
+                        <div className={`absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/95 via-black/50 to-transparent pt-12 sm:pt-20 pointer-events-none flex flex-col sm:flex-row sm:items-end justify-between gap-3 z-20 transition-all duration-300 ${showModalThumbnails ? 'pb-28' : 'pb-14'}`}>
+                            <div className="min-w-0 max-w-full sm:max-w-[70%]">
+                                <h2 className="text-white text-base sm:text-xl font-bold truncate drop-shadow-md">
+                                    {orderedPhotos[currentPhotoIndex]?.name}
+                                </h2>
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-neutral-300 text-[10px] sm:text-xs mt-1.5">
+                                    {formatDateFromFilename(viewingScreenshot) && (
+                                        <div className="flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-md border border-white/10">
+                                            <Calendar size={12} className="text-[var(--color-primary-orange)]" />
+                                            <span>{formatDateFromFilename(viewingScreenshot)}</span>
                                         </div>
+                                    )}
+                                    {imageSize && (
+                                        <div className="flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-md border border-white/10">
+                                            <FileText size={12} className="text-[var(--color-primary-orange)]" />
+                                            <span>{imageSize}</span>
+                                        </div>
+                                    )}
+                                    <div className="hidden md:flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-md border border-white/10 text-neutral-300">
+                                        <span>↕ scroll</span>
+                                        <span>·</span>
+                                        <span>[ ] rotate</span>
+                                        <span>·</span>
+                                        <span>+/- zoom</span>
                                     </div>
-                                );
-                            })}
+                                </div>
+                            </div>
+
+                            {/* Download Button */}
+                            <a
+                                href={getScreenshotUrl(roomId || '', viewingScreenshot)}
+                                download
+                                className="pointer-events-auto shrink-0 inline-flex items-center gap-1.5 bg-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/90 text-white px-4 py-2 rounded-xl font-bold shadow-xl text-xs sm:text-sm transition-all cursor-pointer"
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <Download size={16} />
+                                <span>{t('common.downloadImage', { defaultValue: 'Download Image' })}</span>
+                            </a>
+                        </div>
+
+                        {/* ── 6. Bottom Collapsible Thumbnail Strip Overlay ── */}
+                        <div className="absolute bottom-3 inset-x-3 sm:inset-x-6 flex flex-col items-center z-30 pointer-events-none">
+                            {/* Toggle Tab Button */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowModalThumbnails((prev) => !prev);
+                                }}
+                                className="pointer-events-auto bg-neutral-900/90 border border-white/20 border-b-0 rounded-t-xl px-4 py-1 flex items-center gap-1.5 shadow-xl text-neutral-300 hover:text-[var(--color-primary-orange)] transition-all cursor-pointer text-[11px] font-bold tracking-wider -mb-px z-10 hover:bg-neutral-800 backdrop-blur-md"
+                            >
+                                {showModalThumbnails ? (
+                                    <>
+                                        <ChevronDown size={14} className="text-[var(--color-primary-orange)]" />
+                                        <span>{t('common.hide', { defaultValue: 'AUSBLENDEN' })}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ChevronUp size={14} className="text-[var(--color-primary-orange)]" />
+                                        <span>{t('common.show', { defaultValue: 'EINBLENDEN' })}</span>
+                                        <span className="bg-white/15 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-1">
+                                            {orderedPhotos.length}
+                                        </span>
+                                    </>
+                                )}
+                            </button>
+
+                            {/* Thumbnail Carousel */}
+                            {showModalThumbnails && (
+                                <div className="pointer-events-auto w-full h-[76px] bg-neutral-900/90 border border-white/15 rounded-xl px-2 py-1.5 flex items-center gap-2 overflow-x-auto custom-scrollbar backdrop-blur-md shadow-2xl animate-fade-in">
+                                    {orderedPhotos.map((photo, idx) => {
+                                        const isSelected = viewingScreenshot === photo.filename;
+                                        return (
+                                            <div key={photo.id} id={`thumb-${photo.id}`} className="relative group/thumb h-full aspect-square shrink-0">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setViewingScreenshot(photo.filename);
+                                                    }}
+                                                    className={`w-full h-full rounded-lg overflow-hidden border-2 transition-all duration-300 cursor-pointer ${isSelected
+                                                            ? 'border-[var(--color-primary-orange)] ring-2 ring-[var(--color-primary-orange)]/40 scale-105 shadow-lg shadow-orange-500/30'
+                                                            : 'border-transparent opacity-60 hover:opacity-100 hover:border-gray-400'
+                                                        }`}
+                                                >
+                                                    <img
+                                                        src={getScreenshotUrl(roomId || '', photo.filename)}
+                                                        alt={photo.name}
+                                                        className="w-full h-full object-cover"
+                                                        loading="lazy"
+                                                    />
+                                                    <div className="absolute top-0.5 left-0.5 bg-black/80 text-white text-[9px] font-bold px-1 rounded leading-tight">
+                                                        {idx + 1}
+                                                    </div>
+                                                </button>
+                                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-neutral-900 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover/thumb:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/15 z-30 shadow-lg">
+                                                    {photo.name}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>,
