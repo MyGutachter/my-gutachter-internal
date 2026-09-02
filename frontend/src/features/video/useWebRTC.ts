@@ -274,6 +274,32 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
         setLocalStream(acquiredStream);
         localStreamRef.current = acquiredStream;
 
+        // If there are already active peer connections (e.g. signaling was joined before camera opened),
+        // add/replace tracks on existing peer connections now.
+        const vTracks = acquiredStream.getVideoTracks();
+        const aTracks = acquiredStream.getAudioTracks();
+        for (const [uid, pc] of peerConnections.current.entries()) {
+            if (pc.connectionState !== 'closed' && pc.connectionState !== 'failed') {
+                const senders = pc.getSenders();
+                aTracks.forEach(track => {
+                    const existingAudioSender = senders.find(s => s.track?.kind === 'audio');
+                    if (existingAudioSender) {
+                        existingAudioSender.replaceTrack(track).catch(err => console.error(`[WebRTC] replaceTrack (audio) failed for ${uid}:`, err));
+                    } else {
+                        pc.addTrack(track, acquiredStream!);
+                    }
+                });
+                vTracks.forEach(track => {
+                    const existingVideoSender = senders.find(s => s.track?.kind === 'video');
+                    if (existingVideoSender) {
+                        existingVideoSender.replaceTrack(track).catch(err => console.error(`[WebRTC] replaceTrack (video) failed for ${uid}:`, err));
+                    } else {
+                        pc.addTrack(track, acquiredStream!);
+                    }
+                });
+            }
+        }
+
         const videoTrack = acquiredStream.getVideoTracks()[0];
         if (videoTrack) {
             const initialQuality = evaluateStreamQuality(videoTrack, successfulStep);
@@ -308,9 +334,16 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
 
     // 2. Create PC for a specific user
     const createPeerConnection = useCallback((userId: string) => {
-        if (peerConnections.current.has(userId)) {
-            console.warn(`PC for ${userId} already exists.`);
-            return peerConnections.current.get(userId);
+        const existingPc = peerConnections.current.get(userId);
+        if (existingPc) {
+            if (existingPc.connectionState === 'failed' || existingPc.connectionState === 'closed') {
+                console.warn(`PC for ${userId} was in state '${existingPc.connectionState}'. Closing and recreating fresh PC.`);
+                try { existingPc.close(); } catch { /* ignore */ }
+                peerConnections.current.delete(userId);
+            } else {
+                console.warn(`PC for ${userId} already exists in state '${existingPc.connectionState}'.`);
+                return existingPc;
+            }
         }
 
         console.log(`Creating PeerConnection for ${userId}`);
@@ -350,24 +383,24 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
 
         pc.onconnectionstatechange = () => {
             console.log(`PC ${userId} state: ${pc.connectionState}`);
+            // Always retain connection state in state map so the UI is aware of what happened
             setConnectionStates(prev => {
                 const newMap = new Map(prev);
                 newMap.set(userId, pc.connectionState);
                 return newMap;
             });
             if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-                // Cleanup
+                // Cleanup remote stream so stale/black video disappears from screen
                 setRemoteStreams(prev => {
                     const newMap = new Map(prev);
                     newMap.delete(userId);
                     return newMap;
                 });
-                setConnectionStates(prev => {
-                    const newMap = new Map(prev);
-                    newMap.delete(userId);
-                    return newMap;
-                });
-                peerConnections.current.delete(userId);
+                // Only delete from peerConnections ref on terminal states ('failed' / 'closed').
+                // 'disconnected' may recover on its own via ICE reconnection.
+                if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                    peerConnections.current.delete(userId);
+                }
             }
         };
 
@@ -643,7 +676,7 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
         });
         setConnectionStates(prev => {
             const newMap = new Map(prev);
-            newMap.delete(newUserId);
+            newMap.set(newUserId, 'connecting' as RTCPeerConnectionState);
             return newMap;
         });
 
@@ -701,6 +734,11 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
                     // sometimes stuck on loader" bug).
                     if (Array.isArray(data) && data.length > 0) {
                         console.log('Found existing users in room:', data);
+                        setConnectionStates(prev => {
+                            const newMap = new Map(prev);
+                            data.forEach((uid: string) => newMap.set(uid, 'connecting' as RTCPeerConnectionState));
+                            return newMap;
+                        });
                         if (shouldInitiateOffers()) {
                             // Organizer joined a room that already has a guest (e.g. rejoin scenario)
                             for (const existingUserId of data) {

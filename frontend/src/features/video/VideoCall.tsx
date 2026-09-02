@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { Camera, CarFront, ChevronLeft, ChevronRight, Copy, Download, Eye, EyeOff, Gauge, Images, Mail, Mic, MicOff, Phone, Smartphone, SwitchCamera, Trash2, User, Video, VideoOff, X, Zap, ZapOff, ZoomIn } from 'lucide-react';
+import { AlertTriangle, Camera, CarFront, ChevronLeft, ChevronRight, Copy, Download, Eye, EyeOff, Gauge, Images, Mail, Mic, MicOff, Phone, RefreshCw, Smartphone, SwitchCamera, Trash2, User, Users, Video, VideoOff, WifiOff, X, Zap, ZapOff, ZoomIn } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -240,14 +240,30 @@ export const VideoCall = () => {
     const [hoveredPart, setHoveredPart] = useState<{ id: string; name: string } | null>(null);
     const [showUvvModal, setShowUvvModal] = useState(false);
 
+    // Meeting Ended State for Guest
+    const [isMeetingEnded, setIsMeetingEnded] = useState(() => {
+        if (typeof window !== 'undefined' && roomId) {
+            return sessionStorage.getItem(`meeting_ended_${roomId}`) === 'true';
+        }
+        return false;
+    });
+    // Room Full State (when a 3rd person attempts to join a 1v1 meeting)
+    const [isRoomFull, setIsRoomFull] = useState(false);
+
     // Recording State
-    const [recordingConsent, setRecordingConsent] = useState<'pending' | 'accepted'>('pending');
+    const [recordingConsent, setRecordingConsent] = useState<'pending' | 'accepted'>(() => {
+        if (typeof window !== 'undefined' && roomId) {
+            return sessionStorage.getItem(`guest_consent_${roomId}`) === 'accepted' ? 'accepted' : 'pending';
+        }
+        return 'pending';
+    });
     const [isGuestConsentAccepted, setIsGuestConsentAccepted] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isUploadingVideo, setIsUploadingVideo] = useState(false);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingFinishedRef = useRef(false);
+    const pendingUploadsRef = useRef<Promise<void>[]>([]);
     // In-flight stop+upload, shared by concurrent callers (see stopRecordingAndUpload).
     const stopInFlightRef = useRef<Promise<void> | null>(null);
     // 'guest-left' and the server's 'user-left' can both arrive for the same hangup.
@@ -311,9 +327,72 @@ export const VideoCall = () => {
     const [localSpeedMbps, setLocalSpeedMbps] = useState<number>(0);
     const [remoteUserDeviceInfo, setRemoteUserDeviceInfo] = useState<Record<string, { browser: string; os: string; deviceName: string; speedMbps: number }>>({});
     const [remoteUserStreamQuality, setRemoteUserStreamQuality] = useState<Record<string, StreamQualityInfo>>({});
+    // Track remote users' camera error status (e.g. permission denied or camera in use)
+    const [remoteUserCameraErrors, setRemoteUserCameraErrors] = useState<Record<string, { errorType: 'denied' | 'busy' | 'notfound' | 'general'; message: string }>>({});
+    // Track if a customer has ever joined this room session
+    const [hasGuestJoined, setHasGuestJoined] = useState(false);
+    // Track if customer explicitly hung up via End Call button
+    const [isCustomerEndedCall, setIsCustomerEndedCall] = useState(false);
+
+    const flushCurrentSegmentAndUpload = (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+            const uploadCurrentChunks = () => {
+                mediaRecorderRef.current = null;
+                setIsRecording(false);
+
+                const chunkCount = recordedChunksRef.current.length;
+                const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+                recordedChunksRef.current = [];
+
+                if (blob.size === 0) {
+                    console.log('[Recording] Segment blob empty, skipping upload');
+                    resolve();
+                    return;
+                }
+
+                console.log('[Recording] Uploading valid segment blob size =', (blob.size / (1024 * 1024)).toFixed(2), 'MB, chunks:', chunkCount);
+
+                const uploadPromise = uploadRecording(blob, roomId).then(() => {
+                    console.log('[Recording] Segment upload successful');
+                }).catch(err => {
+                    console.error('[Recording] Segment upload failed:', err);
+                }).finally(() => {
+                    resolve();
+                });
+
+                pendingUploadsRef.current.push(uploadPromise);
+            };
+
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                const recorder = mediaRecorderRef.current;
+                recorder.onstop = uploadCurrentChunks;
+                try {
+                    if (recorder.state === 'recording') recorder.requestData();
+                } catch (e) {
+                    console.warn('[Recording] requestData failed:', e);
+                }
+                try {
+                    recorder.stop();
+                } catch (e) {
+                    console.warn('[Recording] stop failed:', e);
+                    uploadCurrentChunks();
+                }
+            } else if (recordedChunksRef.current.length > 0) {
+                uploadCurrentChunks();
+            } else {
+                mediaRecorderRef.current = null;
+                setIsRecording(false);
+                resolve();
+            }
+        });
+    };
 
     const startRecording = (stream: MediaStream) => {
         if (!stream || mediaRecorderRef.current || recordingFinishedRef.current) return;
+        if (stream.getVideoTracks().length === 0) {
+            console.log('[Recording] Stream has no video tracks, waiting for video track...');
+            return;
+        }
         try {
             // Try codecs in order of preference
             const mimeTypes = [
@@ -334,9 +413,9 @@ export const VideoCall = () => {
                 return;
             }
 
-            console.log('[Recording] Starting with MIME:', mimeType);
-            const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1000000 });
+            console.log('[Recording] Starting recorder segment with MIME:', mimeType, 'stream:', stream.id);
             recordedChunksRef.current = [];
+            const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1000000 });
 
             recorder.ondataavailable = (e) => {
                 if (e.data && e.data.size > 0) {
@@ -344,95 +423,47 @@ export const VideoCall = () => {
                 }
             };
 
-            recorder.onstop = () => {
-                // Default empty handler - overridden by stopRecordingAndUpload
+            recorder.onerror = (err) => {
+                console.error('[Recording] MediaRecorder error:', err);
             };
 
             // Use timeslice of 1000ms so data is flushed periodically
             recorder.start(1000);
             mediaRecorderRef.current = recorder;
             setIsRecording(true);
-            console.log('[Recording] Started successfully');
+            console.log('[Recording] Segment recorder started successfully');
         } catch (e) {
             console.error('[Recording] Error starting recording:', e);
         }
     };
 
     /**
-     * Stop the recorder and upload the captured video. Called from every path that can
-     * end a call (End call button, guest hangup/drop, socket close, unmount), so it must
-     * be safe to call more than once and from two paths at the same time: concurrent
-     * callers share the single in-flight promise, later calls resolve immediately.
+     * Stop the recorder and ensure all recording segments are uploaded to the order.
+     * Called ONLY when the call is permanently ended (Host End Call button, UVV completion, or Host unmount).
      */
     const stopRecordingAndUpload = (): Promise<void> => {
         if (stopInFlightRef.current) return stopInFlightRef.current;
 
-        // Immediately mark as finished to prevent useEffect from restarting
         recordingFinishedRef.current = true;
+        setIsUploadingVideo(true);
 
-        const promise = new Promise<void>((resolve) => {
-            // Build the blob from whatever was buffered and upload it. Shared by the
-            // normal stop path and the "recorder already inactive" path below.
-            const uploadBufferedChunks = () => {
+        const promise = (async () => {
+            try {
+                // Flush the active recording segment
+                await flushCurrentSegmentAndUpload();
+                // Wait for all in-flight segment uploads to complete
+                await Promise.all(pendingUploadsRef.current);
+                console.log('[Recording] All call segments uploaded successfully');
+            } catch (err) {
+                console.error('[Recording] Error waiting for segment uploads:', err);
+            } finally {
+                setIsUploadingVideo(false);
                 mediaRecorderRef.current = null;
                 setIsRecording(false);
-
-                const chunkCount = recordedChunksRef.current.length;
-                const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-                console.log('[Recording] Stop: blob size =', (blob.size / (1024 * 1024)).toFixed(2), 'MB, chunks:', chunkCount);
-                recordedChunksRef.current = [];
-
-                if (blob.size === 0) {
-                    console.warn('[Recording] Empty blob (chunks:', chunkCount, '), skipping upload');
-                    resolve();
-                    return;
-                }
-
-                setIsUploadingVideo(true);
-
-                // Upload the raw WebM blob directly
-                uploadRecording(blob, roomId).then(() => {
-                    console.log('[Recording] Upload successful');
-                    setIsUploadingVideo(false);
-                    resolve();
-                }).catch(err => {
-                    console.error('[Recording] Upload failed:', err);
-                    setIsUploadingVideo(false);
-                    resolve();
-                });
-            };
-
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                const recorder = mediaRecorderRef.current;
-                recorder.onstop = uploadBufferedChunks;
-
-                // Flush the trailing partial timeslice before stopping, otherwise the
-                // last <1s of video is dropped.
-                try {
-                    if (recorder.state === 'recording') recorder.requestData();
-                } catch (e) {
-                    console.warn('[Recording] requestData failed:', e);
-                }
-                recorder.stop();
-            } else if (recordedChunksRef.current.length > 0) {
-                // The recorder already stopped on its own - the browser auto-stops a
-                // MediaRecorder once every track of its stream ends, which is exactly
-                // what happens the moment the customer hangs up. The chunks captured so
-                // far are still buffered and must be uploaded.
-                console.log('[Recording] Recorder already inactive, uploading buffered chunks');
-                uploadBufferedChunks();
-            } else {
-                mediaRecorderRef.current = null;
-                setIsRecording(false);
-                resolve();
             }
-        });
+        })();
 
-        // Release the guard once done, so a later segment (guest rejoined) can stop too.
         stopInFlightRef.current = promise;
-        promise.finally(() => {
-            if (stopInFlightRef.current === promise) stopInFlightRef.current = null;
-        });
         return promise;
     };
 
@@ -443,50 +474,34 @@ export const VideoCall = () => {
 
     /**
      * The call ended by some path other than the host pressing "End call"
-     * (guest dropped, signaling socket died). Only the host holds a recorder, so this
-     * flushes and uploads whatever was captured. Idempotent: a no-op once the recording
-     * has already been finished/uploaded.
+     * (signaling socket died permanently or host closed tab).
      */
     const handleCallEndedRemotely = async (reason: string) => {
         if (isGuest) return;
-        if (!mediaRecorderRef.current) return;
-        console.log('[Recording] Ending recording early, reason:', reason);
+        if (!mediaRecorderRef.current && recordedChunksRef.current.length === 0 && pendingUploadsRef.current.length === 0) return;
+        console.log('[Recording] Ending recording on remote teardown, reason:', reason);
         await stopRecordingAndUpload();
     };
 
     /**
-     * The customer hung up (explicit 'guest-left' or the server's 'user-left'). Tell the
-     * expert what happened, save the recording, then end the call on this side too.
+     * The customer disconnected or is refreshing the page. Tell the expert what happened.
+     * Flush and upload the segment captured so far so its WebM headers remain 100% valid.
+     * When the customer rejoins, the next segment will record cleanly into its own valid container.
      */
     const handleGuestLeft = async (reason: string) => {
         if (isGuest || guestLeftHandledRef.current) return;
         guestLeftHandledRef.current = true;
 
-        console.log('[VideoCall] Customer left the call, reason:', reason);
-        showNotification(t('videoCall.customerLeftSaving', {
-            defaultValue: 'The customer left the call. Saving the recording…'
+        console.log('[VideoCall] Customer disconnected or refreshing, reason:', reason);
+        showNotification(t('videoCall.customerLeftNotice', {
+            defaultValue: 'Customer is reconnecting… The call will resume automatically.'
         }));
 
-        // Let the expert actually read the message before the full-screen "Saving
-        // Video…" overlay takes over (the overlay hides the notification toast).
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Flush and upload the recorded segment before reload in the background
+        await flushCurrentSegmentAndUpload();
 
-        // Upload next - the teardown below closes the socket and unmounts the view.
-        await stopRecordingAndUpload();
-
-        showNotification(t('videoCall.customerLeftSaved', {
-            defaultValue: 'Recording saved. Ending the call…'
-        }));
-
-        // Release the room server-side so the case can be re-opened later.
-        sendMessage('end-meeting', {});
-        setTimeout(() => {
-            cleanup();
-            setIsJoined(false);
-            setIsMuted(false);
-            setIsVideoEnabled(true);
-            navigate('/video');
-        }, 1500);
+        // Reset flag so when the customer rejoins, the next recording segment begins cleanly
+        guestLeftHandledRef.current = false;
     };
 
     const handleAcceptRecording = () => {
@@ -690,7 +705,7 @@ export const VideoCall = () => {
                 const code = data?.code;
                 const message = data?.message;
 
-                if (code === 'MEETING_ENDED') {
+                if (code === 'MEETING_ENDED' || code === 'ROOM_ENDED') {
                     if (!isGuest) {
                         showNotification(t('videoCall.restartingMeeting', { defaultValue: 'Restarting meeting…' }));
                         // Save whatever was recorded before the room was torn down; the
@@ -703,15 +718,22 @@ export const VideoCall = () => {
                             handleJoin(roomId);
                         }, 500);
                     } else {
-                        showNotification(message || t('videoCall.meetingEnded', { defaultValue: 'This meeting has ended.' }));
+                        if (typeof window !== 'undefined' && roomId) {
+                            sessionStorage.removeItem(`guest_consent_${roomId}`);
+                            sessionStorage.setItem(`meeting_ended_${roomId}`, 'true');
+                        }
                         cleanup();
                         setIsJoined(false);
+                        setIsMeetingEnded(true);
                     }
                     return;
                 }
 
                 if (code === 'ROOM_FULL') {
-                    showNotification(message || t('videoCall.meetingFull'));
+                    setIsRoomFull(true);
+                    cleanup();
+                    setIsJoined(false);
+                    return;
                 } else if (code === 'UNAUTHORIZED') {
                     showNotification(message || t('videoCall.unauthorized'));
                 } else if (code === 'INVALID_JOIN') {
@@ -726,6 +748,17 @@ export const VideoCall = () => {
             }
 
             if (type === 'user-joined') {
+                if (!isGuest) {
+                    setHasGuestJoined(true);
+                    setIsCustomerEndedCall(false);
+                }
+                if (data) {
+                    setRemoteUserCameraErrors(prev => {
+                        const next = { ...prev };
+                        delete next[data];
+                        return next;
+                    });
+                }
                 if (selectedParts.length > 0) {
                     sendMessage('sync-state', {
                         selectedParts,
@@ -771,6 +804,24 @@ export const VideoCall = () => {
                         placeholderIndex: placeholderIndex
                     }, data);
                 }
+            } else if (type === 'camera-error') {
+                const { errorType, message: errMsg, userId } = data || {};
+                const senderId = msg.sender || userId;
+                if (senderId) {
+                    setRemoteUserCameraErrors(prev => ({
+                        ...prev,
+                        [senderId]: { errorType: errorType || 'general', message: errMsg || '' }
+                    }));
+                }
+            } else if (type === 'camera-recovered') {
+                const senderId = msg.sender || data?.userId;
+                if (senderId) {
+                    setRemoteUserCameraErrors(prev => {
+                        const next = { ...prev };
+                        delete next[senderId];
+                        return next;
+                    });
+                }
             } else if (type === 'recording-consent-accepted') {
                 if (!isGuest) {
                     setIsGuestConsentAccepted(true);
@@ -800,25 +851,41 @@ export const VideoCall = () => {
                         return next;
                     });
                 }
+            } else if (type === 'guest-ended-call') {
+                setIsCustomerEndedCall(true);
+                showNotification(t('videoCall.customerEndedCallNotice', {
+                    defaultValue: 'The customer ended the call. Saving full recording…'
+                }));
+                await stopRecordingAndUpload();
             } else if (type === 'user-left' || type === 'guest-left') {
-                // Customer hung up, closed the tab or dropped off the network. Both the
-                // explicit 'guest-left' and the server's 'user-left' can arrive; the
-                // second one is a no-op.
+                if (data) {
+                    setRemoteUserCameraErrors(prev => {
+                        const next = { ...prev };
+                        delete next[data];
+                        return next;
+                    });
+                }
+                // Customer hung up, closed the tab or dropped off the network.
                 await handleGuestLeft(type);
             } else if (type === 'socket-closed') {
                 // Signaling connection died unexpectedly - don't lose the recording.
                 await handleCallEndedRemotely('socket-closed');
+            } else if (type === 'third-party-join-attempted') {
+                showNotification(t('videoCall.thirdPartyJoinAttempted', {
+                    defaultValue: 'Ein weiterer Teilnehmer hat versucht, dem Meeting beizutreten (Meeting ist voll: max. 2 Teilnehmer).'
+                }));
             } else if (type === 'end-meeting') {
-                showNotification(t('videoCall.hostEndedMeeting'));
-                setTimeout(() => {
-                    cleanup();
-                    setIsJoined(false);
-                    if (!isGuest) {
-                        navigate('/video');
-                    } else {
-                        window.location.reload();
-                    }
-                }, 2000);
+                if (typeof window !== 'undefined' && roomId) {
+                    sessionStorage.removeItem(`guest_consent_${roomId}`);
+                    sessionStorage.setItem(`meeting_ended_${roomId}`, 'true');
+                }
+                cleanup();
+                setIsJoined(false);
+                if (!isGuest) {
+                    navigate('/video');
+                } else {
+                    setIsMeetingEnded(true);
+                }
             } else if (type === 'user-capabilities') {
                 const { capabilities, currentZoom, userId } = data;
                 const senderId = msg.sender || userId;
@@ -1190,20 +1257,18 @@ export const VideoCall = () => {
 
     // Handle recording start when consent is accepted and stream is available
     useEffect(() => {
-        if (isGuest || !isGuestConsentAccepted || isRecording || mediaRecorderRef.current) return;
+        if (isGuest || !isGuestConsentAccepted || isRecording || mediaRecorderRef.current || recordingFinishedRef.current) return;
         if (remoteStreams.size === 0) return;
-
-        // A previous segment finished (guest left and rejoined, or the meeting was
-        // restarted). Once its upload has settled, allow a new segment - each one is
-        // stored as its own S3 key.
-        if (recordingFinishedRef.current) {
-            if (isUploadingVideo) return;
-            recordingFinishedRef.current = false;
-        }
 
         const firstRemoteStream = Array.from(remoteStreams.values())[0];
         startRecording(firstRemoteStream);
-    }, [isGuest, isGuestConsentAccepted, remoteStreams.size, isRecording, isUploadingVideo]);
+    }, [isGuest, isGuestConsentAccepted, remoteStreams.size, isRecording]);
+
+    useEffect(() => {
+        if (!isGuest && remoteStreams.size > 0) {
+            setHasGuestJoined(true);
+        }
+    }, [isGuest, remoteStreams.size]);
 
     // Safety nets: never leave a recording buffered in memory with no upload.
     useEffect(() => {
@@ -1320,17 +1385,26 @@ export const VideoCall = () => {
             return;
         }
 
+        recordingFinishedRef.current = false;
+        stopInFlightRef.current = null;
+
         try {
-            if (isGuest && recordingConsent === 'pending') {
+            if (isGuest) {
                 setRecordingConsent('accepted');
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem(`guest_consent_${id}`, 'accepted');
+                }
                 sendMessage('recording-consent-accepted', {});
             }
 
             await startLocalStream(isGuest);
             setIsJoined(true);
             init(id);
+            if (isGuest) {
+                sendMessage('camera-recovered', {});
+            }
         } catch (e: any) {
-            console.error('[VideoCall] Error joining meeting:', {
+            console.error('[VideoCall] Error joining meeting / starting camera:', {
                 name: e?.name,
                 message: e?.message,
                 constraint: e?.constraint,
@@ -1357,7 +1431,17 @@ export const VideoCall = () => {
                 errorMsg = t('videoCall.cameraOverconstrainedError');
             }
 
-            setIsJoined(false);
+            // Connect to signaling so the expert sees that a participant has joined
+            // and is experiencing a camera acquisition failure
+            setIsJoined(true);
+            init(id);
+            setTimeout(() => {
+                sendMessage('camera-error', {
+                    errorType,
+                    message: errorMsg
+                });
+            }, 300);
+
             setPermissionModalState({
                 isOpen: true,
                 errorType,
@@ -1365,6 +1449,22 @@ export const VideoCall = () => {
             });
         }
     };
+
+    // Auto-rejoin if guest previously accepted consent for this room (e.g. browser refresh)
+    useEffect(() => {
+        if (isGuest && roomId && !isJoined && !isMeetingEnded && !isRoomFull) {
+            const meetingEnded = sessionStorage.getItem(`meeting_ended_${roomId}`);
+            if (meetingEnded === 'true') {
+                setIsMeetingEnded(true);
+                return;
+            }
+            const savedConsent = sessionStorage.getItem(`guest_consent_${roomId}`);
+            if (savedConsent === 'accepted') {
+                console.log('[VideoCall] Auto-rejoining guest on refresh for room:', roomId);
+                handleJoin(roomId);
+            }
+        }
+    }, [isGuest, roomId, isJoined, isMeetingEnded, isRoomFull]);
 
     const navigate = useNavigate();
 
@@ -1385,15 +1485,16 @@ export const VideoCall = () => {
                 navigate('/video');
             }, 100);
         } else {
-            // Tell the host immediately so it can flush the recording. The server's
-            // 'user-left' broadcast is the fallback, but on a flaky mobile network the
-            // socket close can take tens of seconds to be detected.
-            sendMessage('guest-left', {});
+            if (typeof window !== 'undefined' && roomId) {
+                sessionStorage.removeItem(`guest_consent_${roomId}`);
+            }
+            // Explicit hangup by customer: inform host to finalize and save the full recording
+            sendMessage('guest-ended-call', {});
             cleanup();
             setIsJoined(false);
             setIsMuted(false);
             setIsVideoEnabled(true);
-            window.location.reload();
+            setRecordingConsent('pending');
         }
     };
 
@@ -1701,6 +1802,72 @@ export const VideoCall = () => {
             .catch(() => prompt(t('videoCall.copyLinkPrompt'), url));
     };
 
+    if (isGuest && isMeetingEnded) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-dark-900 text-white p-6">
+                <div className="bg-dark-800 border border-gray-700/60 p-8 md:p-10 rounded-3xl max-w-md w-full text-center shadow-2xl animate-fade-in flex flex-col items-center">
+                    <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-6 text-red-400 shadow-[0_0_30px_rgba(239,68,68,0.15)]">
+                        <Phone size={36} className="rotate-[135deg]" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-3">
+                        {t('videoCall.meetingEnded.title', { defaultValue: 'Meeting beendet' })}
+                    </h2>
+                    <p className="text-gray-300 text-sm mb-3 leading-relaxed">
+                        {t('videoCall.meetingEnded.description', { defaultValue: 'Das Video-Meeting wurde vom Gutachter beendet. Vielen Dank für Ihre Zeit und Mithilfe!' })}
+                    </p>
+                    <p className="text-gray-400 text-xs mb-8">
+                        {t('videoCall.meetingEnded.subtext', { defaultValue: 'Sie können dieses Browserfenster nun sicher schließen.' })}
+                    </p>
+                    <button
+                        onClick={() => {
+                            try {
+                                window.close();
+                            } catch {
+                                // ignore
+                            }
+                        }}
+                        className="bg-primary hover:bg-orange-600 text-white font-bold py-3.5 px-8 rounded-xl transition-all w-full shadow-lg hover:shadow-orange-500/20 cursor-pointer"
+                    >
+                        {t('videoCall.meetingEnded.closeButton', { defaultValue: 'Fenster schließen' })}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (isRoomFull) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-dark-900 text-white p-6">
+                <div className="bg-dark-800 border border-gray-700/60 p-8 md:p-10 rounded-3xl max-w-md w-full text-center shadow-2xl animate-fade-in flex flex-col items-center">
+                    <div className="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-6 text-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.15)]">
+                        <Users size={36} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-3">
+                        {t('videoCall.roomFullModal.title', { defaultValue: 'Meeting ist voll' })}
+                    </h2>
+                    <p className="text-gray-300 text-sm mb-3 leading-relaxed">
+                        {t('videoCall.roomFullModal.description', { defaultValue: 'In diesem Videoanruf befinden sich bereits 2 Teilnehmer. Ein weiterer Beitritt ist derzeit nicht möglich.' })}
+                    </p>
+                    <p className="text-gray-400 text-xs mb-8">
+                        {t('videoCall.roomFullModal.subtext', { defaultValue: 'Bitte kontaktieren Sie Ihren Gutachter oder versuchen Sie es später erneut.' })}
+                    </p>
+                    <button
+                        onClick={() => {
+                            try {
+                                window.close();
+                            } catch {
+                                // ignore
+                            }
+                        }}
+                        className="bg-primary hover:bg-orange-600 text-white font-bold py-3.5 px-8 rounded-xl transition-all w-full shadow-lg hover:shadow-orange-500/20 cursor-pointer"
+                    >
+                        {t('videoCall.roomFullModal.closeButton', { defaultValue: 'Fenster schließen' })}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (!isJoined) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-dark-900 text-white p-4">
@@ -1799,8 +1966,8 @@ export const VideoCall = () => {
                 </div>
             )}
 
-            {notification && !isUploadingVideo && (
-                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+            {notification && (
+                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 animate-slide-up pointer-events-none">
                     <div className="bg-dark-800 text-white px-6 py-3 rounded-full shadow-lg border border-gray-700 flex items-center gap-2">
                         <span>{notification}</span>
                     </div>
@@ -1808,11 +1975,16 @@ export const VideoCall = () => {
             )}
 
             {isUploadingVideo && (
-                <div className="absolute inset-0 z-[10000] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-dark-800 border border-[var(--color-primary-orange)] p-8 rounded-2xl max-w-sm w-full text-center shadow-[0_0_40px_rgba(255,107,53,0.3)] animate-pulse">
-                        <div className="w-16 h-16 border-4 border-[var(--color-primary-orange)] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                        <h2 className="text-xl font-bold text-white mb-2">{t('videoCall.savingVideo')}</h2>
-                        <p className="text-gray-400 text-sm">{t('videoCall.pleaseWait')}</p>
+                <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in pointer-events-auto">
+                    <div className="bg-dark-900 border border-orange-500/50 p-8 rounded-2xl max-w-sm w-full text-center shadow-[0_0_60px_rgba(255,107,53,0.3)] flex flex-col items-center">
+                        <div className="w-16 h-16 rounded-full bg-orange-500/10 border-4 border-orange-500 border-t-transparent animate-spin mb-6 flex items-center justify-center">
+                        </div>
+                        <h2 className="text-xl font-bold text-white mb-2">
+                            {t('videoCall.savingVideo', { defaultValue: 'Videoaufnahme wird gespeichert…' })}
+                        </h2>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            {t('videoCall.pleaseWait', { defaultValue: 'Bitte warten Sie, bis die Aufnahme verarbeitet und gespeichert wurde.' })}
+                        </p>
                     </div>
                 </div>
             )}
@@ -1833,20 +2005,182 @@ export const VideoCall = () => {
                             <AudioStream key={uid} stream={stream} />
                         ))}
 
-                        {((isGuest && !localStream) || (!isGuest && !primaryRemoteStream)) && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
-                                <CarInspectionLoader text={t('videoCall.waiting')} size="lg" />
-                                <div className="mt-4 text-xs text-gray-500 font-mono">
-                                    {connectionStates.size > 0 ? (
-                                        Array.from(connectionStates.entries()).map(([uid, state]) => (
-                                            <div key={uid}>User {uid.slice(0, 4)}: {state}</div>
-                                        ))
-                                    ) : (
-                                        <div>{t('videoCall.waiting')}</div>
-                                    )}
+                        {((isGuest && !localStream) || (!isGuest && !primaryRemoteStream)) && (() => {
+                            if (isGuest) {
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center">
+                                        <CarInspectionLoader text={t('videoCall.connecting', { defaultValue: 'Verbindung wird hergestellt...' })} size="lg" />
+                                        <div className="mt-4 text-xs text-gray-500 font-mono">
+                                            {permissionModalState.isOpen
+                                                ? t('videoCall.permissionModal.title')
+                                                : t('videoCall.waitingForOrganizerDesc', { defaultValue: 'Das Meeting startet, sobald der Organisator beitritt.' })}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // Expert view: Evaluate distinct failure/waiting states
+                            const activeCameraErrorEntry = Object.entries(remoteUserCameraErrors)[0];
+                            const connectionEntries = Array.from(connectionStates.entries());
+                            const failedEntry = connectionEntries.find(([, s]) => s === 'failed');
+                            const disconnectedEntry = connectionEntries.find(([, s]) => s === 'disconnected');
+                            const connectingEntry = connectionEntries.find(([, s]) => s === 'connecting' || s === 'new');
+
+                            // State 1: Participant camera blocked / failed
+                            if (activeCameraErrorEntry) {
+                                const [errUserId, cameraErr] = activeCameraErrorEntry;
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-dark-900/90 backdrop-blur-md z-20">
+                                        <div className="w-20 h-20 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                                            <VideoOff size={38} className="animate-pulse" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">
+                                            {t('videoCall.states.guestCameraBlocked', { defaultValue: 'Kamerazugriff beim Teilnehmer fehlgeschlagen' })}
+                                        </h3>
+                                        <p className="text-gray-300 text-sm max-w-md mb-4 leading-relaxed">
+                                            {t('videoCall.states.guestCameraBlockedDesc', { defaultValue: 'Der Teilnehmer ist im Meeting, konnte jedoch nicht auf die Kamera zugreifen.' })}
+                                        </p>
+                                        <div className="bg-amber-950/60 border border-amber-500/40 rounded-xl p-4 max-w-md text-left text-xs text-amber-200 mb-4 shadow-lg space-y-2">
+                                            <div className="font-semibold text-amber-300 flex items-center gap-1.5">
+                                                <AlertTriangle size={15} />
+                                                <span>{cameraErr.errorType === 'denied' ? t('videoCall.permissionModal.deniedSubtitle') : t('videoCall.permissionModal.busySubtitle')}</span>
+                                            </div>
+                                            <p className="text-amber-200/90 leading-normal">
+                                                {cameraErr.errorType === 'denied'
+                                                    ? t('videoCall.states.guestCameraDeniedAdvice')
+                                                    : t('videoCall.states.guestCameraBusyAdvice')}
+                                            </p>
+                                        </div>
+                                        <div className="text-xs text-gray-500 font-mono">
+                                            {t('videoCall.user')} {errUserId.slice(0, 4)}: {cameraErr.errorType} ({cameraErr.message || 'camera error'})
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // State 2: WebRTC Connection Failed
+                            if (failedEntry) {
+                                const [failedUserId] = failedEntry;
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-dark-900/90 backdrop-blur-md z-20">
+                                        <div className="w-20 h-20 bg-red-500/20 text-red-400 border border-red-500/30 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                                            <WifiOff size={38} />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">
+                                            {t('videoCall.states.connectionFailed', { defaultValue: 'Verbindung zum Teilnehmer fehlgeschlagen' })}
+                                        </h3>
+                                        <p className="text-gray-300 text-sm max-w-md mb-4 leading-relaxed">
+                                            {t('videoCall.states.connectionFailedDesc', { defaultValue: 'Die direkte Video-Verbindung (WebRTC) konnte nicht aufgebaut werden.' })}
+                                        </p>
+                                        <div className="bg-red-950/60 border border-red-500/40 rounded-xl p-4 max-w-md text-left text-xs text-red-200 mb-4 shadow-lg space-y-1.5">
+                                            <div className="font-semibold text-red-300 flex items-center gap-1.5">
+                                                <AlertTriangle size={15} />
+                                                <span>{t('videoCall.states.connectionFailedAdvice')}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-red-400/80 font-mono">
+                                            {t('videoCall.user')} {failedUserId.slice(0, 4)}: failed
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // State 3: Disconnected / Reconnecting
+                            if (disconnectedEntry) {
+                                const [discUserId] = disconnectedEntry;
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-dark-900/90 backdrop-blur-md z-20">
+                                        <div className="w-20 h-20 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                                            <RefreshCw size={38} className="animate-spin" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">
+                                            {t('videoCall.states.reconnecting', { defaultValue: 'Verbindung unterbrochen' })}
+                                        </h3>
+                                        <p className="text-gray-300 text-sm max-w-md mb-4 leading-relaxed">
+                                            {t('videoCall.states.reconnectingDesc', { defaultValue: 'Versuche die Verbindung zum Teilnehmer automatisch wiederherzustellen...' })}
+                                        </p>
+                                        <div className="text-xs text-amber-400/80 font-mono">
+                                            {t('videoCall.user')} {discUserId.slice(0, 4)}: disconnected (reconnecting...)
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // State 4: Connected (Audio Only / No Video)
+                            const connectedEntry = connectionEntries.find(([, s]) => s === 'connected');
+                            if (connectedEntry || audioOnlyEntries.length > 0) {
+                                const connUserId = connectedEntry ? connectedEntry[0] : (audioOnlyEntries[0] ? audioOnlyEntries[0][0] : 'Participant');
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-dark-900/90 backdrop-blur-md z-20">
+                                        <div className="w-20 h-20 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                                            <Mic size={38} className="animate-pulse" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">
+                                            {t('videoCall.states.connectedAudioOnly', { defaultValue: 'Teilnehmer verbunden (Nur Audio)' })}
+                                        </h3>
+                                        <p className="text-gray-300 text-sm max-w-md mb-4 leading-relaxed">
+                                            {t('videoCall.states.connectedAudioOnlyDesc', { defaultValue: 'Die Audioverbindung steht, es wird jedoch kein Kamerabild übertragen.' })}
+                                        </p>
+                                        <div className="text-xs text-blue-400/80 font-mono">
+                                            {t('videoCall.user')} {connUserId.slice(0, 4)}: connected (audio only)
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // State 5: Connecting
+                            if (connectingEntry) {
+                                const [connUserId, connState] = connectingEntry;
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center">
+                                        <CarInspectionLoader text={t('videoCall.states.connecting', { defaultValue: 'Verbindung wird hergestellt...' })} size="lg" />
+                                        <div className="mt-4 text-xs text-gray-500 font-mono">
+                                            {t('videoCall.user')} {connUserId.slice(0, 4)}: {connState}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // State: Customer explicitly ended the call
+                            if (isCustomerEndedCall) {
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-dark-900/90 backdrop-blur-md z-20">
+                                        <div className="w-20 h-20 bg-red-500/20 text-red-400 border border-red-500/30 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                                            <Phone size={38} className="rotate-[135deg]" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">
+                                            {t('videoCall.states.customerEndedCallTitle', { defaultValue: 'Gespräch vom Kunden beendet' })}
+                                        </h3>
+                                        <p className="text-gray-300 text-sm max-w-md mb-4 leading-relaxed">
+                                            {t('videoCall.states.customerEndedCallDesc', { defaultValue: 'Der Kunde hat den Videoanruf beendet. Die Aufnahme wurde vollständig gespeichert.' })}
+                                        </p>
+                                    </div>
+                                );
+                            }
+
+                            // State 6 & 7: Customer reconnecting/reloading vs initial waiting
+                            const closedEntry = connectionEntries.find(([, s]) => s === 'closed');
+                            if (hasGuestJoined || closedEntry) {
+                                return (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center animate-fade-in">
+                                        <CarInspectionLoader text={t('videoCall.states.participantReloading', { defaultValue: 'Kunde verbindet sich erneut…' })} size="lg" />
+                                        <div className="mt-4 text-xs text-amber-400/90 font-medium max-w-md leading-relaxed">
+                                            {t('videoCall.states.participantReloadingDesc', { defaultValue: 'Der Kunde lädt die Seite neu. Das Gespräch wird automatisch fortgesetzt.' })}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // State 8: Waiting for participant to join for the first time
+                            return (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center">
+                                    <CarInspectionLoader text={t('videoCall.states.waitingForGuest', { defaultValue: t('videoCall.waiting') })} size="lg" />
+                                    <div className="mt-4 text-xs text-gray-500 font-mono">
+                                        {t('videoCall.states.waitingForGuestDesc', { defaultValue: 'Warten auf Teilnehmer...' })}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {!isGuest && primaryRemoteId && primaryRemoteStream && (
                             <div className="absolute inset-0">

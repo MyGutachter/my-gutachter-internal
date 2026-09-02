@@ -1,6 +1,7 @@
 package com.mygutachter.controller;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,6 +48,8 @@ public class SignalingHandler extends TextWebSocketHandler {
     private final Map<String, String> sessionUsernames = new ConcurrentHashMap<>();
     // Per-room lock to make join atomic
     private final Map<String, Object> roomLocks = new ConcurrentHashMap<>();
+    // Set of ended room IDs to reject guest re-joins after call has ended
+    private final Set<String> endedRooms = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final JwtService jwtService;
@@ -173,14 +176,54 @@ public class SignalingHandler extends TextWebSocketHandler {
 
                 Object lock = roomLocks.computeIfAbsent(roomId, k -> new Object());
                 synchronized (lock) {
-
+                    if ("guest".equalsIgnoreCase(role)) {
+                        if (endedRooms.contains(roomId)) {
+                            sendErrorAndClose(session, "ROOM_ENDED", "Meeting has already been ended by the organizer");
+                            return;
+                        }
+                    } else if (username != null) {
+                        endedRooms.remove(roomId);
+                    }
 
                     Set<WebSocketSession> roomSessions = rooms.computeIfAbsent(roomId,
                             k -> new CopyOnWriteArraySet<>());
                     roomSessions.removeIf(s -> !s.isOpen());
 
-                    // 1v1 rule: max 2 sessions per room
+                    // If the organizer reloads/rejoins, replace their previous session with the same username
+                    if (username != null) {
+                        for (WebSocketSession s : roomSessions) {
+                            String existingUser = sessionUsernames.get(s.getId());
+                            if (username.equals(existingUser) && !s.getId().equals(session.getId())) {
+                                System.out.println("Evicting previous organizer session on reload: " + s.getId());
+                                try {
+                                    s.close(CloseStatus.NORMAL);
+                                } catch (Exception ignored) {
+                                }
+                                roomSessions.remove(s);
+                                sessionRoomMap.remove(s.getId());
+                                sessionUsernames.remove(s.getId());
+                            }
+                        }
+                    }
+
+                    // 1v1 rule: max 2 active sessions per room
                     if (roomSessions.size() >= 2) {
+                        System.out.println("3rd person join attempted for full room: " + roomId + ", role: " + role);
+                        for (WebSocketSession s : roomSessions) {
+                            if (s.isOpen() && !s.getId().equals(session.getId())) {
+                                synchronized (s) {
+                                    try {
+                                        ObjectNode noticeNode = objectMapper.createObjectNode();
+                                        noticeNode.put("type", "third-party-join-attempted");
+                                        ObjectNode noticeData = noticeNode.putObject("data");
+                                        noticeData.put("role", role != null ? role : "guest");
+                                        s.sendMessage(new TextMessage(
+                                                Objects.requireNonNull(objectMapper.writeValueAsString(noticeNode))));
+                                    } catch (Exception ignored) {
+                                    }
+                                }
+                            }
+                        }
                         sendErrorAndClose(session, "ROOM_FULL", "Meeting already has 2 participants");
                         return;
                     }
@@ -228,6 +271,7 @@ public class SignalingHandler extends TextWebSocketHandler {
                     Object lock = roomLocks.computeIfAbsent(roomId, k -> new Object());
                     synchronized (lock) {
                         System.out.println("Room ended by organizer: " + roomId);
+                        endedRooms.add(roomId);
 
                         Set<WebSocketSession> roomSessions = rooms.get(roomId);
                         if (roomSessions != null) {
