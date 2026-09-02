@@ -482,7 +482,7 @@ const DamageEntryModal: React.FC<DamageEntryModalProps> = ({ isOpen, onClose, da
                                         onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(photo.data, photo.id, incl)}
                                         onRemove={() => store.removePhoto(photo.id)}
                                         onUpdate={(newSrc) => store.updatePhoto(photo.id, { data: newSrc })}
-                                        className="w-16 h-12 rounded-lg"
+                                        className="w-20 h-14 rounded-lg"
                                     />
                                 ))}
                             </div>

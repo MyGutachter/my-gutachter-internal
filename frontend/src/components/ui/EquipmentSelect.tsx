@@ -79,10 +79,9 @@ const EquipmentSelect: React.FC<EquipmentSelectProps> = ({
                 </div>
             </label>
 
-            <div className={`relative flex flex-col gap-2 p-2 bg-white rounded-xl border-2 transition-all duration-300 ${
-                error ? 'border-red-500 bg-red-50/10' :
-                (adminMode && required ? 'border-primary/30 bg-primary/5 ring-4 ring-primary/5' : 'border-slate-200')
-            } ${adminMode ? 'cursor-pointer hover:bg-slate-50/50' : ''}`}>
+            <div className={`relative flex flex-col gap-2 p-2 bg-white rounded-xl border-2 transition-all duration-300 ${error ? 'border-red-500 bg-red-50/10' :
+                    (adminMode && required ? 'border-primary/30 bg-primary/5 ring-4 ring-primary/5' : 'border-slate-200')
+                } ${adminMode ? 'cursor-pointer hover:bg-slate-50/50' : ''}`}>
 
                 <div className="flex flex-wrap items-center gap-3">
                     <select

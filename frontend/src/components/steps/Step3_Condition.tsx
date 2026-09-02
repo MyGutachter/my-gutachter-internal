@@ -930,13 +930,12 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-8 items-start">
                             {/* Maintenance Trigger Choice */}
                             <div className="space-y-4">
-                                <div 
+                                <div
                                     data-fieldname="nextMaintenanceType"
-                                    className={`flex flex-col gap-2 p-2 rounded-xl transition-all ${
-                                        showValidationErrors && validationErrors['nextMaintenanceType']
+                                    className={`flex flex-col gap-2 p-2 rounded-xl transition-all ${showValidationErrors && validationErrors['nextMaintenanceType']
                                             ? 'border-2 border-red-500 bg-red-50/10'
                                             : 'border border-transparent'
-                                    }`}
+                                        }`}
                                 >
                                     <label className="text-[11px] font-black uppercase tracking-[0.05em] text-slate-400">
                                         {t('step3.maintenanceSelection')}
@@ -970,11 +969,10 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                     }
                                                     store.updateField('nextMaintenanceType', opt.id as any);
                                                 }}
-                                                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                                                    store.nextMaintenanceType === opt.id || (opt.id === 'date' && !store.nextMaintenanceType)
+                                                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-200 ${store.nextMaintenanceType === opt.id || (opt.id === 'date' && !store.nextMaintenanceType)
                                                         ? 'bg-white text-primary shadow-sm ring-1 ring-black/5'
                                                         : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'
-                                                }`}
+                                                    }`}
                                             >
                                                 <opt.icon className={`w-3.5 h-3.5 ${(store.nextMaintenanceType === opt.id || (opt.id === 'date' && !store.nextMaintenanceType)) ? 'text-primary' : 'text-slate-300'}`} />
                                                 {opt.label}
@@ -1049,7 +1047,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 <div className={`grid grid-cols-1 ${isVehicleEvaluation || store.nextMaintenanceType === 'mileage' ? '' : '@3xl:grid-cols-2'} gap-4`}>
                                     {store.nextMaintenanceType !== 'mileage' && (
                                         <FormInput
@@ -1093,13 +1091,12 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                 <>
                     <SectionTitle>{t('step3.chargingCable')}</SectionTitle>
                     <Card>
-                        <div 
+                        <div
                             data-fieldname="chargingCable"
-                            className={`flex flex-col gap-2 p-3 rounded-xl transition-all ${
-                                showValidationErrors && validationErrors['chargingCable']
+                            className={`flex flex-col gap-2 p-3 rounded-xl transition-all ${showValidationErrors && validationErrors['chargingCable']
                                     ? 'border-2 border-red-500 bg-red-50/10'
                                     : 'border border-transparent'
-                            }`}
+                                }`}
                         >
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-medium text-gray-700">{t('step3.chargingCable')}</label>
@@ -1187,13 +1184,12 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                 </div>
 
                 {!store.noPaintIssuesDetected && (
-                    <div 
+                    <div
                         data-fieldname="paintMeasurements"
-                        className={`space-y-4 animate-fade-in p-3 rounded-xl transition-all ${
-                            showValidationErrors && validationErrors['paintMeasurements']
+                        className={`space-y-4 animate-fade-in p-3 rounded-xl transition-all ${showValidationErrors && validationErrors['paintMeasurements']
                                 ? 'border-2 border-red-500 bg-red-50/10'
                                 : 'border border-transparent'
-                        }`}
+                            }`}
                     >
                         {/* Desktop Table - Hidden on Mobile */}
                         <div className="hidden @3xl:block overflow-x-auto">
@@ -2049,75 +2045,75 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 </table>
                             </div>
 
-                             {/* Mobile Second Set Cards */}
-                             <div className="@3xl:hidden space-y-3">
-                                 {store.secondTires.map((tire, i) => {
-                                     const photoCount = (tire.images || []).length;
-                                     return (
-                                         <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-100">
-                                             <div className="flex justify-between items-center">
-                                                 <div className="flex items-center gap-2">
-                                                     <span className="font-bold text-primary">#{i + 1}</span>
-                                                     <div className="flex items-center gap-1 ml-2">
-                                                         <button onClick={() => setEditingSecondTireIndex(i)} className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-primary transition-colors hover:shadow-sm font-medium text-sm px-3">
-                                                             {t('step4.edit')}
-                                                         </button>
-                                                         {photoCount > 0 && (
-                                                             <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full whitespace-nowrap">
-                                                                 {photoCount} {t('step4.photosAbbr')}
-                                                             </span>
-                                                         )}
-                                                     </div>
-                                                 </div>
-                                                 <button
-                                                     onClick={() => {
-                                                         store.copySecondTireToNext(i);
-                                                         toast.success(t('step3.copySuccess'));
-                                                     }}
-                                                     className="flex items-center gap-1 text-[10px] bg-primary/10 px-2 py-0.5 rounded text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-                                                 >
-                                                     <Copy className="w-3 h-3" />
-                                                     {t('step3.copyToAxle', 'Copy to next')}
-                                                 </button>
-                                             </div>
-                                             <div className="text-sm font-semibold text-gray-800">
-                                                 {t('step3.axleLabel', { axle: tire.axle, side: tire.side === 'links' ? t('common.left') : t('common.right') })}
-                                             </div>
-                                             <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2 bg-white/50 p-2 rounded-lg border border-gray-100/50">
-                                                 <div>
-                                                     <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireManufacturer')}</label>
-                                                     <div className="text-sm truncate">{tire.manufacturer || '-'}</div>
-                                                 </div>
-                                                 <div>
-                                                     <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireModel')}</label>
-                                                     <div className="text-sm truncate">{tire.tireModel || '-'}</div>
-                                                 </div>
-                                                 {store.secondTireSetSelection === 'Both' && (
-                                                     <div className="col-span-2 mt-1 border-t border-gray-100 pt-1 grid grid-cols-2 gap-4">
-                                                         <div>
-                                                             <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
-                                                             <div className="text-sm truncate">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</div>
-                                                         </div>
-                                                         <div>
-                                                             <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
-                                                             <div className="text-sm">{tire.damaged ? t('common.yes') : t('common.no')}</div>
-                                                         </div>
-                                                     </div>
-                                                 )}
-                                                 {store.secondTireSetSelection === 'Only Tires' && (
-                                                     <div className="col-span-2 mt-1 border-t border-gray-100 pt-1">
-                                                         <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
-                                                         <div className="text-sm">{tire.damaged ? t('common.yes') : t('common.no')}</div>
-                                                     </div>
-                                                 )}
-                                                 {store.secondTireSetSelection === 'Only Rims' && (
-                                                     <div className="col-span-2 mt-1 border-t border-gray-100 pt-1">
-                                                         <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
-                                                         <div className="text-sm truncate">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</div>
-                                                     </div>
-                                                 )}
-                                             </div>
-                                         </div>
+                            {/* Mobile Second Set Cards */}
+                            <div className="@3xl:hidden space-y-3">
+                                {store.secondTires.map((tire, i) => {
+                                    const photoCount = (tire.images || []).length;
+                                    return (
+                                        <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-100">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-primary">#{i + 1}</span>
+                                                    <div className="flex items-center gap-1 ml-2">
+                                                        <button onClick={() => setEditingSecondTireIndex(i)} className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-primary transition-colors hover:shadow-sm font-medium text-sm px-3">
+                                                            {t('step4.edit')}
+                                                        </button>
+                                                        {photoCount > 0 && (
+                                                            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full whitespace-nowrap">
+                                                                {photoCount} {t('step4.photosAbbr')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        store.copySecondTireToNext(i);
+                                                        toast.success(t('step3.copySuccess'));
+                                                    }}
+                                                    className="flex items-center gap-1 text-[10px] bg-primary/10 px-2 py-0.5 rounded text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                                                >
+                                                    <Copy className="w-3 h-3" />
+                                                    {t('step3.copyToAxle', 'Copy to next')}
+                                                </button>
+                                            </div>
+                                            <div className="text-sm font-semibold text-gray-800">
+                                                {t('step3.axleLabel', { axle: tire.axle, side: tire.side === 'links' ? t('common.left') : t('common.right') })}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2 bg-white/50 p-2 rounded-lg border border-gray-100/50">
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireManufacturer')}</label>
+                                                    <div className="text-sm truncate">{tire.manufacturer || '-'}</div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireModel')}</label>
+                                                    <div className="text-sm truncate">{tire.tireModel || '-'}</div>
+                                                </div>
+                                                {store.secondTireSetSelection === 'Both' && (
+                                                    <div className="col-span-2 mt-1 border-t border-gray-100 pt-1 grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
+                                                            <div className="text-sm truncate">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
+                                                            <div className="text-sm">{tire.damaged ? t('common.yes') : t('common.no')}</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {store.secondTireSetSelection === 'Only Tires' && (
+                                                    <div className="col-span-2 mt-1 border-t border-gray-100 pt-1">
+                                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
+                                                        <div className="text-sm">{tire.damaged ? t('common.yes') : t('common.no')}</div>
+                                                    </div>
+                                                )}
+                                                {store.secondTireSetSelection === 'Only Rims' && (
+                                                    <div className="col-span-2 mt-1 border-t border-gray-100 pt-1">
+                                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
+                                                        <div className="text-sm truncate">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     );
                                 })}
                             </div>

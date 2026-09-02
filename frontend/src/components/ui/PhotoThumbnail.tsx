@@ -228,7 +228,7 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
 
             {/* Non-print badge (Visible if marked as tool-only) */}
             {!hidePrintOption && !includeInPdf && (
-                <div 
+                <div
                     className="absolute top-1 left-1 z-20 bg-amber-500/95 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow flex items-center gap-1 backdrop-blur-xs select-none pointer-events-none tracking-tight"
                     title={t('common.toolOnlyTooltip', 'Nur im Tool (wird nicht im PDF gedruckt)')}
                 >
@@ -246,22 +246,20 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
             />
 
             {/* Actions Overlay — visible on mobile tap, or hover on desktop */}
-            <div 
-                className={`absolute inset-0 z-20 flex items-center justify-center p-1 bg-black/35 backdrop-blur-[1px] transition-all duration-150 pointer-events-none ${
-                    showMobileActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                }`}
+            <div
+                className={`absolute inset-0 z-20 flex items-center justify-center p-1 bg-black/40 backdrop-blur-[1px] transition-all duration-150 pointer-events-none ${showMobileActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
             >
-                <div className="flex items-center gap-1.5 bg-gray-900/85 backdrop-blur-md px-2 py-1 rounded-xl shadow-xl border border-white/15 pointer-events-auto">
+                <div className="flex items-center justify-center gap-1 bg-gray-900/90 backdrop-blur-md p-1 rounded-lg shadow-xl border border-white/20 pointer-events-auto max-w-[96%] max-h-[96%]">
                     {/* Toggle PDF Print Button */}
                     {!hidePrintOption && onToggleIncludeInPdf && (
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onToggleIncludeInPdf(!includeInPdf); }}
-                            className={`w-7 h-7 flex items-center justify-center rounded-lg shadow-sm transition-all active:scale-90 ${
-                                includeInPdf
+                            className={`w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-md shadow-sm transition-all hover:scale-105 active:scale-95 shrink-0 ${includeInPdf
                                     ? 'bg-blue-600 hover:bg-blue-500 text-white'
                                     : 'bg-amber-600 hover:bg-amber-500 text-white'
-                            }`}
+                                }`}
                             title={includeInPdf ? t('common.printInReportTooltip', 'Dieses Bild im PDF-Gutachten drucken') : t('common.toolOnlyTooltip', 'Nur im Tool zur Beweissicherung gespeichert')}
                             aria-label={t('common.togglePrintTooltip', 'Drucken im PDF-Bericht umschalten')}
                         >
@@ -273,7 +271,7 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setShowEditModal(true); }}
-                        className="w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/30 text-white rounded-lg shadow-sm transition-all active:scale-90"
+                        className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-white/20 hover:bg-white/30 text-white rounded-md shadow-sm transition-all hover:scale-105 active:scale-95 shrink-0"
                         title={t('common.edit') || 'Bild anpassen'}
                         aria-label={t('common.edit') || 'Edit photo'}
                     >
@@ -284,7 +282,7 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                        className="w-7 h-7 flex items-center justify-center bg-red-600/90 hover:bg-red-500 text-white rounded-lg shadow-sm transition-all active:scale-90"
+                        className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-red-600/90 hover:bg-red-500 text-white rounded-md shadow-sm transition-all hover:scale-105 active:scale-95 shrink-0"
                         title={t('common.remove') || 'Entfernen'}
                         aria-label={t('common.remove') || 'Remove photo'}
                     >
@@ -304,11 +302,10 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
                         type="button"
                         onClick={() => onToggleIncludeInPdf(!includeInPdf)}
                         title={includeInPdf ? t('common.printInReportTooltip', 'Dieses Bild im PDF-Gutachten drucken') : t('common.toolOnlyTooltip', 'Nur im Tool zur Beweissicherung gespeichert')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shadow-sm select-none active:scale-95 ${
-                            includeInPdf
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shadow-sm select-none active:scale-95 ${includeInPdf
                                 ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                                 : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                        }`}
+                            }`}
                     >
                         {includeInPdf ? <Printer className="w-3.5 h-3.5 text-blue-600" /> : <EyeOff className="w-3.5 h-3.5 text-amber-600" />}
                         <span className="font-semibold text-[11px] sm:text-xs">

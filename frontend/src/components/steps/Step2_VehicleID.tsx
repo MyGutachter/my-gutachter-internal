@@ -635,7 +635,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
             // EV-safe normalization: zero out ICE-only fields that may have
             // leaked through the DAT fallback chain for pure electric vehicles.
             const safeDisplacement = isPureEV ? 0 : (data.displacement ?? resolveDisplacement(all, data.manufacturer || '', store.displacement));
-            const safeCylinders    = isPureEV ? 0 : cylinders;
+            const safeCylinders = isPureEV ? 0 : cylinders;
             const safeTransmission = isPureEV && transmission !== undefined && /\d+-Gang/i.test(transmission || '')
                 ? 'Elektrogetriebe (1-Gang)'
                 : transmission;
@@ -711,11 +711,10 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     {/* Identification Photos aligned above the Search Button */}
                     <div
                         data-fieldname="identificationImages"
-                        className={`flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4 p-3 rounded-xl transition-all ${
-                            showValidationErrors && (validationErrors['identificationImages'] || validationErrors['vin_photo'])
+                        className={`flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4 p-3 rounded-xl transition-all ${showValidationErrors && (validationErrors['identificationImages'] || validationErrors['vin_photo'])
                                 ? 'border-2 border-red-500 bg-red-50/10'
                                 : 'border border-transparent'
-                        }`}
+                            }`}
                     >
                         <div className="flex flex-col gap-1">
                             <div className="flex flex-wrap items-center gap-2">

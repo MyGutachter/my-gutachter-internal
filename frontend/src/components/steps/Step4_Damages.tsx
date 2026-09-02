@@ -886,7 +886,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             <thead>
                                 <tr className="bg-gray-50/50">
                                     <th className="table-header pl-4">{t('minderwert.bodyPart')}</th>
-                                    <th className="table-header w-20">{t('step4.photoActions')}</th>
+                                    <th className="table-header w-28 min-w-[110px]">{t('step4.photoActions')}</th>
                                     <th className="table-header">{t('minderwert.damageCol')}</th>
 
                                     <th className="table-header w-24">{t('minderwert.repairCode')}</th>
@@ -919,19 +919,19 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 </div>
                                             </td>
                                             <td className="table-cell">
-                                                <div className="flex flex-col items-center gap-1.5">
-                                                    <div className="flex items-center gap-1">
-                                                        <label className="p-1 px-1.5 bg-white border border-gray-200 rounded-md cursor-pointer text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.takePhoto')}>
+                                                <div className="flex flex-col items-center gap-1.5 py-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <label className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95" title={t('step4.takePhoto')}>
                                                             <Camera className="w-3.5 h-3.5" />
                                                             <input type="file" accept="image/*" capture="environment" onChange={e => handleMinderwertPhoto(e, row.id)} className="hidden" />
                                                         </label>
-                                                        <label className="p-1 px-1.5 bg-white border border-gray-200 rounded-md cursor-pointer text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.choosePhoto')}>
+                                                        <label className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95" title={t('step4.choosePhoto')}>
                                                             <ImagePlus className="w-3.5 h-3.5" />
                                                             <input type="file" multiple accept="image/*" onChange={e => handleMinderwertPhoto(e, row.id)} className="hidden" />
                                                         </label>
                                                     </div>
                                                     {row.images && row.images.length > 0 && (
-                                                        <div className="flex flex-wrap justify-center gap-1">
+                                                        <div className="flex flex-wrap justify-center gap-1.5 mt-0.5">
                                                             {row.images.map((img, idx) => (
                                                                 <PhotoThumbnail
                                                                     key={idx}
@@ -941,7 +941,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                                     onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                     onRemove={() => store.removeMinderwertPhoto(row.id, idx)}
                                                                     onUpdate={(newSrc) => updateMinderwertPhoto(row.id, idx, newSrc)}
-                                                                    className="w-14 h-10"
+                                                                    className="w-20 h-14"
                                                                 />
                                                             ))}
                                                         </div>
@@ -1242,19 +1242,19 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 )}
                                             </td>
                                             <td className="table-cell">
-                                                <div className="flex flex-col items-center gap-1.5">
-                                                    <div className={`flex items-center gap-1 p-1 rounded-md ${isInvalid ? 'border-2 border-red-500 bg-red-50/10' : ''}`}>
-                                                        <label className="p-1 px-1.5 bg-white border border-gray-200 rounded-md cursor-pointer text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.takePhoto')} onClick={e => e.stopPropagation()}>
+                                                <div className="flex flex-col items-center gap-1.5 py-1">
+                                                    <div className={`flex items-center gap-1.5 p-1 rounded-lg ${isInvalid ? 'border-2 border-red-500 bg-red-50/10' : ''}`}>
+                                                        <label className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95" title={t('step4.takePhoto')} onClick={e => e.stopPropagation()}>
                                                             <Camera className="w-3.5 h-3.5" />
                                                             <input type="file" accept="image/*" capture="environment" onChange={e => handleDamagePhoto(e, damage.id)} className="hidden" />
                                                         </label>
-                                                        <label className="p-1 px-1.5 bg-white border border-gray-200 rounded-md cursor-pointer text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.choosePhoto')} onClick={e => e.stopPropagation()}>
+                                                        <label className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95" title={t('step4.choosePhoto')} onClick={e => e.stopPropagation()}>
                                                             <ImagePlus className="w-3.5 h-3.5" />
                                                             <input type="file" multiple accept="image/*" onChange={e => handleDamagePhoto(e, damage.id)} className="hidden" />
                                                         </label>
                                                     </div>
                                                     {damage.images && damage.images.length > 0 && (
-                                                        <div className="flex flex-wrap justify-center gap-1">
+                                                        <div className="flex flex-wrap justify-center gap-1.5 mt-0.5">
                                                             {damage.images.map((img, idx) => (
                                                                 <PhotoThumbnail
                                                                     key={idx}
@@ -1264,7 +1264,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                                     onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                     onRemove={() => store.removeDamagePhoto(damage.id, idx)}
                                                                     onUpdate={(newSrc) => updateDamagePhoto(damage.id, idx, newSrc)}
-                                                                    className="w-14 h-10"
+                                                                    className="w-20 h-14"
                                                                 />
                                                             ))}
                                                         </div>
@@ -1828,7 +1828,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                                     onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                                     onRemove={() => !isUserAdded ? store.removeMinderwertPhoto(item.id, idx) : store.removeDamagePhoto(item.id, idx)}
                                                                     onUpdate={(newSrc) => !isUserAdded ? updateMinderwertPhoto(item.id, idx, newSrc) : updateDamagePhoto(item.id, idx, newSrc)}
-                                                                    className="w-16 h-12"
+                                                                    className="w-20 h-14"
                                                                 />
                                                             ))}
                                                         </div>

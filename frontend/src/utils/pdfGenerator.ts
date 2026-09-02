@@ -1606,12 +1606,6 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
     if (eq?.images) eq.images.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${lbl} (${L.photoLabel} ${i + 1})` }));
   });
   r.chargingCableImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.chargingCable} (${L.photoLabel} ${i + 1})` }));
-  if (r.authorizedPersonPhoto && isIncluded(r.authorizedPersonPhoto)) {
-    sortedPhotos.push({
-      data: r.authorizedPersonPhoto,
-      label: L.authorizedPersonPhoto || 'Foto Personalausweis der bevollmächtigten Person'
-    });
-  }
 
   // ─────────────────────────────────────────────────────────────────────
   // DAMAGE TABLE PAGINATION
