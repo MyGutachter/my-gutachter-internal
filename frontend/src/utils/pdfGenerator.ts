@@ -802,6 +802,17 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   const safeLang = lang?.startsWith('en') ? 'en' : 'de';
   const L = LabelsTyped[safeLang];
 
+  const hiddenFieldNames = new Set(
+    ((r as any).fieldConfigs || [])
+      .filter((c: any) => c && c.hidden === true)
+      .map((c: any) => c.fieldName)
+  );
+
+  const isFieldHidden = (fieldName?: string): boolean => {
+    if (!fieldName) return false;
+    return hiddenFieldNames.has(fieldName);
+  };
+
   // Sort paint measurements in a logical "around the vehicle" order
   if (r.paintMeasurements) {
     r.paintMeasurements = sortPaintMeasurements(r.paintMeasurements);
@@ -1501,39 +1512,46 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   };
 
   const excluded = new Set(r.excludedFromPdfImages || []);
-  const isIncluded = (imgDataOrId?: string, photoObj?: any): boolean => {
+  const isIncluded = (imgDataOrId?: string, photoObj?: any, associatedFieldName?: string): boolean => {
     if (!imgDataOrId && !photoObj) return false;
     if (photoObj && photoObj.includeInPdf === false) return false;
     if (imgDataOrId && excluded.has(imgDataOrId)) return false;
     if (photoObj?.id && excluded.has(photoObj.id)) return false;
     if (photoObj?.data && excluded.has(photoObj.data)) return false;
     if (photoObj?.filePath && excluded.has(photoObj.filePath)) return false;
+    if (associatedFieldName && isFieldHidden(associatedFieldName)) return false;
+    if (photoObj?.id && isFieldHidden(photoObj.id)) return false;
+    if (photoObj?.mandatoryPhotoId && isFieldHidden(photoObj.mandatoryPhotoId)) return false;
     return true;
   };
 
   // Combine all photos from the photos gallery for sorting, but filter out damage-specific photos
   // since they are explicitly appended below with localized titles
-  const basePhotos = (r.photos || []).filter(p => !p.damageId && isIncluded(p.data, p));
+  const basePhotos = (r.photos || []).filter(p => !p.damageId && isIncluded(p.data, p, p.id || p.mandatoryPhotoId));
 
   // Add ALL dedicated images if not already present, ensuring they are sorted together
-  r.mileageImages?.filter(img => isIncluded(img)).forEach((img, i) => {
-    if (img && !basePhotos.some(p => p.data === img)) {
-      basePhotos.push({
-        data: img,
-        label: i === 0 ? (L.mileageLabel || 'Kilometerstand') : `${L.mileageRead || 'Kilometerstand'} (${L.photoLabel} ${i + 1})`,
-        mandatoryPhotoId: 'mileage_photo'
-      });
-    }
-  });
-  r.identificationImages?.filter(img => isIncluded(img)).forEach((img, i) => {
-    if (img && !basePhotos.some(p => p.data === img)) {
-      basePhotos.push({
-        data: img,
-        label: i === 0 ? (L.vinLabel || 'Fahrgestellnummer (FIN)') : `${L.vinLabel || 'Fahrgestellnummer (FIN)'} (${L.photoLabel} ${i + 1})`,
-        mandatoryPhotoId: 'vin_photo'
-      });
-    }
-  });
+  if (!isFieldHidden('mileageImages') && !isFieldHidden('mileage_photo') && !isFieldHidden('mileage')) {
+    r.mileageImages?.filter(img => isIncluded(img, undefined, 'mileage_photo')).forEach((img, i) => {
+      if (img && !basePhotos.some(p => p.data === img)) {
+        basePhotos.push({
+          data: img,
+          label: i === 0 ? (L.mileageLabel || 'Kilometerstand') : `${L.mileageRead || 'Kilometerstand'} (${L.photoLabel} ${i + 1})`,
+          mandatoryPhotoId: 'mileage_photo'
+        });
+      }
+    });
+  }
+  if (!isFieldHidden('identificationImages') && !isFieldHidden('vin_photo') && !isFieldHidden('vin')) {
+    r.identificationImages?.filter(img => isIncluded(img, undefined, 'vin_photo')).forEach((img, i) => {
+      if (img && !basePhotos.some(p => p.data === img)) {
+        basePhotos.push({
+          data: img,
+          label: i === 0 ? (L.vinLabel || 'Fahrgestellnummer (FIN)') : `${L.vinLabel || 'Fahrgestellnummer (FIN)'} (${L.photoLabel} ${i + 1})`,
+          mandatoryPhotoId: 'vin_photo'
+        });
+      }
+    });
+  }
 
   // Sort photos based on our priority mapping (stable sort by default)
   const sortedPhotos = basePhotos.sort((a, b) => getPhotoPriority(a) - getPhotoPriority(b));
@@ -1575,26 +1593,58 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   });
 
   // Common condition images
-  r.lastRegistrationImages?.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.registrationPaper || 'Fz-Schein'} (${L.photoLabel} ${i + 1})` }));
-  r.nextHUImages?.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.huLabel || 'HU-Bericht'} (${L.photoLabel} ${i + 1})` }));
+  if (!isFieldHidden('lastRegistrationImages') && !isFieldHidden('registrationCertificateStatus') && !isFieldHidden('fzScheinImages')) {
+    r.lastRegistrationImages?.filter((img: string) => isIncluded(img, undefined, 'lastRegistrationImages')).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.registrationPaper || 'Fz-Schein'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('nextHUImages') && !isFieldHidden('nextHU')) {
+    r.nextHUImages?.filter((img: string) => isIncluded(img, undefined, 'nextHUImages')).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.huLabel || 'HU-Bericht'} (${L.photoLabel} ${i + 1})` }));
+  }
 
   // Append new general inspection photos
-  r.serviceheftImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docServiceheft || 'Serviceheft'} (${L.photoLabel} ${i + 1})` }));
-  r.bordliteraturImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBedienungsanleitung || 'Bordliteratur'} (${L.photoLabel} ${i + 1})` }));
-  r.keysImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.keys || 'Schlüssel'} (${L.photoLabel} ${i + 1})` }));
-  r.maintenanceImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.maintenanceRecord || 'Wartung'} (${L.photoLabel} ${i + 1})` }));
-  r.fzScheinImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docFzSchein || 'Fz-Schein'} (${L.photoLabel} ${i + 1})` }));
-  r.errorMemoryReadImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.errorMemory || 'Fehlerspeicher'} (${L.photoLabel} ${i + 1})` }));
-  r.hybridBatteryCheckedImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.hybridLabel || 'Hybrid-Batterie'} (${L.photoLabel} ${i + 1})` }));
-  r.environmentalBadgeImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBadge || 'Umweltplakette'} (${L.photoLabel} ${i + 1})` }));
+  if (!isFieldHidden('serviceheftImages') && !isFieldHidden('serviceBookletStatus')) {
+    r.serviceheftImages?.filter(img => isIncluded(img, undefined, 'serviceheftImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docServiceheft || 'Serviceheft'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('bordliteraturImages') && !isFieldHidden('operatingManualStatus')) {
+    r.bordliteraturImages?.filter(img => isIncluded(img, undefined, 'bordliteraturImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBedienungsanleitung || 'Bordliteratur'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('keysImages') && !isFieldHidden('keysPresent') && !isFieldHidden('targetKeysCount')) {
+    r.keysImages?.filter(img => isIncluded(img, undefined, 'keysImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.keys || 'Schlüssel'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('maintenanceImages') && !isFieldHidden('nextMaintenanceType')) {
+    r.maintenanceImages?.filter(img => isIncluded(img, undefined, 'maintenanceImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.maintenanceRecord || 'Wartung'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('fzScheinImages') && !isFieldHidden('registrationCertificateStatus')) {
+    r.fzScheinImages?.filter(img => isIncluded(img, undefined, 'fzScheinImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docFzSchein || 'Fz-Schein'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('errorMemoryReadImages') && !isFieldHidden('errorMemoryRead')) {
+    r.errorMemoryReadImages?.filter(img => isIncluded(img, undefined, 'errorMemoryReadImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.errorMemory || 'Fehlerspeicher'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('hybridBatteryCheckedImages') && !isFieldHidden('hybridBatteryChecked')) {
+    r.hybridBatteryCheckedImages?.filter(img => isIncluded(img, undefined, 'hybridBatteryCheckedImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.hybridLabel || 'Hybrid-Batterie'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('environmentalBadgeImages') && !isFieldHidden('environmentalBadgeStatus')) {
+    r.environmentalBadgeImages?.filter(img => isIncluded(img, undefined, 'environmentalBadgeImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBadge || 'Umweltplakette'} (${L.photoLabel} ${i + 1})` }));
+  }
 
-  r.inspectionFromAboveImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.inspectionFromAbove || 'Besichtigung unten'} (${L.photoLabel} ${i + 1})` }));
-  r.inspectionFromBelowImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.inspectionFromBelow || 'Besichtigung oben'} (${L.photoLabel} ${i + 1})` }));
-  r.vehicleConditionImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.vehicleCondition || 'Fahrzeugzustand (Sichtprüfung)'} (${L.photoLabel} ${i + 1})` }));
-  r.engineRunPerformedImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.engineRun || 'Motorlauf'} (${L.photoLabel} ${i + 1})` }));
+  if (!isFieldHidden('inspectionFromAboveImages') && !isFieldHidden('inspectionFromAbove')) {
+    r.inspectionFromAboveImages?.filter(img => isIncluded(img, undefined, 'inspectionFromAboveImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.inspectionFromAbove || 'Besichtigung unten'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('inspectionFromBelowImages') && !isFieldHidden('inspectionFromBelow')) {
+    r.inspectionFromBelowImages?.filter(img => isIncluded(img, undefined, 'inspectionFromBelowImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.inspectionFromBelow || 'Besichtigung oben'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('vehicleConditionImages') && !isFieldHidden('vehicleConditionStatus')) {
+    r.vehicleConditionImages?.filter(img => isIncluded(img, undefined, 'vehicleConditionImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.vehicleCondition || 'Fahrzeugzustand (Sichtprüfung)'} (${L.photoLabel} ${i + 1})` }));
+  }
+  if (!isFieldHidden('engineRunPerformedImages') && !isFieldHidden('engineRunPerformed')) {
+    r.engineRunPerformedImages?.filter(img => isIncluded(img, undefined, 'engineRunPerformedImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.engineRun || 'Motorlauf'} (${L.photoLabel} ${i + 1})` }));
+  }
 
-  r.equipmentListAvailableImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.equipmentListAvailable} (${i + 1})` }));
-  r.deliveryConfirmationAvailableImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.deliveryConfirmationAvailable} (${i + 1})` }));
+  if (!isFieldHidden('equipmentListAvailableImages') && !isFieldHidden('equipmentListAvailable')) {
+    r.equipmentListAvailableImages?.filter(img => isIncluded(img, undefined, 'equipmentListAvailableImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.equipmentListAvailable} (${i + 1})` }));
+  }
+  if (!isFieldHidden('deliveryConfirmationAvailableImages') && !isFieldHidden('deliveryConfirmationAvailable')) {
+    r.deliveryConfirmationAvailableImages?.filter(img => isIncluded(img, undefined, 'deliveryConfirmationAvailableImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.deliveryConfirmationAvailable} (${i + 1})` }));
+  }
 
   [
     { key: 'breakdownKit', lbl: L.breakdownKit },
@@ -1602,10 +1652,14 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
     { key: 'safetyVest', lbl: L.safetyVestLabel || 'Warnweste' },
     { key: 'warningTriangle', lbl: L.warningTriangleLabel || 'Warndreieck' }
   ].forEach(({ key, lbl }) => {
-    const eq = (r as any)[key];
-    if (eq?.images) eq.images.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${lbl} (${L.photoLabel} ${i + 1})` }));
+    if (!isFieldHidden(key)) {
+      const eq = (r as any)[key];
+      if (eq?.images) eq.images.filter((img: string) => isIncluded(img, undefined, key)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${lbl} (${L.photoLabel} ${i + 1})` }));
+    }
   });
-  r.chargingCableImages?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.chargingCable} (${L.photoLabel} ${i + 1})` }));
+  if (!isFieldHidden('chargingCableImages') && !isFieldHidden('chargingCable')) {
+    r.chargingCableImages?.filter(img => isIncluded(img, undefined, 'chargingCableImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.chargingCable} (${L.photoLabel} ${i + 1})` }));
+  }
 
   // ─────────────────────────────────────────────────────────────────────
   // DAMAGE TABLE PAGINATION
@@ -1725,20 +1779,28 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   // ─────────────────────────────────────────────────────────────────────
   // VEHICLE DATA TABLE ROW helper
   // ─────────────────────────────────────────────────────────────────────
-  const vRow = (l1: string, v1: string | number, l2: string, v2: string | number) => `
+  const vRow = (l1: string, v1: string | number, l2: string, v2: string | number, fieldName1?: string, fieldName2?: string) => {
+    const hide1 = fieldName1 ? isFieldHidden(fieldName1) : false;
+    const hide2 = fieldName2 ? isFieldHidden(fieldName2) : false;
+    if (hide1 && hide2) return '';
+    return `
     <tr>
-      <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${l1}</td>
-      <td style="font-weight:500;padding:2px 6px;width:30%">${cleanup(v1)}</td>
-      <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${l2}</td>
-      <td style="font-weight:500;padding:2px 6px;width:30%">${cleanup(v2)}</td>
+      <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${hide1 ? '' : l1}</td>
+      <td style="font-weight:500;padding:2px 6px;width:30%">${hide1 ? '' : cleanup(v1)}</td>
+      <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${hide2 ? '' : l2}</td>
+      <td style="font-weight:500;padding:2px 6px;width:30%">${hide2 ? '' : cleanup(v2)}</td>
     </tr>`;
+  };
 
   // Single-value row helper (for odd fields)
-  const vRowSingle = (l1: string, v1: string | number) => `
+  const vRowSingle = (l1: string, v1: string | number, fieldName1?: string) => {
+    if (fieldName1 && isFieldHidden(fieldName1)) return '';
+    return `
     <tr>
       <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${l1}</td>
       <td colspan="3" style="font-weight:500;padding:2px 6px">${cleanup(v1)}</td>
     </tr>`;
+  };
 
   // ─────────────────────────────────────────────────────────────────────
   // PHOTO PAGES — 2 photos per page, own page numbering
@@ -1929,22 +1991,22 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
   ${secHead(L.vehicleData)}
     <table class="premium-table" style="width:100%;border-collapse:collapse;font-size:9pt">
-      ${vRow(L.firstRegistration, fmtDate(r.firstRegistration), L.lastRegistration, fmtDate(r.lastRegistration))}
-      ${vRow(L.manufacturer, r.manufacturer, L.typeSales, `${r.baseModel} ${r.subModel}`)}
-      ${vRow(L.bodyType, r.bodyType, L.doors, r.doors ?? '-')}
-      ${vRow(L.seats, r.seats ?? '-', L.vehicleCategory, r.vehicleCategory || '-')}
-      ${vRowSingle(L.vinFull, r.vin)}
-      ${vRow(L.hsnTsn, r.kbaNumbers, L.keyNo, r.keyNumber)}
-      ${vRow(L.mileageRead, `${new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(r.mileage)} km`, L.nextInspection, formatMonthYear(r.nextHU))}
-      ${vRow(L.fuel, r.fuelType, L.cylinders, r.cylinders ?? '-')}
-      ${vRow(L.power, r.powerKw, L.displacement, r.displacement)}
-      ${vRow(L.emissionClass, r.emissionClass, L.driveType, r.driveType)}
-      ${vRow(L.transmission, r.transmission, L.wheels, r.wheels)}
-      ${vRow(L.color, r.colorDescription, L.upholstery, r.upholsteryDescription)}
-      ${r.breakdownKit ? vRowSingle(L.breakdownKit, (typeof r.breakdownKit === 'string' ? r.breakdownKit : (isAvailable(r.breakdownKit.status) ? L.available : isNotAvailable(r.breakdownKit.status) ? L.notAvailable : r.breakdownKit.status)) + (r.breakdownKit.price ? ` (${fmtCur(r.breakdownKit.price)})` : '')) : ''}
-      ${r.firstAidKit?.status ? vRowSingle(L.firstAidKitLabel || 'Erste-Hilfe-Set', isAvailable(r.firstAidKit.status) ? L.available : isNotAvailable(r.firstAidKit.status) ? L.notAvailable : r.firstAidKit.status) : ''}
-      ${r.safetyVest?.status ? vRowSingle(L.safetyVestLabel || 'Warnweste', isAvailable(r.safetyVest.status) ? L.available : isNotAvailable(r.safetyVest.status) ? L.notAvailable : r.safetyVest.status) : ''}
-      ${r.warningTriangle?.status ? vRowSingle(L.warningTriangleLabel || 'Warndreieck', isAvailable(r.warningTriangle.status) ? L.available : isNotAvailable(r.warningTriangle.status) ? L.notAvailable : r.warningTriangle.status) : ''}
+      ${vRow(L.firstRegistration, fmtDate(r.firstRegistration), L.lastRegistration, fmtDate(r.lastRegistration), 'firstRegistration', 'lastRegistration')}
+      ${vRow(L.manufacturer, r.manufacturer, L.typeSales, `${r.baseModel} ${r.subModel}`, 'manufacturer', 'baseModel')}
+      ${vRow(L.bodyType, r.bodyType, L.doors, r.doors ?? '-', 'bodyType', 'doors')}
+      ${vRow(L.seats, r.seats ?? '-', L.vehicleCategory, r.vehicleCategory || '-', 'seats', 'vehicleCategory')}
+      ${vRowSingle(L.vinFull, r.vin, 'vin')}
+      ${vRow(L.hsnTsn, r.kbaNumbers, L.keyNo, r.keyNumber, 'kbaNumbers', 'keyNumber')}
+      ${vRow(L.mileageRead, `${new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(r.mileage)} km`, L.nextInspection, formatMonthYear(r.nextHU), 'mileage', 'nextHU')}
+      ${vRow(L.fuel, r.fuelType, L.cylinders, r.cylinders ?? '-', 'fuelType', 'cylinders')}
+      ${vRow(L.power, r.powerKw, L.displacement, r.displacement, 'powerKw', 'displacement')}
+      ${vRow(L.emissionClass, r.emissionClass, L.driveType, r.driveType, 'emissionClass', 'driveType')}
+      ${vRow(L.transmission, r.transmission, L.wheels, r.wheels, 'transmission', 'wheels')}
+      ${vRow(L.color, r.colorDescription, L.upholstery, r.upholsteryDescription, 'colorDescription', 'upholsteryDescription')}
+      ${r.breakdownKit ? vRowSingle(L.breakdownKit, (typeof r.breakdownKit === 'string' ? r.breakdownKit : (isAvailable(r.breakdownKit.status) ? L.available : isNotAvailable(r.breakdownKit.status) ? L.notAvailable : r.breakdownKit.status)) + (r.breakdownKit.price ? ` (${fmtCur(r.breakdownKit.price)})` : ''), 'breakdownKit') : ''}
+      ${r.firstAidKit?.status ? vRowSingle(L.firstAidKitLabel || 'Erste-Hilfe-Set', isAvailable(r.firstAidKit.status) ? L.available : isNotAvailable(r.firstAidKit.status) ? L.notAvailable : r.firstAidKit.status, 'firstAidKit') : ''}
+      ${r.safetyVest?.status ? vRowSingle(L.safetyVestLabel || 'Warnweste', isAvailable(r.safetyVest.status) ? L.available : isNotAvailable(r.safetyVest.status) ? L.notAvailable : r.safetyVest.status, 'safetyVest') : ''}
+      ${r.warningTriangle?.status ? vRowSingle(L.warningTriangleLabel || 'Warndreieck', isAvailable(r.warningTriangle.status) ? L.available : isNotAvailable(r.warningTriangle.status) ? L.notAvailable : r.warningTriangle.status, 'warningTriangle') : ''}
     </table>
     <p style="font-size:8pt;font-style:italic;margin-top:8px;color:#666">${L.mileageDisclaimer}</p>
   </div>

@@ -1469,8 +1469,26 @@
             "front_bumper": "Front bumper",
             "wheels": "Wheels",
             "sills": "Sills",
+            "documents_equipment": "Documents & Equipment",
             "other": "Other"
         }
+    },
+    "addPhoto": {
+        "title": "Add Photo",
+        "subtitle": "Upload post-call photo & assign vehicle part",
+        "fileLabel": "Select Image File",
+        "dropText": "Drag & drop image here or click",
+        "maxSize": "max. 15MB",
+        "partLabel": "Vehicle Part / Category",
+        "customGroup": "Other",
+        "customOption": "Custom Part Name...",
+        "customPlaceholder": "Enter part name (e.g. Front Left Fender)",
+        "uploading": "Uploading...",
+        "submit": "Upload & Save",
+        "errorInvalidType": "Please select a valid image file (JPEG, PNG, WEBP).",
+        "errorNoFile": "Please select an image file to upload.",
+        "errorNoPartName": "Please specify a vehicle part name.",
+        "errorUploadFailed": "Failed to upload photo. Please try again."
     },
     "meeting": {
         "setupTitle": "Setup Meeting",

@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { Camera, Eye, Trash2, CheckCircle, ChevronDown, ChevronUp, Car, FileText, ShieldCheck, Image, ClipboardCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, Eye, Trash2, CheckCircle, ChevronDown, ChevronUp, Car, FileText, ShieldCheck, Image, ClipboardCheck, Upload } from 'lucide-react';
 import { API_BASE_URL } from './videoConfig';
 import type { Order } from './videoTypes';
+import { useReportStore } from '../../store/reportStore';
+import { uploadScreenshot } from './services/orderService';
+
 
 interface VehicleReportStepsPanelProps {
     order: Order | null;
@@ -11,6 +14,48 @@ interface VehicleReportStepsPanelProps {
     onDelete: (filename: string) => void;
     onView: (filename: string) => void;
 }
+
+// ─── Slot and Field Aliases for Field Configuration ──────────────────────────
+
+const SLOT_ALIASES: Record<string, string[]> = {
+    vin_number: ['vin_number', 'vin_photo', 'identificationimages', 'vin', 'vinnumber'],
+    Meter_reading: ['meter_reading', 'mileage_photo', 'mileageimages', 'mileage'],
+    next_hu: ['next_hu', 'nexthuimages', 'nexthu'],
+    keys_photo: ['keys_photo', 'keysimages', 'keys'],
+    docRegistration: ['docregistration', 'lastregistrationimages', 'fzschein', 'fzscheinimages'],
+    docServiceBook: ['docservicebook', 'serviceheft', 'serviceheftimages'],
+    docManual: ['docmanual', 'bordliteratur', 'bordliteraturimages'],
+    docBadge: ['docbadge', 'environmentalbadge', 'environmentalbadgeimages'],
+    maintenance_images: ['maintenance_images', 'maintenanceimages', 'maintenance'],
+    breakdown_kit: ['breakdown_kit', 'breakdownkit'],
+    first_aid_kit: ['first_aid_kit', 'firstaidkit'],
+    warning_triangle: ['warning_triangle', 'warningtriangle'],
+    safety_vest: ['safety_vest', 'safetyvest'],
+    spare_tire: ['spare_tire', 'sparetire'],
+    EV_charging_cover: ['ev_charging_cover', 'chargingcable', 'chargingcableimages'],
+    Overview_diagonal_front_left: ['overview_diagonal_front_left', 'diag_fl'],
+    Overview_diagonal_front_right: ['overview_diagonal_front_right', 'diag_fr'],
+    Overview_diagonal_rear_left: ['overview_diagonal_rear_left', 'diag_rl'],
+    Overview_diagonal_rear_right: ['overview_diagonal_rear_right', 'diag_rr'],
+    left_sill: ['left_sill', 'sill_left'],
+    Right_sill: ['right_sill', 'sill_right'],
+    front_left_wheel: ['front_left_wheel', 'tires'],
+    front_right_wheel: ['front_right_wheel', 'tires'],
+    rear_right_wheel: ['rear_right_wheel', 'tires'],
+    rear_left_wheel: ['rear_left_wheel', 'tires'],
+};
+
+const FIELD_ALIASES: Record<string, string[]> = {
+    licensePlate: ['licenseplate', 'licenseplatenumber', 'kennzeichen'],
+    vin: ['vin', 'vinnumber', 'fin'],
+    brand: ['brand', 'vehiclemake', 'marke'],
+    model: ['model', 'vehiclemodel', 'modell'],
+    mileage: ['mileage', 'kilometerstand'],
+    firstRegistrationDate: ['firstregistrationdate', 'lastvehicleinspectiondate', 'erstzulassung'],
+    companyName: ['companyname', 'firmenname'],
+    contactPersonName: ['contactpersonname', 'ansprechpartner'],
+    auftragsnummer: ['auftragsnummer', 'casenumber'],
+};
 
 // ─── Step Definitions ─────────────────────────────────────────────────────────
 
@@ -98,6 +143,7 @@ const SlotRow = ({
     onCapture,
     onDelete,
     onView,
+    onUploadSuccess,
 }: {
     slot: { id: string; label: string; labelEn: string };
     filename: string | null;
@@ -105,61 +151,100 @@ const SlotRow = ({
     onCapture: () => void;
     onDelete: (f: string) => void;
     onView: (f: string) => void;
-}) => (
-    <div className="flex items-center justify-between p-2.5 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-tertiary)]/30 hover:bg-[var(--color-bg-hover)] transition-all gap-2 group">
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            {filename ? (
-                <div className="relative w-10 h-8 rounded-lg overflow-hidden border border-[var(--color-border-secondary)] bg-black flex-shrink-0">
-                    <img
-                        src={`${API_BASE_URL}/screenshots/${roomId}/${filename}`}
-                        alt={slot.label}
-                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => onView(filename)}
-                    />
+    onUploadSuccess?: () => void;
+}) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setIsUploading(true);
+            try {
+                await uploadScreenshot(file, slot.id, roomId);
+                if (onUploadSuccess) onUploadSuccess();
+            } catch (err) {
+                console.error('Failed to upload photo for slot:', slot.id, err);
+            } finally {
+                setIsUploading(false);
+            }
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between p-2.5 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-tertiary)]/30 hover:bg-[var(--color-bg-hover)] transition-all gap-2 group">
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+            />
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                {filename ? (
+                    <div className="relative w-10 h-8 rounded-lg overflow-hidden border border-[var(--color-border-secondary)] bg-black flex-shrink-0">
+                        <img
+                            src={`${API_BASE_URL}/screenshots/${roomId}/${filename}`}
+                            alt={slot.label}
+                            className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => onView(filename)}
+                        />
+                    </div>
+                ) : (
+                    <div className="w-10 h-8 rounded-lg border border-dashed border-[var(--color-border-primary)] flex items-center justify-center text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] flex-shrink-0">
+                        <Camera size={12} />
+                    </div>
+                )}
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-[var(--color-text-primary)] truncate">{slot.label}</span>
+                        {filename && <CheckCircle size={9} className="text-green-500 flex-shrink-0 animate-scale-in" />}
+                    </div>
+                    <span className="text-[9px] text-[var(--color-text-secondary)] truncate block">{slot.labelEn}</span>
                 </div>
-            ) : (
-                <div className="w-10 h-8 rounded-lg border border-dashed border-[var(--color-border-primary)] flex items-center justify-center text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] flex-shrink-0">
-                    <Camera size={12} />
-                </div>
-            )}
-            <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-[var(--color-text-primary)] truncate">{slot.label}</span>
-                    {filename && <CheckCircle size={9} className="text-green-500 flex-shrink-0 animate-scale-in" />}
-                </div>
-                <span className="text-[9px] text-[var(--color-text-secondary)] truncate block">{slot.labelEn}</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+                {filename ? (
+                    <>
+                        <button
+                            onClick={() => onView(filename)}
+                            className="p-1.5 bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] rounded-lg transition-colors cursor-pointer"
+                            title="Anzeigen"
+                        >
+                            <Eye size={11} />
+                        </button>
+                        <button
+                            onClick={() => onDelete(filename)}
+                            className="p-1.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white dark:bg-red-950/30 dark:hover:bg-red-600 dark:text-red-400 dark:hover:text-white rounded-lg transition-all cursor-pointer border border-red-100 hover:border-red-600 dark:border-red-950/50 dark:hover:border-red-600"
+                            title="Löschen"
+                        >
+                            <Trash2 size={11} />
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button
+                            onClick={onCapture}
+                            className="flex items-center gap-1 px-2 py-1.5 bg-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/90 text-white rounded-lg text-[9px] font-bold transition-all shadow-sm cursor-pointer"
+                            title="Snapshot per Video-Call"
+                        >
+                            <Camera size={11} />
+                            <span>Aufnehmen</span>
+                        </button>
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="p-1.5 bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-hover)] text-[var(--color-primary-orange)] rounded-lg transition-colors cursor-pointer border border-[var(--color-border-primary)]"
+                            title="Foto hochladen"
+                        >
+                            <Upload size={11} />
+                        </button>
+                    </>
+                )}
             </div>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-            {filename ? (
-                <>
-                    <button
-                        onClick={() => onView(filename)}
-                        className="p-1.5 bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] rounded-lg transition-colors cursor-pointer"
-                        title="Anzeigen"
-                    >
-                        <Eye size={11} />
-                    </button>
-                    <button
-                        onClick={() => onDelete(filename)}
-                        className="p-1.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white dark:bg-red-950/30 dark:hover:bg-red-600 dark:text-red-400 dark:hover:text-white rounded-lg transition-all cursor-pointer border border-red-100 hover:border-red-600 dark:border-red-950/50 dark:hover:border-red-600"
-                        title="Löschen"
-                    >
-                        <Trash2 size={11} />
-                    </button>
-                </>
-            ) : (
-                <button
-                    onClick={onCapture}
-                    className="flex items-center gap-1 px-2.5 py-1.5 bg-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/90 text-white rounded-lg text-[9px] font-bold transition-all shadow-sm cursor-pointer"
-                >
-                    <Camera size={11} />
-                    <span>Aufnehmen</span>
-                </button>
-            )}
-        </div>
-    </div>
-);
+    );
+};
 
 // ─── Step Accordion ───────────────────────────────────────────────────────────
 
@@ -168,28 +253,46 @@ const StepAccordion: React.FC<{
     order: Order | null;
     roomId: string;
     savedScreenshots: Record<string, string>;
+    isHidden: (id: string, aliases?: string[]) => boolean;
     onCapture: (slotId: string) => void;
     onDelete: (filename: string) => void;
     onView: (filename: string) => void;
+    onUploadSuccess?: () => void;
     isOpen: boolean;
     onToggle: () => void;
-}> = ({ step, order, roomId, savedScreenshots, onCapture, onDelete, onView, isOpen, onToggle }) => {
+}> = ({ step, order, roomId, savedScreenshots, isHidden, onCapture, onDelete, onView, onUploadSuccess, isOpen, onToggle }) => {
     const Icon = step.icon;
 
     const getFilename = (slotId: string): string | null => {
-        const key = Object.keys(savedScreenshots).find(
-            k => k === slotId || k.startsWith(slotId + '_')
-        );
+        const aliases = [slotId, ...(SLOT_ALIASES[slotId] || [])].map(s => s.toLowerCase());
+        const key = Object.keys(savedScreenshots).find((k) => {
+            const cleanK = k.toLowerCase();
+            return aliases.some(alias => cleanK === alias || cleanK.startsWith(alias + '_'));
+        });
         return key ? savedScreenshots[key] : null;
     };
 
+    // Filter visible slots
+    const visibleSlots = step.type === 'slots'
+        ? (step.slots || []).filter(slot => !isHidden(slot.id, SLOT_ALIASES[slot.id] || []))
+        : [];
+
     // Count captured slots for badge
-    let capturedCount = 0;
-    let totalSlots = 0;
-    if (step.type === 'slots') {
-        totalSlots = step.slots.length;
-        capturedCount = step.slots.filter(s => getFilename(s.id) !== null).length;
-    }
+    const totalSlots = visibleSlots.length;
+    const capturedCount = visibleSlots.filter(s => getFilename(s.id) !== null).length;
+
+    // Filter Step 1 fields
+    const step1Fields = [
+        { fieldName: 'licensePlate', label: 'Kennzeichen', value: order?.licensePlateNumber },
+        { fieldName: 'vin', label: 'FIN / VIN', value: order?.vinNumber },
+        { fieldName: 'brand', label: 'Marke', value: order?.vehicleMake },
+        { fieldName: 'model', label: 'Modell', value: order?.vehicleModel },
+        { fieldName: 'mileage', label: 'Kilometerstand', value: order?.mileage ? `${order.mileage.toLocaleString('de-DE')} km` : null },
+        { fieldName: 'firstRegistrationDate', label: 'Erstzulassung', value: order?.lastVehicleInspectionDate },
+        { fieldName: 'companyName', label: 'Firmenname', value: order?.companyName },
+        { fieldName: 'contactPersonName', label: 'Ansprechpartner', value: order?.contactPersonName },
+        { fieldName: 'auftragsnummer', label: 'Auftragsnummer', value: order?.auftragsnummer || order?.caseNumber },
+    ].filter(f => !isHidden(f.fieldName, FIELD_ALIASES[f.fieldName] || []));
 
     return (
         <div className="border border-[var(--color-border-primary)] rounded-xl overflow-hidden">
@@ -224,21 +327,15 @@ const StepAccordion: React.FC<{
                 <div className="p-3 bg-[var(--color-bg-card)] space-y-2">
                     {step.type === 'fields' && (
                         <div className="bg-[var(--color-bg-secondary)] rounded-lg px-3 py-1">
-                            <FieldRow label="Kennzeichen" value={order?.licensePlateNumber} />
-                            <FieldRow label="FIN / VIN" value={order?.vinNumber} />
-                            <FieldRow label="Marke" value={order?.vehicleMake} />
-                            <FieldRow label="Modell" value={order?.vehicleModel} />
-                            <FieldRow label="Kilometerstand" value={order?.mileage ? `${order.mileage.toLocaleString('de-DE')} km` : null} />
-                            <FieldRow label="Erstzulassung" value={order?.lastVehicleInspectionDate} />
-                            <FieldRow label="Firmenname" value={order?.companyName} />
-                            <FieldRow label="Ansprechpartner" value={order?.contactPersonName} />
-                            <FieldRow label="Auftragsnummer" value={order?.auftragsnummer || order?.caseNumber} />
+                            {step1Fields.map(f => (
+                                <FieldRow key={f.fieldName} label={f.label} value={f.value} />
+                            ))}
                         </div>
                     )}
 
                     {step.type === 'slots' && (
                         <div className="space-y-1.5">
-                            {(step as { slots: { id: string; label: string; labelEn: string }[] }).slots.map(slot => (
+                            {visibleSlots.map(slot => (
                                 <SlotRow
                                     key={slot.id}
                                     slot={slot}
@@ -247,6 +344,7 @@ const StepAccordion: React.FC<{
                                     onCapture={() => onCapture(slot.id)}
                                     onDelete={onDelete}
                                     onView={onView}
+                                    onUploadSuccess={onUploadSuccess}
                                 />
                             ))}
                         </div>
@@ -289,6 +387,16 @@ export const VehicleReportStepsPanel: React.FC<VehicleReportStepsPanelProps> = (
 }) => {
     // Start with first two steps open
     const [openSteps, setOpenSteps] = useState<Set<string>>(new Set(['step1', 'step2']));
+    const { fieldConfigs, fetchFieldConfigs } = useReportStore();
+
+    useEffect(() => {
+        fetchFieldConfigs(order?.customerNumber);
+    }, [order?.customerNumber, fetchFieldConfigs]);
+
+    const isHidden = (fieldOrSlotId: string, aliases: string[] = []) => {
+        const names = [fieldOrSlotId, ...aliases].map(s => s.toLowerCase());
+        return !!fieldConfigs?.some((c: any) => names.includes(c.fieldName.toLowerCase()) && c.hidden === true);
+    };
 
     const toggleStep = (id: string) => {
         setOpenSteps(prev => {
@@ -302,12 +410,19 @@ export const VehicleReportStepsPanel: React.FC<VehicleReportStepsPanelProps> = (
         });
     };
 
-    // Total photo progress
-    const allSlots = STEPS.filter(s => s.type === 'slots').flatMap(s => (s as any).slots);
-    const totalPhotos = allSlots.length;
-    const capturedPhotos = allSlots.filter((slot: { id: string }) => {
-        const key = Object.keys(savedScreenshots).find(k => k === slot.id || k.startsWith(slot.id + '_'));
-        return !!key;
+    // Total photo progress across only visible slots
+    const allVisibleSlots = STEPS
+        .filter(s => s.type === 'slots')
+        .flatMap(s => (s as any).slots)
+        .filter((slot: { id: string }) => !isHidden(slot.id, SLOT_ALIASES[slot.id] || []));
+
+    const totalPhotos = allVisibleSlots.length;
+    const capturedPhotos = allVisibleSlots.filter((slot: { id: string }) => {
+        const aliases = [slot.id, ...(SLOT_ALIASES[slot.id] || [])].map(s => s.toLowerCase());
+        return Object.keys(savedScreenshots).some((k) => {
+            const cleanK = k.toLowerCase();
+            return aliases.some(alias => cleanK === alias || cleanK.startsWith(alias + '_'));
+        });
     }).length;
 
     return (
@@ -338,6 +453,7 @@ export const VehicleReportStepsPanel: React.FC<VehicleReportStepsPanelProps> = (
                         order={order}
                         roomId={roomId}
                         savedScreenshots={savedScreenshots}
+                        isHidden={isHidden}
                         onCapture={onCapture}
                         onDelete={onDelete}
                         onView={onView}

@@ -7,7 +7,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FieldConfig {
     private String fieldName;
-    private boolean required;
+    private Boolean required;
+    private Boolean hidden;
     private Integer stepNumber;
     private String type;
     private String customerNumber;
@@ -27,12 +28,20 @@ public class FieldConfig {
         this.fieldName = fieldName;
     }
 
-    public boolean isRequired() {
+    public Boolean getRequired() {
         return required;
     }
 
-    public void setRequired(boolean required) {
+    public void setRequired(Boolean required) {
         this.required = required;
+    }
+
+    public Boolean getHidden() {
+        return hidden;
+    }
+
+    public void setHidden(Boolean hidden) {
+        this.hidden = hidden;
     }
 
     public Integer getStepNumber() {

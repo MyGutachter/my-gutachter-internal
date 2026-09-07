@@ -61,7 +61,7 @@ public class ScreenshotController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("partName") String partName,
             @RequestParam("meetingId") String meetingId,
-            @RequestParam("userId") String userId) {
+            @RequestParam(value = "userId", required = false) String userId) {
         try {
             String safePartName = partName.replaceAll("[^a-zA-Z0-9.-]", "_");
             long timestamp = System.currentTimeMillis();

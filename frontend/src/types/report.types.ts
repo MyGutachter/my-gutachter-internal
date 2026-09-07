@@ -444,7 +444,7 @@ export interface ReportData {
     hasSecondTireSet: boolean;
     secondTires: TireInfo[];
     secondTireSetSelection?: 'Only Tires' | 'Only Rims' | 'Both' | '';
-    fieldConfigs: any[];
+    fieldConfigs: FieldConfig[];
     globalConfig?: GlobalConfig | null;
     initialData?: Partial<ReportData> | null;
     vehicleBaseValue?: number;
@@ -457,6 +457,19 @@ export interface ReportData {
     meetingData?: Record<string, string>;
     uvvResult?: 'PASSED' | 'FAILED' | '';
     uvvInspectionDate?: string;
+}
+
+export interface FieldConfig {
+    fieldName: string;
+    required?: boolean;
+    hidden?: boolean;
+    stepNumber?: number;
+    type?: 'global' | 'customer';
+    customerNumber?: string;
+    label?: string;
+    sortOrder?: number;
+    isPhotoSlot?: boolean;
+    isCustom?: boolean;
 }
 
 export interface ReportVersion {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Camera, ImagePlus, X } from 'lucide-react';
+import { Camera, Eye, EyeOff, ImagePlus, X } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import toast from 'react-hot-toast';
 import type { EquipmentItem } from '../../types/report.types';
@@ -13,8 +13,10 @@ interface EquipmentSelectProps {
     onChange: (val: EquipmentItem) => void;
     showExpiration?: boolean;
     required?: boolean;
+    hidden?: boolean;
     adminMode?: boolean;
     onToggleRequired?: () => void;
+    onToggleHidden?: () => void;
     name?: string;
     error?: string;
 }
@@ -25,14 +27,18 @@ const EquipmentSelect: React.FC<EquipmentSelectProps> = ({
     onChange,
     showExpiration,
     required,
+    hidden,
     adminMode,
     onToggleRequired,
+    onToggleHidden,
     name,
     error
 }) => {
     const { t } = useTranslation();
     const claimType = useReportStore(state => state.claimType);
     const isVehicleEvaluation = claimType === 'Fahrzeugbewertung';
+
+    if (!adminMode && hidden) return null;
 
     const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -61,27 +67,62 @@ const EquipmentSelect: React.FC<EquipmentSelectProps> = ({
     };
 
     return (
-        <div className="relative flex flex-col gap-2 w-full group" data-fieldname={name}>
+        <div className={`relative flex flex-col gap-2 w-full group ${adminMode && hidden ? 'opacity-65' : ''}`} data-fieldname={name}>
             <label
                 className={`block text-[11px] font-black uppercase tracking-[0.05em] mb-1 transition-all duration-300 ${required ? 'text-black' : 'text-slate-400 group-hover:text-slate-600'
-                    } ${adminMode ? 'cursor-pointer' : ''}`}
-                onClick={adminMode ? onToggleRequired : undefined}
+                    }`}
             >
-                <div className="flex items-center gap-1.5">
-                    {label}
-                    {required && !adminMode && <span className="text-red-500 ml-1 font-bold">*</span>}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={adminMode && hidden ? 'line-through text-slate-500' : ''}>{label}</span>
+                    {required && !adminMode && <span className="text-red-500 ml-0.5 font-bold">*</span>}
 
-                    {adminMode && required && (
-                        <span className="text-[9px] font-bold bg-primary text-white px-2 py-0.5 rounded-full ml-auto">
-                            {t('admin.mandatory')}
-                        </span>
+                    {adminMode && (
+                        <div className="flex items-center gap-1.5 ml-auto">
+                            {onToggleHidden && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onToggleHidden();
+                                    }}
+                                    className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full transition-all ${
+                                        hidden
+                                            ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-400'
+                                            : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
+                                    }`}
+                                    title={hidden ? 'Feld ist ausgeblendet' : 'Feld ist sichtbar'}
+                                >
+                                    {hidden ? <EyeOff className="w-3 h-3 text-slate-600" /> : <Eye className="w-3 h-3 text-emerald-700" />}
+                                    <span>{hidden ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                                </button>
+                            )}
+                            {onToggleRequired && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onToggleRequired();
+                                    }}
+                                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full transition-all ${
+                                        required
+                                            ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm'
+                                            : 'bg-slate-200 hover:bg-slate-300 text-slate-600'
+                                    }`}
+                                    title={required ? 'Pflichtfeld' : 'Optionales Feld'}
+                                >
+                                    {required ? 'Pflicht' : 'Optional'}
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             </label>
 
             <div className={`relative flex flex-col gap-2 p-2 bg-white rounded-xl border-2 transition-all duration-300 ${error ? 'border-red-500 bg-red-50/10' :
-                    (adminMode && required ? 'border-primary/30 bg-primary/5 ring-4 ring-primary/5' : 'border-slate-200')
-                } ${adminMode ? 'cursor-pointer hover:bg-slate-50/50' : ''}`}>
+                    (adminMode && hidden ? 'border-dashed border-slate-300 bg-slate-50' : (adminMode && required ? 'border-amber-600/30 bg-amber-500/5 ring-4 ring-amber-600/5' : 'border-slate-200'))
+                }`}>
 
                 <div className="flex flex-wrap items-center gap-3">
                     <select
@@ -152,12 +193,6 @@ const EquipmentSelect: React.FC<EquipmentSelectProps> = ({
                             />
                         ))}
                     </div>
-                )}
-                {adminMode && (
-                    <div
-                        onClick={onToggleRequired}
-                        className="absolute inset-0 cursor-pointer z-10"
-                    />
                 )}
             </div>
             {value?.status === 'Not available' && !isVehicleEvaluation && (

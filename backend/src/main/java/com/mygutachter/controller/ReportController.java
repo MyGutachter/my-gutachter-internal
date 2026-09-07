@@ -227,6 +227,11 @@ public class ReportController {
 
         Document report = null;
         if (caseNumber != null && !caseNumber.trim().isEmpty()) {
+            try {
+                orderService.reSyncVideoExpertPhotos(caseNumber);
+            } catch (Exception e) {
+                // Log and continue if resync fails
+            }
             if (canViewAllVehicleValuations(requesterEmail, requesterRole)) {
                 // Admin can search globally by caseNumber
                 report = collection.find(Filters.eq("caseNumber", caseNumber)).first();

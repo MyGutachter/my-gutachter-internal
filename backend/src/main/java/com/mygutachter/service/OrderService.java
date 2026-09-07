@@ -433,9 +433,9 @@ public class OrderService {
         meetingData.put(dbKey, value);
         doc.put("meetingData", meetingData);
 
-        mapScreenshotToReport(doc, caseNumber, dbKey, value);
-
         collection.replaceOne(Filters.eq("caseNumber", caseNumber), doc);
+
+        reSyncVideoExpertPhotos(caseNumber);
     }
 
     /** Remove a screenshot reference from {@code meetingData}. Automatically remove from report fields. */
@@ -450,8 +450,9 @@ public class OrderService {
         }
 
         removeScreenshotFromReport(doc, dbKey);
-
         collection.replaceOne(Filters.eq("caseNumber", caseNumber), doc);
+
+        reSyncVideoExpertPhotos(caseNumber);
     }
 
     private void mapScreenshotToReport(Document doc, String caseNumber, String dbKey, String s3Key) {
@@ -473,79 +474,96 @@ public class OrderService {
             doc.put("videoExpertImages", videoExpertImages);
         }
 
-        switch (cleanPartId) {
+        switch (cleanPartId.toLowerCase()) {
             case "vin_number":
             case "vin_photo":
-            case "identificationImages":
+            case "identificationimages":
+            case "vin":
+            case "vinnumber":
                 addToUniqueList(doc, "identificationImages", url);
                 addMandatoryPhoto(doc, "vin_photo", "Fahrzeug-Ident.-Nr. / Typschild", url, filename);
                 break;
 
-            case "Meter_reading":
+            case "meter_reading":
             case "mileage_photo":
-            case "mileageImages":
+            case "mileageimages":
+            case "mileage":
                 addToUniqueList(doc, "mileageImages", url);
                 addMandatoryPhoto(doc, "mileage_photo", "Kilometerstand / Tacho", url, filename);
                 break;
 
             case "next_hu":
-            case "nextHUImages":
+            case "nexthuimages":
+            case "nexthu":
                 addToUniqueList(doc, "nextHUImages", url);
                 break;
 
             case "keys_photo":
-            case "keysImages":
+            case "keysimages":
+            case "keys":
                 addToUniqueList(doc, "keysImages", url);
                 break;
 
-            case "docRegistration":
+            case "docregistration":
             case "vehicle_registration_document":
-            case "fzScheinImages":
+            case "fzschein":
+            case "fzscheinimages":
+            case "lastregistrationimages":
                 addToUniqueList(doc, "fzScheinImages", url);
                 break;
 
-            case "docServiceBook":
-            case "serviceheftImages":
+            case "docservicebook":
+            case "serviceheft":
+            case "serviceheftimages":
                 addToUniqueList(doc, "serviceheftImages", url);
                 break;
 
-            case "docManual":
-            case "bordliteraturImages":
+            case "docmanual":
+            case "bordliteratur":
+            case "bordliteraturimages":
                 addToUniqueList(doc, "bordliteraturImages", url);
                 break;
 
-            case "docBadge":
-            case "environmentalBadgeImages":
+            case "docbadge":
+            case "environmentalbadge":
+            case "environmentalbadgeimages":
                 addToUniqueList(doc, "environmentalBadgeImages", url);
                 break;
 
             case "maintenance_images":
-            case "maintenanceImages":
+            case "maintenanceimages":
+            case "maintenance":
                 addToUniqueList(doc, "maintenanceImages", url);
                 break;
 
             case "breakdown_kit":
+            case "breakdownkit":
                 updateEquipmentImage(doc, "breakdownKit", url);
                 break;
 
             case "first_aid_kit":
+            case "firstaidkit":
                 updateEquipmentImage(doc, "firstAidKit", url);
                 break;
 
             case "warning_triangle":
+            case "warningtriangle":
                 updateEquipmentImage(doc, "warningTriangle", url);
                 break;
 
             case "safety_vest":
+            case "safetyvest":
                 updateEquipmentImage(doc, "safetyVest", url);
                 break;
 
             case "spare_tire":
+            case "sparetire":
                 updateEquipmentImage(doc, "spareTire", url);
                 break;
 
-            case "EV_charging_cover":
-            case "chargingCableImages":
+            case "ev_charging_cover":
+            case "chargingcable":
+            case "chargingcableimages":
                 addToUniqueList(doc, "chargingCableImages", url);
                 break;
 
@@ -565,27 +583,33 @@ public class OrderService {
                 updateTireImage(doc, 3, url);
                 break;
 
-            case "Overview_diagonal_front_left":
+            case "overview_diagonal_front_left":
+            case "diag_fl":
                 addMandatoryPhoto(doc, "diag_fl", "Übersicht diagonal vorne links", url, filename);
                 break;
 
-            case "Overview_diagonal_front_right":
+            case "overview_diagonal_front_right":
+            case "diag_fr":
                 addMandatoryPhoto(doc, "diag_fr", "Übersicht diagonal vorne rechts", url, filename);
                 break;
 
-            case "Overview_diagonal_rear_left":
+            case "overview_diagonal_rear_left":
+            case "diag_rl":
                 addMandatoryPhoto(doc, "diag_rl", "Übersicht diagonal hinten links", url, filename);
                 break;
 
-            case "Overview_diagonal_rear_right":
+            case "overview_diagonal_rear_right":
+            case "diag_rr":
                 addMandatoryPhoto(doc, "diag_rr", "Übersicht diagonal hinten rechts", url, filename);
                 break;
 
             case "left_sill":
+            case "sill_left":
                 addMandatoryPhoto(doc, "sill_left", "Schweller links", url, filename);
                 break;
 
-            case "Right_sill":
+            case "right_sill":
+            case "sill_right":
                 addMandatoryPhoto(doc, "sill_right", "Schweller rechts", url, filename);
                 break;
 
@@ -632,17 +656,17 @@ public class OrderService {
             .append("fileName", filename)
             .append("mandatoryPhotoId", mandatoryPhotoId)
             .append("isExternal", true)
-            .append("fromVideoExpert", true);
+            .append("fromVideoExpert", true)
+            .append("includeInPdf", true);
 
         if (foundIndex >= 0) {
-            Document existing = photos.get(foundIndex);
-            if (existing.getString("data") == null || existing.getString("data").isEmpty()) {
-                photos.set(foundIndex, photoObj);
-            }
+            photos.set(foundIndex, photoObj);
         } else {
             photos.add(photoObj);
         }
         doc.put("photos", photos);
+
+        removeFromExcludedPdfImages(doc, url, filename, "vx_" + filename.replaceAll("\\.[^/.]+$", ""));
     }
 
     @SuppressWarnings("unchecked")
@@ -662,9 +686,29 @@ public class OrderService {
             .append("label", label)
             .append("fileName", filename)
             .append("isExternal", true)
-            .append("fromVideoExpert", true);
+            .append("fromVideoExpert", true)
+            .append("includeInPdf", true);
         photos.add(photoObj);
         doc.put("photos", photos);
+
+        removeFromExcludedPdfImages(doc, url, filename, "vx_" + filename.replaceAll("\\.[^/.]+$", ""));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeFromExcludedPdfImages(Document doc, String... keys) {
+        List<String> excluded = (List<String>) doc.get("excludedFromPdfImages");
+        if (excluded != null && !excluded.isEmpty()) {
+            boolean modified = false;
+            for (String key : keys) {
+                if (key != null && excluded.contains(key)) {
+                    excluded.remove(key);
+                    modified = true;
+                }
+            }
+            if (modified) {
+                doc.put("excludedFromPdfImages", excluded);
+            }
+        }
     }
 
     private void updateEquipmentImage(Document doc, String fieldName, String url) {

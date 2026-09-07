@@ -1,4 +1,4 @@
-import { Calendar, Camera, CheckCircle, Copy, ImagePlus, List, Plus, ScanLine, Search, ShieldAlert, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Calendar, Camera, CheckCircle, Copy, Eye, EyeOff, ImagePlus, List, Plus, ScanLine, Search, ShieldAlert, ShieldCheck, Trash2, X } from 'lucide-react';
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -329,8 +329,10 @@ interface DateInputProps {
     value: string;
     onChange: (val: string) => void;
     required?: boolean;
+    hidden?: boolean;
     adminMode?: boolean;
     onToggleRequired?: () => void;
+    onToggleHidden?: () => void;
     className?: string;
     name?: string;
     error?: string;
@@ -341,8 +343,10 @@ const GermanDatePickerInput: React.FC<DateInputProps> = ({
     value,
     onChange,
     required,
+    hidden,
     adminMode,
     onToggleRequired,
+    onToggleHidden,
     className,
     name,
     error
@@ -372,7 +376,9 @@ const GermanDatePickerInput: React.FC<DateInputProps> = ({
                 inputMode="numeric"
                 adminMode={adminMode}
                 onToggleRequired={onToggleRequired}
+                onToggleHidden={onToggleHidden}
                 required={required}
+                hidden={hidden}
                 suffix={
                     <button
                         type="button"
@@ -412,8 +418,10 @@ const GermanMonthYearPickerInput: React.FC<MonthYearInputProps> = ({
     value,
     onChange,
     required,
+    hidden,
     adminMode,
     onToggleRequired,
+    onToggleHidden,
     className,
     name,
     error,
@@ -444,7 +452,9 @@ const GermanMonthYearPickerInput: React.FC<MonthYearInputProps> = ({
                 inputMode="numeric"
                 adminMode={adminMode}
                 onToggleRequired={onToggleRequired}
+                onToggleHidden={onToggleHidden}
                 required={required}
+                hidden={hidden}
                 suffix={
                     <button
                         type="button"
@@ -480,10 +490,11 @@ const GermanMonthYearPickerInput: React.FC<MonthYearInputProps> = ({
 
 interface Props {
     adminMode?: boolean;
-    onToggleRequired?: (fieldName: string) => Promise<void>;
+    onToggleRequired?: (fieldName: string) => Promise<void> | void;
+    onToggleHidden?: (fieldName: string) => Promise<void> | void;
 }
 
-const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
+const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleHidden }) => {
     const { t } = useTranslation();
     const store = useReportStore();
     const { showValidationErrors } = useUIStore();
@@ -491,7 +502,8 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
     const getFieldError = (fieldName: string) => {
         return showValidationErrors && validationErrors[fieldName] ? t('validation.required', 'Pflichtfeld') : undefined;
     };
-    const isRequired = (fieldName: string) => store.fieldConfigs?.find(c => c.fieldName === fieldName)?.required;
+    const isRequired = (fieldName: string) => store.fieldConfigs?.find((c: any) => c.fieldName === fieldName)?.required;
+    const isHidden = (fieldName: string) => store.fieldConfigs?.find((c: any) => c.fieldName === fieldName)?.hidden;
     const [vinInput, setVinInput] = useState(store.vin);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -704,140 +716,146 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
 
     return (
         <div className="animate-fade-in space-y-4">
-            <SectionTitle>{t('step2.vinLookup')}</SectionTitle>
+            {(!isHidden('vin') || adminMode) && (
+                <div className={`space-y-4 ${adminMode && isHidden('vin') ? 'opacity-65' : ''}`}>
+                    <SectionTitle>{t('step2.vinLookup')}</SectionTitle>
 
-            <Card>
-                <div className="space-y-4">
-                    {/* Identification Photos aligned above the Search Button */}
-                    <div
-                        data-fieldname="identificationImages"
-                        className={`flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4 p-3 rounded-xl transition-all ${showValidationErrors && (validationErrors['identificationImages'] || validationErrors['vin_photo'])
-                                ? 'border-2 border-red-500 bg-red-50/10'
-                                : 'border border-transparent'
-                            }`}
-                    >
-                        <div className="flex flex-col gap-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('step4.photoActions')}:</span>
-                                <label className="p-1.5 bg-primary/5 border border-primary/20 rounded-lg cursor-pointer text-primary hover:bg-primary/10 transition-all flex items-center gap-1.5 shadow-sm active:scale-95" title={t('step4.takePhoto')}>
-                                    <Camera className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold">{t('step2.takePhoto')}</span>
-                                    <input type="file" accept="image/*" capture="environment" onChange={e => handleFieldPhoto(e, 'identificationImages')} className="hidden" />
-                                </label>
-                                <label className="p-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer text-gray-500 hover:bg-gray-100 transition-all flex items-center gap-1.5 shadow-sm active:scale-95" title={t('step4.choosePhoto')}>
-                                    <ImagePlus className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold">{t('step2.uploadPhoto')}</span>
-                                    <input type="file" multiple accept="image/*" onChange={e => handleFieldPhoto(e, 'identificationImages')} className="hidden" />
-                                </label>
-                            </div>
-                            {showValidationErrors && (validationErrors['identificationImages'] || validationErrors['vin_photo']) && (
-                                <p className="text-[10px] text-red-600 font-medium">{t('validation.required', 'Pflichtfeld')}</p>
-                            )}
-                        </div>
-
-                        {store.identificationImages && store.identificationImages.length > 0 && (
-                            <div className="flex flex-wrap @3xl:justify-end gap-1.5">
-                                {store.identificationImages.map((img, idx) => (
-                                    <PhotoThumbnail
-                                        key={idx}
-                                        src={img}
-                                        includeInPdf={store.isImageIncludedInPdf(img)}
-                                        onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                        onRemove={() => removeFieldPhoto('identificationImages', idx)}
-                                        onUpdate={(newSrc) => updateFieldPhoto('identificationImages', idx, newSrc)}
-                                        className="w-24 h-16 sm:w-28 sm:h-20"
-                                        isExternal={store.videoExpertImages?.includes(img)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col @3xl:flex-row gap-3 @3xl:items-end">
-                        <div className="flex-1 w-full">
-                            <FormInput
-                                name="vin"
-                                label={t('step2.vinInput')}
-                                value={vinInput}
-                                onChange={(v) => {
-                                    setVinInput(v.toUpperCase());
-                                    setVinValidation(null); // Reset validation when manually edited
-                                }}
-                                mono
-                                placeholder={t('step2.vinInputPlaceholder')}
-                                error={
-                                    getFieldError('vin') || (vinInput.length > 0 && !validateVIN(vinInput)
-                                        ? t('step2.vinFormatError')
-                                        : '')
-                                }
-                                adminMode={adminMode}
-                                onToggleRequired={() => onToggleRequired?.('vin')}
-                                required={isRequired('vin')}
-                            />
-                            {vinValidation && (
-                                <div className={`mt-1 flex items-center gap-1.5 text-[11px] font-medium animate-fade-in ${vinValidation.isValid ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                    {vinValidation.isValid ? (
-                                        <>
-                                            <ShieldCheck className="w-3.5 h-3.5" />
-                                            {t('step2.scanSuccess')}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <ShieldAlert className="w-3.5 h-3.5" />
-                                            {t('step2.scanMismatch')}
-                                        </>
+                    <Card className={adminMode && isHidden('vin') ? 'border-dashed border-slate-300 bg-slate-50/50' : ''}>
+                        <div className="space-y-4">
+                            {/* Identification Photos aligned above the Search Button */}
+                            <div
+                                data-fieldname="identificationImages"
+                                className={`flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4 p-3 rounded-xl transition-all ${showValidationErrors && (validationErrors['identificationImages'] || validationErrors['vin_photo'])
+                                        ? 'border-2 border-red-500 bg-red-50/10'
+                                        : 'border border-transparent'
+                                    }`}
+                            >
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('step4.photoActions')}:</span>
+                                        <label className="p-1.5 bg-primary/5 border border-primary/20 rounded-lg cursor-pointer text-primary hover:bg-primary/10 transition-all flex items-center gap-1.5 shadow-sm active:scale-95" title={t('step4.takePhoto')}>
+                                            <Camera className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold">{t('step2.takePhoto')}</span>
+                                            <input type="file" accept="image/*" capture="environment" onChange={e => handleFieldPhoto(e, 'identificationImages')} className="hidden" />
+                                        </label>
+                                        <label className="p-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer text-gray-500 hover:bg-gray-100 transition-all flex items-center gap-1.5 shadow-sm active:scale-95" title={t('step4.choosePhoto')}>
+                                            <ImagePlus className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold">{t('step2.uploadPhoto')}</span>
+                                            <input type="file" multiple accept="image/*" onChange={e => handleFieldPhoto(e, 'identificationImages')} className="hidden" />
+                                        </label>
+                                    </div>
+                                    {showValidationErrors && (validationErrors['identificationImages'] || validationErrors['vin_photo']) && (
+                                        <p className="text-[10px] text-red-600 font-medium">{t('validation.required', 'Pflichtfeld')}</p>
                                     )}
                                 </div>
-                            )}
-                        </div>
-                        <div className="flex gap-2 h-[42px]">
-                            <VINScannerModal
-                                expectedVin={vinInput}
-                                onValidated={(isValid, scannedVin) => setVinValidation({ isValid, scannedVin })}
-                                onApply={(scannedVin) => {
-                                    setVinInput(scannedVin);
-                                    setVinValidation({ isValid: true, scannedVin });
-                                }}
-                            >
+
+                                {store.identificationImages && store.identificationImages.length > 0 && (
+                                    <div className="flex flex-wrap @3xl:justify-end gap-1.5">
+                                        {store.identificationImages.map((img, idx) => (
+                                            <PhotoThumbnail
+                                                key={idx}
+                                                src={img}
+                                                includeInPdf={store.isImageIncludedInPdf(img)}
+                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                onRemove={() => removeFieldPhoto('identificationImages', idx)}
+                                                onUpdate={(newSrc) => updateFieldPhoto('identificationImages', idx, newSrc)}
+                                                className="w-24 h-16 sm:w-28 sm:h-20"
+                                                isExternal={store.videoExpertImages?.includes(img)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col @3xl:flex-row gap-3 @3xl:items-end">
+                                <div className="flex-1 w-full">
+                                    <FormInput
+                                        name="vin"
+                                        label={t('step2.vinInput')}
+                                        value={vinInput}
+                                        onChange={(v) => {
+                                            setVinInput(v.toUpperCase());
+                                            setVinValidation(null); // Reset validation when manually edited
+                                        }}
+                                        mono
+                                        placeholder={t('step2.vinInputPlaceholder')}
+                                        error={
+                                            getFieldError('vin') || (vinInput.length > 0 && !validateVIN(vinInput)
+                                                ? t('step2.vinFormatError')
+                                                : '')
+                                        }
+                                        adminMode={adminMode}
+                                        onToggleRequired={() => onToggleRequired?.('vin')}
+                                        onToggleHidden={() => onToggleHidden?.('vin')}
+                                        required={isRequired('vin')}
+                                        hidden={isHidden('vin')}
+                                    />
+                                    {vinValidation && (
+                                        <div className={`mt-1 flex items-center gap-1.5 text-[11px] font-medium animate-fade-in ${vinValidation.isValid ? 'text-green-600' : 'text-red-600'
+                                            }`}>
+                                            {vinValidation.isValid ? (
+                                                <>
+                                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                                    {t('step2.scanSuccess')}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ShieldAlert className="w-3.5 h-3.5" />
+                                                    {t('step2.scanMismatch')}
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex gap-2 h-[42px]">
+                                    <VINScannerModal
+                                        expectedVin={vinInput}
+                                        onValidated={(isValid, scannedVin) => setVinValidation({ isValid, scannedVin })}
+                                        onApply={(scannedVin) => {
+                                            setVinInput(scannedVin);
+                                            setVinValidation({ isValid: true, scannedVin });
+                                        }}
+                                    >
+                                        <button
+                                            className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all flex items-center gap-2 border border-gray-200 active:scale-95"
+                                            title={t('step2.scanToValidate')}
+                                        >
+                                            <ScanLine className="w-5 h-5 text-primary" />
+                                            <span className="text-xs font-bold whitespace-nowrap">{t('step2.scanVin')}</span>
+                                        </button>
+                                    </VINScannerModal>
+
+                                    <button
+                                        onClick={handleLookup}
+                                        disabled={loading}
+                                        className="btn-primary flex items-center gap-2 px-6 h-full"
+                                    >
+                                        <Search className="w-4 h-4" />
+                                        {t('step2.lookup')}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {loading && <LoadingSpinner text={t('step2.lookupLoading')} />}
+                            {error && <ErrorBanner message={error} onClose={() => setError('')} />}
+
+                            <div className="flex justify-center pt-2 animate-fade-in">
                                 <button
-                                    className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all flex items-center gap-2 border border-gray-200 active:scale-95"
-                                    title={t('step2.scanToValidate')}
+                                    onClick={() => setShowEquipmentModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-full transition-all text-xs font-bold shadow-sm border border-primary/20 active:scale-95"
                                 >
-                                    <ScanLine className="w-5 h-5 text-primary" />
-                                    <span className="text-xs font-bold whitespace-nowrap">{t('step2.scanVin')}</span>
+                                    <List className="w-4 h-4" />
+                                    {t('step2.viewEquipmentDetails')}
                                 </button>
-                            </VINScannerModal>
-
-                            <button
-                                onClick={handleLookup}
-                                disabled={loading}
-                                className="btn-primary flex items-center gap-2 px-6 h-full"
-                            >
-                                <Search className="w-4 h-4" />
-                                {t('step2.lookup')}
-                            </button>
+                            </div>
                         </div>
-                    </div>
-
-                    {loading && <LoadingSpinner text={t('step2.lookupLoading')} />}
-                    {error && <ErrorBanner message={error} onClose={() => setError('')} />}
-
-                    <div className="flex justify-center pt-2 animate-fade-in">
-                        <button
-                            onClick={() => setShowEquipmentModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-full transition-all text-xs font-bold shadow-sm border border-primary/20 active:scale-95"
-                        >
-                            <List className="w-4 h-4" />
-                            {t('step2.viewEquipmentDetails')}
-                        </button>
-                    </div>
-                </div>
-            </Card>
-            {success && (
-                <div className="bg-orange-50 border-l-4 border-primary p-3 text-sm text-primary font-medium animate-slide-down flex items-center gap-2 mb-4">
-                    <CheckCircle className="w-4 h-4" />
-                    {t('step2.lookupSuccess')}
+                    </Card>
+                    {success && (
+                        <div className="bg-orange-50 border-l-4 border-primary p-3 text-sm text-primary font-medium animate-slide-down flex items-center gap-2 mb-4">
+                            <CheckCircle className="w-4 h-4" />
+                            {t('step2.lookupSuccess')}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -856,7 +874,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             onChange={v => store.updateField('firstRegistration', v)}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('firstRegistration')}
+                            onToggleHidden={() => onToggleHidden?.('firstRegistration')}
                             required={isRequired('firstRegistration')}
+                            hidden={isHidden('firstRegistration')}
                         />
                         <div className="flex flex-col gap-2">
                             <GermanDatePickerInput
@@ -887,7 +907,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 className="mb-1"
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('lastRegistration')}
+                                onToggleHidden={() => onToggleHidden?.('lastRegistration')}
                                 required={isRequired('lastRegistration')}
+                                hidden={isHidden('lastRegistration')}
                             />
                         </div>
 
@@ -904,35 +926,39 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 className="mb-1"
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('mileage')}
+                                onToggleHidden={() => onToggleHidden?.('mileage')}
                                 required={isRequired('mileage')}
+                                hidden={isHidden('mileage')}
                             />
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
-                                <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.takePhoto')}>
-                                    <Camera className="w-4 h-4" />
-                                    <input type="file" accept="image/*" capture="environment" onChange={e => handleFieldPhoto(e, 'mileageImages')} className="hidden" />
-                                </label>
-                                <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.choosePhoto')}>
-                                    <ImagePlus className="w-4 h-4" />
-                                    <input type="file" multiple accept="image/*" onChange={e => handleFieldPhoto(e, 'mileageImages')} className="hidden" />
-                                </label>
-                                {store.mileageImages && store.mileageImages.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {store.mileageImages.map((img, idx) => (
-                                            <PhotoThumbnail
-                                                key={idx}
-                                                src={img}
-                                                includeInPdf={store.isImageIncludedInPdf(img)}
-                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                                onRemove={() => removeFieldPhoto('mileageImages', idx)}
-                                                onUpdate={(newSrc) => updateFieldPhoto('mileageImages', idx, newSrc)}
-                                                className="w-24 h-16 sm:w-28 sm:h-20"
-                                                isExternal={store.videoExpertImages?.includes(img)}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {(!isHidden('mileage') || adminMode) && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
+                                    <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.takePhoto')}>
+                                        <Camera className="w-4 h-4" />
+                                        <input type="file" accept="image/*" capture="environment" onChange={e => handleFieldPhoto(e, 'mileageImages')} className="hidden" />
+                                    </label>
+                                    <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.choosePhoto')}>
+                                        <ImagePlus className="w-4 h-4" />
+                                        <input type="file" multiple accept="image/*" onChange={e => handleFieldPhoto(e, 'mileageImages')} className="hidden" />
+                                    </label>
+                                    {store.mileageImages && store.mileageImages.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {store.mileageImages.map((img, idx) => (
+                                                <PhotoThumbnail
+                                                    key={idx}
+                                                    src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                    onRemove={() => removeFieldPhoto('mileageImages', idx)}
+                                                    onUpdate={(newSrc) => updateFieldPhoto('mileageImages', idx, newSrc)}
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
+                                                    isExternal={store.videoExpertImages?.includes(img)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex flex-col gap-2">
@@ -946,91 +972,142 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 className="mb-1"
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('nextHU')}
+                                onToggleHidden={() => onToggleHidden?.('nextHU')}
                                 required={isRequired('nextHU')}
+                                hidden={isHidden('nextHU')}
                             />
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
-                                <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.takePhoto')}>
-                                    <Camera className="w-4 h-4" />
-                                    <input type="file" accept="image/*" capture="environment" onChange={e => handleFieldPhoto(e, 'nextHUImages')} className="hidden" />
-                                </label>
-                                <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.choosePhoto')}>
-                                    <ImagePlus className="w-4 h-4" />
-                                    <input type="file" multiple accept="image/*" onChange={e => handleFieldPhoto(e, 'nextHUImages')} className="hidden" />
-                                </label>
-                                {store.nextHUImages && store.nextHUImages.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {store.nextHUImages.map((img, idx) => (
-                                            <PhotoThumbnail
-                                                key={idx}
-                                                src={img}
-                                                includeInPdf={store.isImageIncludedInPdf(img)}
-                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                                onRemove={() => removeFieldPhoto('nextHUImages', idx)}
-                                                onUpdate={(newSrc) => updateFieldPhoto('nextHUImages', idx, newSrc)}
-                                                className="w-24 h-16 sm:w-28 sm:h-20"
-                                                isExternal={store.videoExpertImages?.includes(img)}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {(!isHidden('nextHU') || adminMode) && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
+                                    <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.takePhoto')}>
+                                        <Camera className="w-4 h-4" />
+                                        <input type="file" accept="image/*" capture="environment" onChange={e => handleFieldPhoto(e, 'nextHUImages')} className="hidden" />
+                                    </label>
+                                    <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm" title={t('step4.choosePhoto')}>
+                                        <ImagePlus className="w-4 h-4" />
+                                        <input type="file" multiple accept="image/*" onChange={e => handleFieldPhoto(e, 'nextHUImages')} className="hidden" />
+                                    </label>
+                                    {store.nextHUImages && store.nextHUImages.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {store.nextHUImages.map((img, idx) => (
+                                                <PhotoThumbnail
+                                                    key={idx}
+                                                    src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                    onRemove={() => removeFieldPhoto('nextHUImages', idx)}
+                                                    onUpdate={(newSrc) => updateFieldPhoto('nextHUImages', idx, newSrc)}
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
+                                                    isExternal={store.videoExpertImages?.includes(img)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
+                    {/* Keys Section */}
+                    {(!isHidden('keysTarget') || !isHidden('actualKeysCount') || !isHidden('workshopKeysCount') || !isHidden('remoteControlsCount') || !isHidden('keysImages') || adminMode) && (
                     <div className="mt-6 pt-6 border-t border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                             <h3 className="text-sm font-semibold text-gray-700">{t('step3.keys')}</h3>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
-                                <label className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95" title={t('step4.takePhoto')}>
-                                    <Camera className="w-4 h-4" />
-                                    <input type="file" accept="image/*" capture="environment" onChange={e => handleFieldPhoto(e, 'keysImages')} className="hidden" />
-                                </label>
-                                <label className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95" title={t('step4.choosePhoto')}>
-                                    <ImagePlus className="w-4 h-4" />
-                                    <input type="file" multiple accept="image/*" onChange={e => handleFieldPhoto(e, 'keysImages')} className="hidden" />
-                                </label>
-                                {store.keysImages && store.keysImages.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 ml-2">
-                                        {store.keysImages.map((img, idx) => (
-                                            <PhotoThumbnail
-                                                key={idx}
-                                                src={img}
-                                                includeInPdf={store.isImageIncludedInPdf(img)}
-                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                                onRemove={() => removeFieldPhoto('keysImages', idx)}
-                                                onUpdate={(newSrc) => updateFieldPhoto('keysImages', idx, newSrc)}
-                                                className="w-24 h-16 sm:w-28 sm:h-20"
-                                                isExternal={store.videoExpertImages?.includes(img)}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {(!isHidden('keysImages') || adminMode) && (
+                                <div className={`flex items-center gap-2 ${adminMode && isHidden('keysImages') ? 'opacity-65' : ''}`}>
+                                    <span className={`text-xs font-medium ${adminMode && isHidden('keysImages') ? 'line-through text-slate-400' : 'text-gray-500'}`}>{t('step4.photoActions')}:</span>
+                                    <label className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95" title={t('step4.takePhoto')}>
+                                        <Camera className="w-4 h-4" />
+                                        <input type="file" accept="image/*" capture="environment" onChange={e => handleFieldPhoto(e, 'keysImages')} className="hidden" />
+                                    </label>
+                                    <label className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95" title={t('step4.choosePhoto')}>
+                                        <ImagePlus className="w-4 h-4" />
+                                        <input type="file" multiple accept="image/*" onChange={e => handleFieldPhoto(e, 'keysImages')} className="hidden" />
+                                    </label>
+                                    {adminMode && (
+                                        <div className="flex items-center gap-1.5 ml-1">
+                                            {onToggleHidden && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        onToggleHidden('keysImages');
+                                                    }}
+                                                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all shadow-sm ${
+                                                        isHidden('keysImages')
+                                                            ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                                            : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                                    }`}
+                                                    title={isHidden('keysImages') ? 'Fotos einblenden' : 'Fotos ausblenden'}
+                                                >
+                                                    {isHidden('keysImages') ? (
+                                                        <><EyeOff className="w-3 h-3 text-slate-600" /><span>Ausgeblendet</span></>
+                                                    ) : (
+                                                        <><Eye className="w-3 h-3 text-emerald-700" /><span>Sichtbar</span></>
+                                                    )}
+                                                </button>
+                                            )}
+                                            {onToggleRequired && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        onToggleRequired('keysImages');
+                                                    }}
+                                                    className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all shadow-sm ${
+                                                        isRequired('keysImages')
+                                                            ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                    }`}
+                                                    title="Pflichtfeld umschalten"
+                                                >
+                                                    {isRequired('keysImages') ? 'Pflicht' : 'Optional'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                    {store.keysImages && store.keysImages.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 ml-2">
+                                            {store.keysImages.map((img, idx) => (
+                                                <PhotoThumbnail
+                                                    key={idx}
+                                                    src={img}
+                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                    onRemove={() => removeFieldPhoto('keysImages', idx)}
+                                                    onUpdate={(newSrc) => updateFieldPhoto('keysImages', idx, newSrc)}
+                                                    className="w-14 h-10"
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 @3xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
-                            {/* Target Keys — manually editable */}
+                            {/* Target Keys Count (SOLL) */}
                             <FormInput
-                                label={t('step2.targetKeysCount')}
+                                name="targetKeysCount"
+                                label={t('step2.targetKeysCount', 'Ziel-Schlüssel (Soll)')}
                                 type="number"
                                 inputMode="numeric"
-                                value={String(store.targetKeysCount ?? '')}
-                                onChange={v => {
-                                    const val = parseInt(v) || 0;
-                                    store.updateField('targetKeysCount', val);
-                                }}
-                                placeholder="2"
+                                value={String(store.targetKeysCount ?? 2)}
+                                onChange={v => store.updateField('targetKeysCount', parseInt(v) || 0)}
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('targetKeysCount')}
+                                onToggleHidden={() => onToggleHidden?.('targetKeysCount')}
                                 required={isRequired('targetKeysCount')}
+                                hidden={isHidden('targetKeysCount')}
                             />
 
-                            {/* Actual Keys — user input */}
+                            {/* Actual Keys Count (IST) */}
                             <div className="space-y-1">
                                 <FormInput
-                                    label={t('step2.actualKeysCount')}
+                                    name="actualKeysCount"
+                                    label={t('step2.actualKeysCount', 'Tatsächliche Schlüssel (Ist)')}
                                     type="number"
                                     inputMode="numeric"
                                     value={String(store.actualKeysCount ?? '')}
@@ -1042,18 +1119,21 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     placeholder={String(store.targetKeysCount ?? 2)}
                                     adminMode={adminMode}
                                     onToggleRequired={() => onToggleRequired?.('actualKeysCount')}
+                                    onToggleHidden={() => onToggleHidden?.('actualKeysCount')}
                                     required={isRequired('actualKeysCount')}
+                                    hidden={isHidden('actualKeysCount')}
                                 />
-                                {(store.actualKeysCount ?? 0) !== (store.targetKeysCount ?? 2) && (store.actualKeysCount ?? 0) > 0 && (
+                                {(store.actualKeysCount ?? 0) !== (store.targetKeysCount ?? 2) && (store.actualKeysCount ?? 0) > 0 && (!isHidden('actualKeysCount') || adminMode) && (
                                     <p className="text-[10px] text-orange-600 font-medium flex items-center gap-1">
                                         <X className="w-3 h-3" /> {t('step2.keysMismatch')}
                                     </p>
                                 )}
                             </div>
 
-                            {/* Workshop Keys — unchanged */}
+                            {/* Workshop Keys */}
                             <FormInput
-                                label={t('step2.workshopKeysCount')}
+                                name="workshopKeysCount"
+                                label={t('step2.workshopKeysCount', 'Werkstattschlüssel')}
                                 type="number"
                                 inputMode="numeric"
                                 value={String(store.workshopKeysCount ?? '')}
@@ -1061,12 +1141,15 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 placeholder="0"
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('workshopKeysCount')}
+                                onToggleHidden={() => onToggleHidden?.('workshopKeysCount')}
                                 required={isRequired('workshopKeysCount')}
+                                hidden={isHidden('workshopKeysCount')}
                             />
 
-                            {/* Additional Remote — unchanged */}
+                            {/* Additional Remote */}
                             <FormInput
-                                label={t('step2.remoteControlsCount')}
+                                name="remoteControlsCount"
+                                label={t('step2.remoteControlsCount', 'Zusatz-FB (Standheizung)')}
                                 type="number"
                                 inputMode="numeric"
                                 value={String(store.remoteControlsCount ?? '')}
@@ -1074,11 +1157,13 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 placeholder="0"
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('remoteControlsCount')}
+                                onToggleHidden={() => onToggleHidden?.('remoteControlsCount')}
                                 required={isRequired('remoteControlsCount')}
+                                hidden={isHidden('remoteControlsCount')}
                             />
                         </div>
-
                     </div>
+                    )}
                 </Card>
 
                 {/* Vehicle data — populated from VIN lookup */}
@@ -1096,7 +1181,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             onChange={v => store.updateField('manufacturer', v)}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('manufacturer')}
+                            onToggleHidden={() => onToggleHidden?.('manufacturer')}
                             required={isRequired('manufacturer')}
+                            hidden={isHidden('manufacturer')}
                         />
                         <FormInput
                             name="baseModel"
@@ -1106,7 +1193,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             onChange={v => store.updateField('baseModel', v)}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('baseModel')}
+                            onToggleHidden={() => onToggleHidden?.('baseModel')}
                             required={isRequired('baseModel')}
+                            hidden={isHidden('baseModel')}
                         />
                         <FormInput
                             name="subModel"
@@ -1116,7 +1205,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             onChange={v => store.updateField('subModel', v)}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('subModel')}
+                            onToggleHidden={() => onToggleHidden?.('subModel')}
                             required={isRequired('subModel')}
+                            hidden={isHidden('subModel')}
                         />
                         <FormInput
                             name="bodyType"
@@ -1127,7 +1218,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.bodyTypePlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('bodyType')}
+                            onToggleHidden={() => onToggleHidden?.('bodyType')}
                             required={isRequired('bodyType')}
+                            hidden={isHidden('bodyType')}
                         />
                         <FormInput
                             name="doors"
@@ -1140,7 +1233,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.doorsPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('doors')}
+                            onToggleHidden={() => onToggleHidden?.('doors')}
                             required={isRequired('doors')}
+                            hidden={isHidden('doors')}
                         />
                         <FormInput
                             name="seats"
@@ -1153,7 +1248,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.seatsPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('seats')}
+                            onToggleHidden={() => onToggleHidden?.('seats')}
                             required={isRequired('seats')}
+                            hidden={isHidden('seats')}
                         />
                         <FormInput
                             name="keyNumber"
@@ -1165,7 +1262,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.keyNumberPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('keyNumber')}
+                            onToggleHidden={() => onToggleHidden?.('keyNumber')}
                             required={isRequired('keyNumber')}
+                            hidden={isHidden('keyNumber')}
                         />
                         <FormSelect
                             name="fuelType"
@@ -1191,7 +1290,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             ]}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('fuelType')}
+                            onToggleHidden={() => onToggleHidden?.('fuelType')}
                             required={isRequired('fuelType')}
+                            hidden={isHidden('fuelType')}
                         />
                         {/* Cylinders — always shown; empty for pure EVs */}
                         <FormInput
@@ -1205,7 +1306,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.cylindersPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('cylinders')}
+                            onToggleHidden={() => onToggleHidden?.('cylinders')}
                             required={isRequired('cylinders')}
+                            hidden={isHidden('cylinders')}
                         />
                         {/* Power (kW) — always shown; empty for pure EVs */}
                         <FormInput
@@ -1219,7 +1322,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.powerKwPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('powerKw')}
+                            onToggleHidden={() => onToggleHidden?.('powerKw')}
                             required={isRequired('powerKw')}
+                            hidden={isHidden('powerKw')}
                         />
                         {/* Displacement (Hubraum) — always shown; empty for pure EVs */}
                         <FormInput
@@ -1233,7 +1338,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.displacementPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('displacement')}
+                            onToggleHidden={() => onToggleHidden?.('displacement')}
                             required={isRequired('displacement')}
+                            hidden={isHidden('displacement')}
                         />
                         <FormInput
                             name="emissionClass"
@@ -1244,7 +1351,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.emissionClassPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('emissionClass')}
+                            onToggleHidden={() => onToggleHidden?.('emissionClass')}
                             required={isRequired('emissionClass')}
+                            hidden={isHidden('emissionClass')}
                         />
                         <FormInput
                             name="driveType"
@@ -1255,7 +1364,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.driveTypePlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('driveType')}
+                            onToggleHidden={() => onToggleHidden?.('driveType')}
                             required={isRequired('driveType')}
+                            hidden={isHidden('driveType')}
                         />
                         <FormInput
                             name="transmission"
@@ -1266,7 +1377,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.transmissionPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('transmission')}
+                            onToggleHidden={() => onToggleHidden?.('transmission')}
                             required={isRequired('transmission')}
+                            hidden={isHidden('transmission')}
                         />
                         <FormInput
                             name="colorDescription"
@@ -1277,7 +1390,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.colorPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('colorDescription')}
+                            onToggleHidden={() => onToggleHidden?.('colorDescription')}
                             required={isRequired('colorDescription')}
+                            hidden={isHidden('colorDescription')}
                         />
                         <FormInput
                             name="upholsteryDescription"
@@ -1288,7 +1403,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             placeholder={t('step2.upholsteryPlaceholder')}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('upholsteryDescription')}
+                            onToggleHidden={() => onToggleHidden?.('upholsteryDescription')}
                             required={isRequired('upholsteryDescription')}
+                            hidden={isHidden('upholsteryDescription')}
                         />
                         <FormSelect
                             name="vehicleCategory"
@@ -1320,7 +1437,9 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             })}
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('vehicleCategory')}
+                            onToggleHidden={() => onToggleHidden?.('vehicleCategory')}
                             required={isRequired('vehicleCategory') || true}
+                            hidden={isHidden('vehicleCategory')}
                         />
                     </div>
                 </Card>

@@ -1,4 +1,4 @@
-import { Calendar, Camera, CheckCircle, Clock, Copy, Hash, ImagePlus, Plus, Trash2, X } from 'lucide-react';
+import { Calendar, Camera, CheckCircle, Clock, Copy, Eye, EyeOff, Hash, ImagePlus, Plus, Trash2, X } from 'lucide-react';
 import React, { useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -37,15 +37,13 @@ const PAINT_BODY_PART_OPTIONS = [
     'bumper_rear'
 ];
 
-
-
-
 interface Props {
     adminMode?: boolean;
-    onToggleRequired?: (fieldName: string) => Promise<void>;
+    onToggleRequired?: (fieldName: string) => Promise<void> | void;
+    onToggleHidden?: (fieldName: string) => Promise<void> | void;
 }
 
-const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
+const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleHidden }) => {
     const { t } = useTranslation();
     const store = useReportStore();
     const { showValidationErrors } = useUIStore();
@@ -54,7 +52,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
         return showValidationErrors && validationErrors[fieldName] ? t('validation.required', 'Pflichtfeld') : undefined;
     };
     const isVehicleEvaluation = store.claimType === 'Fahrzeugbewertung';
-    const isRequired = (fieldName: string) => store.fieldConfigs.find(c => c.fieldName === fieldName)?.required;
+    const isRequired = (fieldName: string) => store.fieldConfigs?.find(c => c.fieldName === fieldName)?.required;
+    const isHidden = (fieldName: string) => store.fieldConfigs?.find(c => c.fieldName === fieldName)?.hidden;
     const [editingTireIndex, setEditingTireIndex] = React.useState<number | null | undefined>(undefined);
     const [editingSecondTireIndex, setEditingSecondTireIndex] = React.useState<number | undefined>(undefined);
 
@@ -259,6 +258,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('testDriveDone')}
                             required={isRequired('testDriveDone')}
+                            hidden={isHidden('testDriveDone')}
+                            onToggleHidden={() => onToggleHidden?.('testDriveDone')}
                         />
 
                         {/* Lift Group */}
@@ -276,6 +277,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('liftingPlatformStatus')}
                             required={isRequired('liftingPlatformStatus')}
+                            hidden={isHidden('liftingPlatformStatus')}
+                            onToggleHidden={() => onToggleHidden?.('liftingPlatformStatus')}
                         />
                     </div>
 
@@ -294,6 +297,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('inspectionFromBelow')}
                             required={isRequired('inspectionFromBelow')}
+                            hidden={isHidden('inspectionFromBelow')}
+                            onToggleHidden={() => onToggleHidden?.('inspectionFromBelow')}
                         />
                         <FormSelect
                             name="inspectionFromAbove"
@@ -308,6 +313,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             adminMode={adminMode}
                             onToggleRequired={() => onToggleRequired?.('inspectionFromAbove')}
                             required={isRequired('inspectionFromAbove')}
+                            hidden={isHidden('inspectionFromAbove')}
+                            onToggleHidden={() => onToggleHidden?.('inspectionFromAbove')}
                         />
                     </div>
 
@@ -330,6 +337,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('vehicleConditionStatus')}
                                 required={isRequired('vehicleConditionStatus')}
+                                hidden={isHidden('vehicleConditionStatus')}
+                                onToggleHidden={() => onToggleHidden?.('vehicleConditionStatus')}
                             />
                             {store.vehicleConditionStatus === 'other' && (
                                 <FormInput
@@ -341,9 +350,11 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     adminMode={adminMode}
                                     onToggleRequired={() => onToggleRequired?.('vehicleConditionOther')}
                                     required={isRequired('vehicleConditionOther')}
+                                    hidden={isHidden('vehicleConditionOther')}
+                                    onToggleHidden={() => onToggleHidden?.('vehicleConditionOther')}
                                 />
                             )}
-                            {store.vehicleConditionStatus && <div className="flex flex-wrap items-center gap-2 ml-1">
+                            {store.vehicleConditionStatus && (!isHidden('vehicleConditionStatus') || adminMode) && <div className="flex flex-wrap items-center gap-2 ml-1">
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
                                     <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'vehicleConditionImages')} className="hidden" /></label>
@@ -384,8 +395,10 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('errorMemoryRead')}
                                 required={isRequired('errorMemoryRead')}
+                                hidden={isHidden('errorMemoryRead')}
+                                onToggleHidden={() => onToggleHidden?.('errorMemoryRead')}
                             />
-                            {store.errorMemoryRead && (
+                            {store.errorMemoryRead && (!isHidden('errorMemoryRead') || adminMode) && (
                                 <div className="flex flex-wrap items-center gap-2 ml-1">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
@@ -395,7 +408,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     {(store as any).errorMemoryReadImages && (store as any).errorMemoryReadImages.length > 0 ? (
                                         <div className="flex flex-wrap gap-2">
                                             {(store as any).errorMemoryReadImages.map((img: string, idx: number) => (
-                                                <PhotoThumbnail
+                                              <PhotoThumbnail
                                                     key={idx}
                                                     src={img}
                                                     includeInPdf={store.isImageIncludedInPdf(img)}
@@ -424,6 +437,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('hybridBatteryChecked')}
                                 required={isRequired('hybridBatteryChecked')}
+                                hidden={isHidden('hybridBatteryChecked')}
+                                onToggleHidden={() => onToggleHidden?.('hybridBatteryChecked')}
                             />
                         </div>
                     </div>
@@ -432,6 +447,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                     <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-x-6 gap-y-4">
                         <div className="flex flex-col gap-2">
                             <FormSelect
+                                name="equipmentListAvailable"
                                 label={t('step3.equipmentListAvailable')}
                                 value={store.equipmentListAvailable === null || store.equipmentListAvailable === undefined ? '' : String(store.equipmentListAvailable)}
                                 onChange={v => store.updateField('equipmentListAvailable', v === '' ? null : (v === 'true' ? true : (v === 'false' ? false : 'dat')))}
@@ -443,8 +459,10 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('equipmentListAvailable')}
                                 required={isRequired('equipmentListAvailable')}
+                                hidden={isHidden('equipmentListAvailable')}
+                                onToggleHidden={() => onToggleHidden?.('equipmentListAvailable')}
                             />
-                            {store.equipmentListAvailable && (
+                            {store.equipmentListAvailable && (!isHidden('equipmentListAvailable') || adminMode) && (
                                 <div className="flex flex-wrap items-center gap-2 ml-1">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
@@ -471,6 +489,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         </div>
                         <div className="flex flex-col gap-2">
                             <FormSelect
+                                name="deliveryConfirmationAvailable"
                                 label={t('step3.deliveryConfirmationAvailable')}
                                 value={store.deliveryConfirmationAvailable === null || store.deliveryConfirmationAvailable === undefined ? '' : (store.deliveryConfirmationAvailable ? 'true' : 'false')}
                                 onChange={v => store.updateField('deliveryConfirmationAvailable', v === '' ? null : v === 'true')}
@@ -481,8 +500,10 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('deliveryConfirmationAvailable')}
                                 required={isRequired('deliveryConfirmationAvailable')}
+                                hidden={isHidden('deliveryConfirmationAvailable')}
+                                onToggleHidden={() => onToggleHidden?.('deliveryConfirmationAvailable')}
                             />
-                            {store.deliveryConfirmationAvailable && (
+                            {store.deliveryConfirmationAvailable && (!isHidden('deliveryConfirmationAvailable') || adminMode) && (
                                 <div className="flex flex-wrap items-center gap-2 ml-1">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
@@ -509,6 +530,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         </div>
                         <div className="flex flex-col gap-2">
                             <FormSelect
+                                name="engineRunPerformed"
                                 label={t('step3.engineRunPerformed')}
                                 value={store.engineRunPerformed}
                                 onChange={v => {
@@ -531,11 +553,14 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 adminMode={adminMode}
                                 onToggleRequired={() => onToggleRequired?.('engineRunPerformed')}
                                 required={isRequired('engineRunPerformed')}
+                                hidden={isHidden('engineRunPerformed')}
+                                onToggleHidden={() => onToggleHidden?.('engineRunPerformed')}
                             />
 
-                            {store.engineRunPerformed === 'carried_out' && (
+                            {store.engineRunPerformed === 'carried_out' && (!isHidden('engineRunPerformed') || adminMode) && (
                                 <div className="pl-4 border-l-2 border-primary/20 space-y-3 mt-1">
                                     <FormSelect
+                                        name="engineRunStatus"
                                         label={t('step3.engineRunStatus')}
                                         value={store.engineRunStatus || ''}
                                         onChange={v => {
@@ -555,11 +580,14 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         adminMode={adminMode}
                                         onToggleRequired={() => onToggleRequired?.('engineRunStatus')}
                                         required={isRequired('engineRunStatus')}
+                                        hidden={isHidden('engineRunStatus')}
+                                        onToggleHidden={() => onToggleHidden?.('engineRunStatus')}
                                     />
 
-                                    {store.engineRunStatus === 'issues' && (
+                                    {store.engineRunStatus === 'issues' && (!isHidden('engineRunStatus') || adminMode) && (
                                         <div className="pl-4 border-l border-gray-200 space-y-3">
                                             <FormSelect
+                                                name="engineRunNoise"
                                                 label={t('step3.engineRunNoise')}
                                                 value={store.engineRunNoise || ''}
                                                 onChange={v => store.updateField('engineRunNoise', v as any)}
@@ -576,9 +604,12 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 adminMode={adminMode}
                                                 onToggleRequired={() => onToggleRequired?.('engineRunNoise')}
                                                 required={isRequired('engineRunNoise')}
+                                                hidden={isHidden('engineRunNoise')}
+                                                onToggleHidden={() => onToggleHidden?.('engineRunNoise')}
                                             />
 
                                             <FormSelect
+                                                name="engineRunRoughRunning"
                                                 label={t('step3.engineRunRoughRunning')}
                                                 value={store.engineRunRoughRunning || ''}
                                                 onChange={v => store.updateField('engineRunRoughRunning', v as any)}
@@ -589,10 +620,13 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 adminMode={adminMode}
                                                 onToggleRequired={() => onToggleRequired?.('engineRunRoughRunning')}
                                                 required={isRequired('engineRunRoughRunning')}
+                                                hidden={isHidden('engineRunRoughRunning')}
+                                                onToggleHidden={() => onToggleHidden?.('engineRunRoughRunning')}
                                             />
 
                                             <div className="space-y-2">
                                                 <FormSelect
+                                                    name="engineRunWarningLightsActive"
                                                     label={t('step3.engineRunWarningLights')}
                                                     value={store.engineRunWarningLightsActive || ''}
                                                     onChange={v => {
@@ -608,9 +642,12 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                     adminMode={adminMode}
                                                     onToggleRequired={() => onToggleRequired?.('engineRunWarningLightsActive')}
                                                     required={isRequired('engineRunWarningLightsActive')}
+                                                    hidden={isHidden('engineRunWarningLightsActive')}
+                                                    onToggleHidden={() => onToggleHidden?.('engineRunWarningLightsActive')}
                                                 />
                                                 {store.engineRunWarningLightsActive === 'yes' && (
                                                     <FormInput
+                                                        name="engineRunWarningLightsDetails"
                                                         label={t('step3.engineRunWarningLightsSpecify')}
                                                         value={store.engineRunWarningLightsDetails || ''}
                                                         onChange={v => store.updateField('engineRunWarningLightsDetails', v)}
@@ -618,11 +655,14 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                         adminMode={adminMode}
                                                         onToggleRequired={() => onToggleRequired?.('engineRunWarningLightsDetails')}
                                                         required={isRequired('engineRunWarningLightsDetails')}
+                                                        hidden={isHidden('engineRunWarningLightsDetails')}
+                                                        onToggleHidden={() => onToggleHidden?.('engineRunWarningLightsDetails')}
                                                     />
                                                 )}
                                             </div>
 
                                             <FormTextarea
+                                                name="engineRunOtherIssues"
                                                 label={t('step3.engineRunOtherIssues')}
                                                 value={store.engineRunOtherIssues || ''}
                                                 onChange={v => store.updateField('engineRunOtherIssues', v)}
@@ -630,6 +670,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 adminMode={adminMode}
                                                 onToggleRequired={() => onToggleRequired?.('engineRunOtherIssues')}
                                                 required={isRequired('engineRunOtherIssues')}
+                                                hidden={isHidden('engineRunOtherIssues')}
+                                                onToggleHidden={() => onToggleHidden?.('engineRunOtherIssues')}
                                                 rows={2}
                                             />
                                         </div>
@@ -637,7 +679,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 </div>
                             )}
 
-                            {store.engineRunPerformed && (
+                            {store.engineRunPerformed && (!isHidden('engineRunPerformed') || adminMode) && (
                                 <div className="flex flex-wrap items-center gap-2 ml-1">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
@@ -671,252 +713,329 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         <label className="form-label">{t('step3.documents')}</label>
                         <div className="space-y-6 mt-4">
                             {/* Registration Certificate */}
-                            <div className="space-y-3">
-                                <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
-                                    <label className="text-sm font-medium text-gray-700 w-full @3xl:w-1/3">{t('step3.docRegistration')}</label>
-                                    <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
-                                        <select
-                                            className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
-                                            value={store.registrationCertificateStatus || ''}
-                                            onChange={e => store.updateField('registrationCertificateStatus', e.target.value as any)}
-                                        >
-                                            <option value="">{t('common.noneSelected')}</option>
-                                            <option value="Original">{t('step3.docStatusOriginal')}</option>
-                                            <option value="Copy">{t('step3.docStatusCopy')}</option>
-                                            <option value="Not Available">{t('step3.docStatusNotAvailable')}</option>
-                                        </select>
-                                        {adminMode && (
-                                            <button
-                                                onClick={() => onToggleRequired?.('registrationCertificateStatus')}
-                                                className={`p-1.5 rounded-lg border-2 transition-all ${isRequired('registrationCertificateStatus')
-                                                    ? 'bg-amber-100 border-amber-400 text-amber-700 shadow-sm'
-                                                    : 'bg-white border-gray-100 text-gray-400 hover:border-amber-200'
-                                                    }`}
-                                                title={t('admin.toggleRequired')}
-                                            >
-                                                <CheckCircle className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        <FormCheckbox
-                                            label={t('step3.willBeSubmittedLater')}
-                                            checked={store.registrationCertificateSubmittedLater}
-                                            onChange={v => store.updateField('registrationCertificateSubmittedLater', v)}
-                                            adminMode={adminMode}
-                                            onToggleRequired={() => onToggleRequired?.('registrationCertificateSubmittedLater')}
-                                            required={isRequired('registrationCertificateSubmittedLater')}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
-                                        <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'fzScheinImages')} className="hidden" /></label>
-                                        <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><ImagePlus className="w-4 h-4" /><input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'fzScheinImages')} className="hidden" /></label>
-                                    </div>
-                                    {(store as any).fzScheinImages && (store as any).fzScheinImages.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {(store as any).fzScheinImages.map((img: string, idx: number) => (
-                                                <PhotoThumbnail
-                                                    key={idx}
-                                                    src={img}
-                                                    includeInPdf={store.isImageIncludedInPdf(img)}
-                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                                    onRemove={() => removeFieldPhoto('fzScheinImages', idx)}
-                                                    onUpdate={(newSrc) => updateFieldPhoto('fzScheinImages', idx, newSrc)}
-                                                    className="w-24 h-16 sm:w-28 sm:h-20"
-                                                />
-                                            ))}
+                            {(!isHidden('registrationCertificateStatus') || adminMode) && (
+                                <div className={`space-y-3 ${adminMode && isHidden('registrationCertificateStatus') ? 'opacity-60 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-300' : ''}`}>
+                                    <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm font-medium text-gray-700">{t('step3.docRegistration')}</label>
+                                            {adminMode && (
+                                                <div className="flex items-center gap-1.5 ml-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleHidden?.('registrationCertificateStatus')}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                            isHidden('registrationCertificateStatus')
+                                                                ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-800'
+                                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                                        }`}
+                                                        title={isHidden('registrationCertificateStatus') ? 'Ausgeblendet' : 'Sichtbar'}
+                                                    >
+                                                        {isHidden('registrationCertificateStatus') ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-emerald-600" />}
+                                                        <span>{isHidden('registrationCertificateStatus') ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleRequired?.('registrationCertificateStatus')}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                            isRequired('registrationCertificateStatus')
+                                                                ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-sm'
+                                                                : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                                                        }`}
+                                                        title={isRequired('registrationCertificateStatus') ? 'Pflichtfeld' : 'Optional'}
+                                                    >
+                                                        <CheckCircle className={`w-3 h-3 ${isRequired('registrationCertificateStatus') ? 'text-amber-700' : 'text-slate-400'}`} />
+                                                        <span>{isRequired('registrationCertificateStatus') ? 'Pflicht' : 'Optional'}</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    ) : null}
+                                        <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
+                                            <select
+                                                className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
+                                                value={store.registrationCertificateStatus || ''}
+                                                onChange={e => store.updateField('registrationCertificateStatus', e.target.value as any)}
+                                            >
+                                                <option value="">{t('common.noneSelected')}</option>
+                                                <option value="Original">{t('step3.docStatusOriginal')}</option>
+                                                <option value="Copy">{t('step3.docStatusCopy')}</option>
+                                                <option value="Not Available">{t('step3.docStatusNotAvailable')}</option>
+                                            </select>
+                                            <FormCheckbox
+                                                label={t('step3.willBeSubmittedLater')}
+                                                checked={store.registrationCertificateSubmittedLater}
+                                                onChange={v => store.updateField('registrationCertificateSubmittedLater', v)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
+                                            <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'fzScheinImages')} className="hidden" /></label>
+                                            <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><ImagePlus className="w-4 h-4" /><input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'fzScheinImages')} className="hidden" /></label>
+                                        </div>
+                                        {(store as any).fzScheinImages && (store as any).fzScheinImages.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {(store as any).fzScheinImages.map((img: string, idx: number) => (
+                                                    <PhotoThumbnail
+                                                        key={idx}
+                                                        src={img}
+                                                        includeInPdf={store.isImageIncludedInPdf(img)}
+                                                        onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                        onRemove={() => removeFieldPhoto('fzScheinImages', idx)}
+                                                        onUpdate={(newSrc) => updateFieldPhoto('fzScheinImages', idx, newSrc)}
+                                                        className="w-24 h-16 sm:w-28 sm:h-20"
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Service Booklet */}
-                            <div className="space-y-3">
-                                <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
-                                    <label className="text-sm font-medium text-gray-700 w-full @3xl:w-1/3">{t('step3.docServiceBook')}</label>
-                                    <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
-                                        <select
-                                            className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
-                                            value={store.serviceBookletStatus || ''}
-                                            onChange={e => store.updateField('serviceBookletStatus', e.target.value as any)}
-                                        >
-                                            <option value="">{t('common.noneSelected')}</option>
-                                            <option value="Original">{t('step3.docStatusOriginal')}</option>
-                                            <option value="Digital">{t('step3.docStatusDigital')}</option>
-                                            <option value="Not Available">{t('step3.docStatusNotAvailable')}</option>
-                                        </select>
-                                        {adminMode && (
-                                            <button
-                                                onClick={() => onToggleRequired?.('serviceBookletStatus')}
-                                                className={`p-1.5 rounded-lg border-2 transition-all ${isRequired('serviceBookletStatus')
-                                                    ? 'bg-amber-100 border-amber-400 text-amber-700 shadow-sm'
-                                                    : 'bg-white border-gray-100 text-gray-400 hover:border-amber-200'
-                                                    }`}
-                                                title={t('admin.toggleRequired')}
-                                            >
-                                                <CheckCircle className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        <FormCheckbox
-                                            label={t('step3.willBeSubmittedLater')}
-                                            checked={store.serviceBookletSubmittedLater}
-                                            onChange={v => store.updateField('serviceBookletSubmittedLater', v)}
-                                            adminMode={adminMode}
-                                            onToggleRequired={() => onToggleRequired?.('serviceBookletSubmittedLater')}
-                                            required={isRequired('serviceBookletSubmittedLater')}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
-                                        <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'serviceheftImages')} className="hidden" /></label>
-                                        <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><ImagePlus className="w-4 h-4" /><input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'serviceheftImages')} className="hidden" /></label>
-                                    </div>
-                                    {(store as any).serviceheftImages && (store as any).serviceheftImages.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {(store as any).serviceheftImages.map((img: string, idx: number) => (
-                                                <PhotoThumbnail
-                                                    key={idx}
-                                                    src={img}
-                                                    includeInPdf={store.isImageIncludedInPdf(img)}
-                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                                    onRemove={() => removeFieldPhoto('serviceheftImages', idx)}
-                                                    onUpdate={(newSrc) => updateFieldPhoto('serviceheftImages', idx, newSrc)}
-                                                    className="w-24 h-16 sm:w-28 sm:h-20"
-                                                />
-                                            ))}
+                            {(!isHidden('serviceBookletStatus') || adminMode) && (
+                                <div className={`space-y-3 ${adminMode && isHidden('serviceBookletStatus') ? 'opacity-60 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-300' : ''}`}>
+                                    <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm font-medium text-gray-700">{t('step3.docServiceBook')}</label>
+                                            {adminMode && (
+                                                <div className="flex items-center gap-1.5 ml-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleHidden?.('serviceBookletStatus')}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                            isHidden('serviceBookletStatus')
+                                                                ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-800'
+                                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                                        }`}
+                                                        title={isHidden('serviceBookletStatus') ? 'Ausgeblendet' : 'Sichtbar'}
+                                                    >
+                                                        {isHidden('serviceBookletStatus') ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-emerald-600" />}
+                                                        <span>{isHidden('serviceBookletStatus') ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleRequired?.('serviceBookletStatus')}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                            isRequired('serviceBookletStatus')
+                                                                ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-sm'
+                                                                : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                                                        }`}
+                                                        title={isRequired('serviceBookletStatus') ? 'Pflichtfeld' : 'Optional'}
+                                                    >
+                                                        <CheckCircle className={`w-3 h-3 ${isRequired('serviceBookletStatus') ? 'text-amber-700' : 'text-slate-400'}`} />
+                                                        <span>{isRequired('serviceBookletStatus') ? 'Pflicht' : 'Optional'}</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    ) : null}
+                                        <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
+                                            <select
+                                                className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
+                                                value={store.serviceBookletStatus || ''}
+                                                onChange={e => store.updateField('serviceBookletStatus', e.target.value as any)}
+                                            >
+                                                <option value="">{t('common.noneSelected')}</option>
+                                                <option value="Original">{t('step3.docStatusOriginal')}</option>
+                                                <option value="Digital">{t('step3.docStatusDigital')}</option>
+                                                <option value="Not Available">{t('step3.docStatusNotAvailable')}</option>
+                                            </select>
+                                            <FormCheckbox
+                                                label={t('step3.willBeSubmittedLater')}
+                                                checked={store.serviceBookletSubmittedLater}
+                                                onChange={v => store.updateField('serviceBookletSubmittedLater', v)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
+                                            <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'serviceheftImages')} className="hidden" /></label>
+                                            <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><ImagePlus className="w-4 h-4" /><input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'serviceheftImages')} className="hidden" /></label>
+                                        </div>
+                                        {(store as any).serviceheftImages && (store as any).serviceheftImages.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {(store as any).serviceheftImages.map((img: string, idx: number) => (
+                                                    <PhotoThumbnail
+                                                        key={idx}
+                                                        src={img}
+                                                        includeInPdf={store.isImageIncludedInPdf(img)}
+                                                        onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                        onRemove={() => removeFieldPhoto('serviceheftImages', idx)}
+                                                        onUpdate={(newSrc) => updateFieldPhoto('serviceheftImages', idx, newSrc)}
+                                                        className="w-24 h-16 sm:w-28 sm:h-20"
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Operating Manual */}
-                            <div className="space-y-3">
-                                <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
-                                    <label className="text-sm font-medium text-gray-700 w-full @3xl:w-1/3">{t('step3.docManual')}</label>
-                                    <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
-                                        <select
-                                            className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
-                                            value={store.operatingManualStatus || ''}
-                                            onChange={e => store.updateField('operatingManualStatus', e.target.value as any)}
-                                        >
-                                            <option value="">{t('common.noneSelected')}</option>
-                                            <option value="In-Vehicle">{t('step3.docStatusInVehicle')}</option>
-                                            <option value="Not Available">{t('step3.docStatusNotAvailable')}</option>
-                                        </select>
-                                        {adminMode && (
-                                            <button
-                                                onClick={() => onToggleRequired?.('operatingManualStatus')}
-                                                className={`p-1.5 rounded-lg border-2 transition-all ${isRequired('operatingManualStatus')
-                                                    ? 'bg-amber-100 border-amber-400 text-amber-700 shadow-sm'
-                                                    : 'bg-white border-gray-100 text-gray-400 hover:border-amber-200'
-                                                    }`}
-                                                title={t('admin.toggleRequired')}
-                                            >
-                                                <CheckCircle className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        <FormCheckbox
-                                            label={t('step3.willBeSubmittedLater')}
-                                            checked={store.operatingManualSubmittedLater}
-                                            onChange={v => store.updateField('operatingManualSubmittedLater', v)}
-                                            adminMode={adminMode}
-                                            onToggleRequired={() => onToggleRequired?.('operatingManualSubmittedLater')}
-                                            required={isRequired('operatingManualSubmittedLater')}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
-                                        <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'bordliteraturImages')} className="hidden" /></label>
-                                        <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><ImagePlus className="w-4 h-4" /><input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'bordliteraturImages')} className="hidden" /></label>
-                                    </div>
-                                    {(store as any).bordliteraturImages && (store as any).bordliteraturImages.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {(store as any).bordliteraturImages.map((img: string, idx: number) => (
-                                                <PhotoThumbnail
-                                                    key={idx}
-                                                    src={img}
-                                                    includeInPdf={store.isImageIncludedInPdf(img)}
-                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                                    onRemove={() => removeFieldPhoto('bordliteraturImages', idx)}
-                                                    onUpdate={(newSrc) => updateFieldPhoto('bordliteraturImages', idx, newSrc)}
-                                                    className="w-24 h-16 sm:w-28 sm:h-20"
-                                                />
-                                            ))}
+                            {(!isHidden('operatingManualStatus') || adminMode) && (
+                                <div className={`space-y-3 ${adminMode && isHidden('operatingManualStatus') ? 'opacity-60 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-300' : ''}`}>
+                                    <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm font-medium text-gray-700">{t('step3.docManual')}</label>
+                                            {adminMode && (
+                                                <div className="flex items-center gap-1.5 ml-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleHidden?.('operatingManualStatus')}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                            isHidden('operatingManualStatus')
+                                                                ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-800'
+                                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                                        }`}
+                                                        title={isHidden('operatingManualStatus') ? 'Ausgeblendet' : 'Sichtbar'}
+                                                    >
+                                                        {isHidden('operatingManualStatus') ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-emerald-600" />}
+                                                        <span>{isHidden('operatingManualStatus') ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleRequired?.('operatingManualStatus')}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                            isRequired('operatingManualStatus')
+                                                                ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-sm'
+                                                                : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                                                        }`}
+                                                        title={isRequired('operatingManualStatus') ? 'Pflichtfeld' : 'Optional'}
+                                                    >
+                                                        <CheckCircle className={`w-3 h-3 ${isRequired('operatingManualStatus') ? 'text-amber-700' : 'text-slate-400'}`} />
+                                                        <span>{isRequired('operatingManualStatus') ? 'Pflicht' : 'Optional'}</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    ) : null}
+                                        <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
+                                            <select
+                                                className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
+                                                value={store.operatingManualStatus || ''}
+                                                onChange={e => store.updateField('operatingManualStatus', e.target.value as any)}
+                                            >
+                                                <option value="">{t('common.noneSelected')}</option>
+                                                <option value="In-Vehicle">{t('step3.docStatusInVehicle')}</option>
+                                                <option value="Not Available">{t('step3.docStatusNotAvailable')}</option>
+                                            </select>
+                                            <FormCheckbox
+                                                label={t('step3.willBeSubmittedLater')}
+                                                checked={store.operatingManualSubmittedLater}
+                                                onChange={v => store.updateField('operatingManualSubmittedLater', v)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
+                                            <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'bordliteraturImages')} className="hidden" /></label>
+                                            <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><ImagePlus className="w-4 h-4" /><input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'bordliteraturImages')} className="hidden" /></label>
+                                        </div>
+                                        {(store as any).bordliteraturImages && (store as any).bordliteraturImages.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {(store as any).bordliteraturImages.map((img: string, idx: number) => (
+                                                    <PhotoThumbnail
+                                                        key={idx}
+                                                        src={img}
+                                                        includeInPdf={store.isImageIncludedInPdf(img)}
+                                                        onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                        onRemove={() => removeFieldPhoto('bordliteraturImages', idx)}
+                                                        onUpdate={(newSrc) => updateFieldPhoto('bordliteraturImages', idx, newSrc)}
+                                                        className="w-24 h-16 sm:w-28 sm:h-20"
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Environmental Badge */}
-                            <div className="space-y-3">
-                                <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
-                                    <label className="text-sm font-medium text-gray-700 w-full @3xl:w-1/3">{t('step3.docBadge')}</label>
-                                    <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
-                                        <select
-                                            className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
-                                            value={store.environmentalBadgeStatus || ''}
-                                            onChange={e => store.updateField('environmentalBadgeStatus', e.target.value as any)}
-                                        >
-                                            <option value="">{t('common.noneSelected')}</option>
-                                            <option value="Green">{t('step3.docStatusGreen')}</option>
-                                            <option value="Yellow">{t('step3.docStatusYellow')}</option>
-                                            <option value="Red">{t('step3.docStatusRed')}</option>
-                                            <option value="Not Available">{t('step3.docStatusNotAvailable')}</option>
-                                        </select>
-                                        {adminMode && (
-                                            <button
-                                                onClick={() => onToggleRequired?.('environmentalBadgeStatus')}
-                                                className={`p-1.5 rounded-lg border-2 transition-all ${isRequired('environmentalBadgeStatus')
-                                                    ? 'bg-amber-100 border-amber-400 text-amber-700 shadow-sm'
-                                                    : 'bg-white border-gray-100 text-gray-400 hover:border-amber-200'
-                                                    }`}
-                                                title={t('admin.toggleRequired')}
-                                            >
-                                                <CheckCircle className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        <FormCheckbox
-                                            label={t('step3.willBeSubmittedLater')}
-                                            checked={store.environmentalBadgeSubmittedLater}
-                                            onChange={v => store.updateField('environmentalBadgeSubmittedLater', v)}
-                                            adminMode={adminMode}
-                                            onToggleRequired={() => onToggleRequired?.('environmentalBadgeSubmittedLater')}
-                                            required={isRequired('environmentalBadgeSubmittedLater')}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
-                                        <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'environmentalBadgeImages')} className="hidden" /></label>
-                                        <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><ImagePlus className="w-4 h-4" /><input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'environmentalBadgeImages')} className="hidden" /></label>
-                                    </div>
-                                    {(store as any).environmentalBadgeImages && (store as any).environmentalBadgeImages.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {(store as any).environmentalBadgeImages.map((img: string, idx: number) => (
-                                                <PhotoThumbnail
-                                                    key={idx}
-                                                    src={img}
-                                                    includeInPdf={store.isImageIncludedInPdf(img)}
-                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                                    onRemove={() => removeFieldPhoto('environmentalBadgeImages', idx)}
-                                                    onUpdate={(newSrc) => updateFieldPhoto('environmentalBadgeImages', idx, newSrc)}
-                                                    className="w-24 h-16 sm:w-28 sm:h-20"
-                                                />
-                                            ))}
+                            {(!isHidden('environmentalBadgeStatus') || adminMode) && (
+                                <div className={`space-y-3 ${adminMode && isHidden('environmentalBadgeStatus') ? 'opacity-60 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-300' : ''}`}>
+                                    <div className="flex flex-col @3xl:flex-row @3xl:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm font-medium text-gray-700">{t('step3.docBadge')}</label>
+                                            {adminMode && (
+                                                <div className="flex items-center gap-1.5 ml-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleHidden?.('environmentalBadgeStatus')}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                            isHidden('environmentalBadgeStatus')
+                                                                ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-800'
+                                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                                        }`}
+                                                        title={isHidden('environmentalBadgeStatus') ? 'Ausgeblendet' : 'Sichtbar'}
+                                                    >
+                                                        {isHidden('environmentalBadgeStatus') ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-emerald-600" />}
+                                                        <span>{isHidden('environmentalBadgeStatus') ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onToggleRequired?.('environmentalBadgeStatus')}
+                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                            isRequired('environmentalBadgeStatus')
+                                                                ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-sm'
+                                                                : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                                                        }`}
+                                                        title={isRequired('environmentalBadgeStatus') ? 'Pflichtfeld' : 'Optional'}
+                                                    >
+                                                        <CheckCircle className={`w-3 h-3 ${isRequired('environmentalBadgeStatus') ? 'text-amber-700' : 'text-slate-400'}`} />
+                                                        <span>{isRequired('environmentalBadgeStatus') ? 'Pflicht' : 'Optional'}</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    ) : null}
+                                        <div className="flex-1 flex flex-col @3xl:flex-row items-start @3xl:items-center gap-4">
+                                            <select
+                                                className="form-input py-1.5 text-sm w-full @3xl:w-48 bg-white"
+                                                value={store.environmentalBadgeStatus || ''}
+                                                onChange={e => store.updateField('environmentalBadgeStatus', e.target.value as any)}
+                                            >
+                                                <option value="">{t('common.noneSelected')}</option>
+                                                <option value="Green">{t('step3.docStatusGreen')}</option>
+                                                <option value="Yellow">{t('step3.docStatusYellow')}</option>
+                                                <option value="Red">{t('step3.docStatusRed')}</option>
+                                                <option value="Not Available">{t('step3.docStatusNotAvailable')}</option>
+                                            </select>
+                                            <FormCheckbox
+                                                label={t('step3.willBeSubmittedLater')}
+                                                checked={store.environmentalBadgeSubmittedLater}
+                                                onChange={v => store.updateField('environmentalBadgeSubmittedLater', v)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 ml-0 @3xl:ml-[33.333%]">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-medium text-gray-500">{t('step4.photoActions')}:</span>
+                                            <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" onChange={e => handleGenericPhoto(e, 'environmentalBadgeImages')} className="hidden" /></label>
+                                            <label className="p-1 bg-white border border-gray-200 rounded-lg cursor-pointer text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm"><ImagePlus className="w-4 h-4" /><input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'environmentalBadgeImages')} className="hidden" /></label>
+                                        </div>
+                                        {(store as any).environmentalBadgeImages && (store as any).environmentalBadgeImages.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {(store as any).environmentalBadgeImages.map((img: string, idx: number) => (
+                                                    <PhotoThumbnail
+                                                        key={idx}
+                                                        src={img}
+                                                        includeInPdf={store.isImageIncludedInPdf(img)}
+                                                        onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                        onRemove={() => removeFieldPhoto('environmentalBadgeImages', idx)}
+                                                        onUpdate={(newSrc) => updateFieldPhoto('environmentalBadgeImages', idx, newSrc)}
+                                                        className="w-24 h-16 sm:w-28 sm:h-20"
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
                     <FormTextarea
+                        name="additionalNotes"
                         label={t('step3.additionalNotes')}
                         value={store.additionalNotes}
                         onChange={v => store.updateField('additionalNotes', v)}
@@ -924,65 +1043,120 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('additionalNotes')}
                         required={isRequired('additionalNotes')}
+                        hidden={isHidden('additionalNotes')}
+                        onToggleHidden={() => onToggleHidden?.('additionalNotes')}
                     />
 
                     <div className="pt-2 border-t border-gray-100">
                         <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-8 items-start">
                             {/* Maintenance Trigger Choice */}
                             <div className="space-y-4">
-                                <div
-                                    data-fieldname="nextMaintenanceType"
-                                    className={`flex flex-col gap-2 p-2 rounded-xl transition-all ${showValidationErrors && validationErrors['nextMaintenanceType']
-                                            ? 'border-2 border-red-500 bg-red-50/10'
-                                            : 'border border-transparent'
-                                        }`}
-                                >
-                                    <label className="text-[11px] font-black uppercase tracking-[0.05em] text-slate-400">
-                                        {t('step3.maintenanceSelection')}
-                                    </label>
-                                    <div className="grid grid-cols-4 gap-1 p-1.5 bg-slate-50 rounded-xl border border-slate-100 shadow-inner">
-                                        {[
-                                            { id: 'date', label: t('step3.maintenanceTypeDate'), icon: Calendar },
-                                            { id: 'days', label: t('step3.maintenanceIntervalDays'), icon: Clock },
-                                            { id: 'months', label: t('step3.maintenanceIntervalMonths'), icon: Clock },
-                                            { id: 'mileage', label: 'km', icon: Hash }
-                                        ].map((opt) => (
-                                            <button
-                                                key={opt.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    if (store.nextMaintenanceType === opt.id) return;
-                                                    // Clear stale fields when switching modes
-                                                    if (opt.id === 'date') {
-                                                        // Switching to date: clear interval fields
-                                                        store.updateField('nextMaintenanceIntervalValue', null);
-                                                        store.updateField('nextMaintenanceMileage', 0);
-                                                    } else if (opt.id === 'mileage') {
-                                                        // Switching to km: clear date fields
-                                                        store.updateField('nextMaintenanceDate', '');
-                                                        store.updateField('nextMaintenanceIntervalValue', null);
-                                                    } else {
-                                                        // Switching to days/months: clear mileage and date
-                                                        store.updateField('nextMaintenanceDate', '');
-                                                        store.updateField('nextMaintenanceMileage', 0);
-                                                        store.updateField('nextMaintenanceIntervalValue', null);
-                                                    }
-                                                    store.updateField('nextMaintenanceType', opt.id as any);
-                                                }}
-                                                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-200 ${store.nextMaintenanceType === opt.id || (opt.id === 'date' && !store.nextMaintenanceType)
-                                                        ? 'bg-white text-primary shadow-sm ring-1 ring-black/5'
-                                                        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'
-                                                    }`}
-                                            >
-                                                <opt.icon className={`w-3.5 h-3.5 ${(store.nextMaintenanceType === opt.id || (opt.id === 'date' && !store.nextMaintenanceType)) ? 'text-primary' : 'text-slate-300'}`} />
-                                                {opt.label}
-                                            </button>
-                                        ))}
+                                {(!isHidden('nextMaintenanceType') || adminMode) && (
+                                    <div
+                                        data-fieldname="nextMaintenanceType"
+                                        className={`flex flex-col gap-2 p-2 rounded-xl transition-all ${adminMode && isHidden('nextMaintenanceType') ? 'opacity-65' : ''} ${showValidationErrors && validationErrors['nextMaintenanceType']
+                                                ? 'border-2 border-red-500 bg-red-50/10'
+                                                : 'border border-transparent'
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <label className={`text-[11px] font-black uppercase tracking-[0.05em] transition-all duration-300 ${
+                                                isRequired('nextMaintenanceType') ? 'text-black' : 'text-slate-400'
+                                            }`}>
+                                                <span className={adminMode && isHidden('nextMaintenanceType') ? 'line-through text-slate-500' : ''}>
+                                                    {t('step3.maintenanceSelection')}
+                                                </span>
+                                                {isRequired('nextMaintenanceType') && !adminMode && <span className="text-red-500 ml-0.5 font-bold">*</span>}
+                                            </label>
+                                            {adminMode && (
+                                                <div className="flex items-center gap-1.5 ml-auto">
+                                                    {onToggleHidden && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                onToggleHidden('nextMaintenanceType');
+                                                            }}
+                                                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all shadow-sm ${
+                                                                isHidden('nextMaintenanceType')
+                                                                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                                                    : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                                            }`}
+                                                            title={isHidden('nextMaintenanceType') ? 'Feld einblenden' : 'Feld ausblenden'}
+                                                        >
+                                                            {isHidden('nextMaintenanceType') ? (
+                                                                <><EyeOff className="w-3 h-3 text-slate-600" /><span>Ausgeblendet</span></>
+                                                            ) : (
+                                                                <><Eye className="w-3 h-3 text-emerald-700" /><span>Sichtbar</span></>
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                    {onToggleRequired && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                onToggleRequired('nextMaintenanceType');
+                                                            }}
+                                                            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all shadow-sm ${
+                                                                isRequired('nextMaintenanceType')
+                                                                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                            }`}
+                                                            title="Pflichtfeld umschalten"
+                                                        >
+                                                            {isRequired('nextMaintenanceType') ? 'Pflicht' : 'Optional'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-1 p-1.5 bg-slate-50 rounded-xl border border-slate-100 shadow-inner">
+                                            {[
+                                                { id: 'date', label: t('step3.maintenanceTypeDate'), icon: Calendar },
+                                                { id: 'days', label: t('step3.maintenanceIntervalDays'), icon: Clock },
+                                                { id: 'months', label: t('step3.maintenanceIntervalMonths'), icon: Clock },
+                                                { id: 'mileage', label: 'km', icon: Hash }
+                                            ].map((opt) => (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (store.nextMaintenanceType === opt.id) return;
+                                                        // Clear stale fields when switching modes
+                                                        if (opt.id === 'date') {
+                                                            // Switching to date: clear interval fields
+                                                            store.updateField('nextMaintenanceIntervalValue', null);
+                                                            store.updateField('nextMaintenanceMileage', 0);
+                                                        } else if (opt.id === 'mileage') {
+                                                            // Switching to km: clear date fields
+                                                            store.updateField('nextMaintenanceDate', '');
+                                                            store.updateField('nextMaintenanceIntervalValue', null);
+                                                        } else {
+                                                            // Switching to days/months: clear mileage and date
+                                                            store.updateField('nextMaintenanceDate', '');
+                                                            store.updateField('nextMaintenanceMileage', 0);
+                                                            store.updateField('nextMaintenanceIntervalValue', null);
+                                                        }
+                                                        store.updateField('nextMaintenanceType', opt.id as any);
+                                                    }}
+                                                    className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-200 ${store.nextMaintenanceType === opt.id || (opt.id === 'date' && !store.nextMaintenanceType)
+                                                            ? 'bg-white text-primary shadow-sm ring-1 ring-black/5'
+                                                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'
+                                                        }`}
+                                                >
+                                                    <opt.icon className={`w-3.5 h-3.5 ${(store.nextMaintenanceType === opt.id || (opt.id === 'date' && !store.nextMaintenanceType)) ? 'text-primary' : 'text-slate-300'}`} />
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {showValidationErrors && validationErrors['nextMaintenanceType'] && (
+                                            <p className="text-[10px] text-red-600 font-medium">{t('validation.required', 'Pflichtfeld')}</p>
+                                        )}
                                     </div>
-                                    {showValidationErrors && validationErrors['nextMaintenanceType'] && (
-                                        <p className="text-[10px] text-red-600 font-medium">{t('validation.required', 'Pflichtfeld')}</p>
-                                    )}
-                                </div>
+                                )}
 
                                 <div className="animate-fade-in">
                                     {(!store.nextMaintenanceType || store.nextMaintenanceType === 'date') ? (
@@ -996,6 +1170,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             adminMode={adminMode}
                                             onToggleRequired={() => onToggleRequired?.('nextMaintenanceDate')}
                                             required={isRequired('nextMaintenanceDate')}
+                                            hidden={isHidden('nextMaintenanceDate')}
+                                            onToggleHidden={() => onToggleHidden?.('nextMaintenanceDate')}
                                         />
                                     ) : (
                                         <FormInput
@@ -1010,6 +1186,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             adminMode={adminMode}
                                             onToggleRequired={() => onToggleRequired?.('nextMaintenanceIntervalValue')}
                                             required={isRequired('nextMaintenanceIntervalValue')}
+                                            hidden={isHidden('nextMaintenanceIntervalValue')}
+                                            onToggleHidden={() => onToggleHidden?.('nextMaintenanceIntervalValue')}
                                         />
                                     )}
                                 </div>
@@ -1017,9 +1195,10 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
 
                             {/* Additional Info: Photos, Fixed Mileage Target, Price */}
                             <div className="space-y-6">
-                                <div className="flex flex-col gap-3">
+                                {(!isHidden('maintenanceImages') || adminMode) && (
+                                <div className={`flex flex-col gap-3 ${adminMode && isHidden('maintenanceImages') ? 'opacity-65' : ''}`}>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[11px] font-black uppercase tracking-[0.05em] text-slate-400">{t('step4.photoActions')}</span>
+                                        <span className={`text-[11px] font-black uppercase tracking-[0.05em] ${adminMode && isHidden('maintenanceImages') ? 'line-through text-slate-400' : 'text-slate-400'}`}>{t('step4.photoActions')}</span>
                                         <div className="flex items-center gap-2">
                                             <label className="p-1.5 bg-white border border-slate-200 rounded-lg cursor-pointer text-slate-500 hover:text-primary hover:border-primary transition-all shadow-sm">
                                                 <Camera className="w-4 h-4" />
@@ -1029,6 +1208,50 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                                 <ImagePlus className="w-4 h-4" />
                                                 <input type="file" multiple accept="image/*" onChange={e => handleGenericPhoto(e, 'maintenanceImages')} className="hidden" />
                                             </label>
+                                            {adminMode && (
+                                                <div className="flex items-center gap-1.5 ml-1">
+                                                    {onToggleHidden && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                onToggleHidden('maintenanceImages');
+                                                            }}
+                                                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all shadow-sm ${
+                                                                isHidden('maintenanceImages')
+                                                                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                                                    : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                                            }`}
+                                                            title={isHidden('maintenanceImages') ? 'Fotos einblenden' : 'Fotos ausblenden'}
+                                                        >
+                                                            {isHidden('maintenanceImages') ? (
+                                                                <><EyeOff className="w-3 h-3 text-slate-600" /><span>Ausgeblendet</span></>
+                                                            ) : (
+                                                                <><Eye className="w-3 h-3 text-emerald-700" /><span>Sichtbar</span></>
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                    {onToggleRequired && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                onToggleRequired('maintenanceImages');
+                                                            }}
+                                                            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all shadow-sm ${
+                                                                isRequired('maintenanceImages')
+                                                                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                            }`}
+                                                            title="Pflichtfeld umschalten"
+                                                        >
+                                                            {isRequired('maintenanceImages') ? 'Pflicht' : 'Optional'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     {(store as any).maintenanceImages && (store as any).maintenanceImages.length > 0 && (
@@ -1047,6 +1270,7 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         </div>
                                     )}
                                 </div>
+                                )}
 
                                 <div className={`grid grid-cols-1 ${isVehicleEvaluation || store.nextMaintenanceType === 'mileage' ? '' : '@3xl:grid-cols-2'} gap-4`}>
                                     {store.nextMaintenanceType !== 'mileage' && (
@@ -1062,6 +1286,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             adminMode={adminMode}
                                             onToggleRequired={() => onToggleRequired?.('nextMaintenanceMileage')}
                                             required={isRequired('nextMaintenanceMileage')}
+                                            hidden={isHidden('nextMaintenanceMileage')}
+                                            onToggleHidden={() => onToggleHidden?.('nextMaintenanceMileage')}
                                         />
                                     )}
                                     {!isVehicleEvaluation && (
@@ -1077,6 +1303,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                             adminMode={adminMode}
                                             onToggleRequired={() => onToggleRequired?.('maintenancePrice')}
                                             required={isRequired('maintenancePrice')}
+                                            hidden={isHidden('maintenancePrice')}
+                                            onToggleHidden={() => onToggleHidden?.('maintenancePrice')}
                                         />
                                     )}
                                 </div>
@@ -1087,10 +1315,10 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
             </Card>
 
             {/* Charging Cable - Only for EV/Hybrid */}
-            {showChargingCable && (
+            {showChargingCable && (!isHidden('chargingCable') || adminMode) && (
                 <>
                     <SectionTitle>{t('step3.chargingCable')}</SectionTitle>
-                    <Card>
+                    <Card className={adminMode && isHidden('chargingCable') ? 'opacity-60 bg-slate-50 border-dashed border-slate-300' : ''}>
                         <div
                             data-fieldname="chargingCable"
                             className={`flex flex-col gap-2 p-3 rounded-xl transition-all ${showValidationErrors && validationErrors['chargingCable']
@@ -1101,17 +1329,34 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-medium text-gray-700">{t('step3.chargingCable')}</label>
                                 {adminMode && (
-                                    <button
-                                        onClick={() => onToggleRequired?.('chargingCable')}
-                                        className={`flex items-center gap-1.5 px-2 py-1 rounded transition-all text-[10px] font-bold uppercase tracking-wider
-                                            ${isRequired('chargingCable')
-                                                ? 'bg-primary text-white shadow-sm'
-                                                : 'bg-white text-gray-400 border border-gray-200 hover:border-primary/30 hover:text-primary'
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleHidden?.('chargingCable')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                isHidden('chargingCable')
+                                                    ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-800'
+                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
                                             }`}
-                                    >
-                                        <CheckCircle className="w-3 h-3" />
-                                        {t('admin.mandatory')}
-                                    </button>
+                                            title={isHidden('chargingCable') ? 'Ausgeblendet' : 'Sichtbar'}
+                                        >
+                                            {isHidden('chargingCable') ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-emerald-600" />}
+                                            <span>{isHidden('chargingCable') ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleRequired?.('chargingCable')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                isRequired('chargingCable')
+                                                    ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-sm'
+                                                    : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                                            }`}
+                                            title={isRequired('chargingCable') ? 'Pflichtfeld' : 'Optional'}
+                                        >
+                                            <CheckCircle className={`w-3 h-3 ${isRequired('chargingCable') ? 'text-amber-700' : 'text-slate-400'}`} />
+                                            <span>{isRequired('chargingCable') ? 'Pflicht' : 'Optional'}</span>
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                             <div className="flex flex-wrap gap-4">
@@ -1180,6 +1425,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('noPaintIssuesDetected')}
                         required={isRequired('noPaintIssuesDetected')}
+                        hidden={isHidden('noPaintIssuesDetected')}
+                        onToggleHidden={() => onToggleHidden?.('noPaintIssuesDetected')}
                     />
                 </div>
 
@@ -1524,24 +1771,98 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('breakdownKit')}
                         required={isRequired('breakdownKit')}
+                        hidden={isHidden('breakdownKit')}
+                        onToggleHidden={() => onToggleHidden?.('breakdownKit')}
                     />
-                    <div className="relative flex flex-col gap-2 w-full group">
-                        <label className="block text-[11px] font-black uppercase tracking-[0.05em] mb-1 text-slate-400 group-hover:text-slate-600">
-                            {t('step3.tireConfiguration')}
-                        </label>
-                        <div className="relative flex flex-col gap-2 p-2 bg-white rounded-xl border border-slate-200 transition-all duration-300">
-                            <select
-                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-primary/30 transition-all"
-                                value={store.tireConfiguration || '2-axle'}
-                                onChange={e => store.updateTireConfiguration(e.target.value as any)}
+                    {(!isHidden('tireConfiguration') || adminMode) && (
+                        <div className={`relative flex flex-col gap-2 w-full group ${adminMode && isHidden('tireConfiguration') ? 'opacity-65' : ''}`} data-fieldname="tireConfiguration">
+                            <label
+                                className={`block text-[11px] font-black uppercase tracking-[0.05em] mb-1 transition-all duration-300 ${
+                                    isRequired('tireConfiguration') ? 'text-black' : 'text-slate-400 group-hover:text-slate-600'
+                                }`}
                             >
-                                <option value="2-axle">{t('step3.config2Axle')}</option>
-                                <option value="3-axle">{t('step3.config3Axle')}</option>
-                                <option value="2-axle-twin">{t('step3.config2AxleTwin')}</option>
-                                <option value="3-axle-twin">{t('step3.config3AxleTwin')}</option>
-                            </select>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={adminMode && isHidden('tireConfiguration') ? 'line-through text-slate-500' : ''}>
+                                        {t('step3.tireConfiguration')}
+                                    </span>
+                                    {isRequired('tireConfiguration') && !adminMode && <span className="text-red-500 ml-0.5 font-bold">*</span>}
+
+                                    {adminMode && (
+                                        <div className="flex items-center gap-1.5 ml-auto">
+                                            {onToggleHidden && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        onToggleHidden('tireConfiguration');
+                                                    }}
+                                                    className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full transition-all ${
+                                                        isHidden('tireConfiguration')
+                                                            ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-400'
+                                                            : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
+                                                    }`}
+                                                    title={isHidden('tireConfiguration') ? 'Feld ist ausgeblendet' : 'Feld ist sichtbar'}
+                                                >
+                                                    {isHidden('tireConfiguration') ? <EyeOff className="w-3 h-3 text-slate-600" /> : <Eye className="w-3 h-3 text-emerald-700" />}
+                                                    <span>{isHidden('tireConfiguration') ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                                                </button>
+                                            )}
+                                            {onToggleRequired && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        onToggleRequired('tireConfiguration');
+                                                    }}
+                                                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full transition-all ${
+                                                        isRequired('tireConfiguration')
+                                                            ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm'
+                                                            : 'bg-slate-200 hover:bg-slate-300 text-slate-600'
+                                                    }`}
+                                                    title={isRequired('tireConfiguration') ? 'Pflichtfeld' : 'Optionales Feld'}
+                                                >
+                                                    {isRequired('tireConfiguration') ? 'Pflicht' : 'Optional'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </label>
+
+                            <div
+                                className={`relative flex flex-col gap-2 p-2 bg-white rounded-xl border-2 transition-all duration-300 ${
+                                    getFieldError('tireConfiguration')
+                                        ? 'border-red-500 bg-red-50/10'
+                                        : adminMode && isHidden('tireConfiguration')
+                                        ? 'border-dashed border-slate-300 bg-slate-50'
+                                        : adminMode && isRequired('tireConfiguration')
+                                        ? 'border-amber-600/30 bg-amber-500/5 ring-4 ring-amber-600/5'
+                                        : 'border-slate-200'
+                                }`}
+                            >
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <select
+                                        className={`flex-1 min-w-[150px] px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-primary/30 transition-all ${
+                                            adminMode ? 'pointer-events-none' : ''
+                                        }`}
+                                        value={store.tireConfiguration || '2-axle'}
+                                        onChange={e => !adminMode && store.updateTireConfiguration(e.target.value as any)}
+                                        disabled={adminMode}
+                                    >
+                                        <option value="2-axle">{t('step3.config2Axle')}</option>
+                                        <option value="3-axle">{t('step3.config3Axle')}</option>
+                                        <option value="2-axle-twin">{t('step3.config2AxleTwin')}</option>
+                                        <option value="3-axle-twin">{t('step3.config3AxleTwin')}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            {getFieldError('tireConfiguration') && (
+                                <p className="text-red-500 text-xs mt-1">{getFieldError('tireConfiguration')}</p>
+                            )}
                         </div>
-                    </div>
+                    )}
                     <EquipmentSelect
                         name="firstAidKit"
                         error={getFieldError('firstAidKit')}
@@ -1552,6 +1873,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('firstAidKit')}
                         required={isRequired('firstAidKit')}
+                        hidden={isHidden('firstAidKit')}
+                        onToggleHidden={() => onToggleHidden?.('firstAidKit')}
                     />
                     <EquipmentSelect
                         name="warningTriangle"
@@ -1562,6 +1885,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('warningTriangle')}
                         required={isRequired('warningTriangle')}
+                        hidden={isHidden('warningTriangle')}
+                        onToggleHidden={() => onToggleHidden?.('warningTriangle')}
                     />
                     <EquipmentSelect
                         name="safetyVest"
@@ -1572,6 +1897,8 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('safetyVest')}
                         required={isRequired('safetyVest') || false}
+                        hidden={isHidden('safetyVest')}
+                        onToggleHidden={() => onToggleHidden?.('safetyVest')}
                     />
                 </div>
 
@@ -1776,350 +2103,395 @@ const Step3_Condition: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                 </div>
 
                 {/* Spare Tire Section */}
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="font-semibold text-gray-700">{t('step3.tireSpareTire')}</span>
-                        <FormCheckbox
-                            label={t('step3.spareTirePresent')}
-                            checked={store.spareTire.present}
-                            onChange={v => store.updateSpareTire({ present: v })}
-                        />
-                    </div>
+                {(!isHidden('spareTire') || adminMode) && (
+                    <div className={`mt-6 pt-6 border-t border-gray-100 ${adminMode && isHidden('spareTire') ? 'opacity-65' : ''}`}>
+                        <div className="flex items-center gap-3 mb-4 w-full">
+                            <span className={`font-semibold ${adminMode && isHidden('spareTire') ? 'line-through text-slate-500' : 'text-gray-700'}`}>{t('step3.tireSpareTire')}</span>
+                            <FormCheckbox
+                                name="spareTire"
+                                label={t('step3.spareTirePresent')}
+                                checked={store.spareTire.present}
+                                onChange={v => store.updateSpareTire({ present: v })}
+                                adminMode={adminMode}
+                                onToggleRequired={() => onToggleRequired?.('spareTire')}
+                                onToggleHidden={() => onToggleHidden?.('spareTire')}
+                                required={isRequired('spareTire')}
+                                hidden={isHidden('spareTire')}
+                                error={!!getFieldError('spareTire')}
+                                className="flex-1"
+                            />
+                        </div>
 
-                    {store.spareTire.present && (
-                        <div className="animate-fade-in">
-                            {/* Desktop Spare Tire Summary */}
-                            <div className="hidden @3xl:block overflow-x-auto -mx-4 @3xl:mx-0">
-                                <table className="w-full min-w-[1000px]">
-                                    <thead>
-                                        <tr>
-                                            <th className="table-header w-24">{t('step4.photoActions')}</th>
-                                            <th className="table-header">{t('step3.tireDesignation')}</th>
-                                            <th className="table-header">{t('step3.tireManufacturer')}</th>
-                                            <th className="table-header">{t('step3.tireModel')}</th>
-                                            <th className="table-header">{t('step3.tireType')}</th>
-                                            <th className="table-header">{t('step3.tireTread')}</th>
-                                            <th className="table-header">DOT</th>
-                                            <th className="table-header">{t('step3.rimType')}</th>
-                                            <th className="table-header">{t('step3.damaged')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr className="hover:bg-gray-50">
-                                            <td className="table-cell">
-                                                <div className="flex items-center gap-1">
-                                                    <button onClick={() => setEditingTireIndex(null)} className="p-1 text-primary hover:bg-primary/10 rounded font-medium text-sm">
-                                                        {t('step4.edit')}
-                                                    </button>
-                                                    {store.spareTire.images && store.spareTire.images.length > 0 && (
-                                                        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full shadow-sm whitespace-nowrap">
-                                                            {store.spareTire.images.length} {t('step4.photosAbbr')}
+                        {(!isHidden('spareTire') || adminMode) && store.spareTire.present && (
+                            <div className="animate-fade-in">
+                                {/* Desktop Spare Tire Summary */}
+                                <div className="hidden @3xl:block overflow-x-auto -mx-4 @3xl:mx-0">
+                                    <table className="w-full min-w-[1000px]">
+                                        <thead>
+                                            <tr>
+                                                <th className="table-header w-24">{t('step4.photoActions')}</th>
+                                                <th className="table-header">{t('step3.tireDesignation')}</th>
+                                                <th className="table-header">{t('step3.tireManufacturer')}</th>
+                                                <th className="table-header">{t('step3.tireModel')}</th>
+                                                <th className="table-header">{t('step3.tireType')}</th>
+                                                <th className="table-header">{t('step3.tireTread')}</th>
+                                                <th className="table-header">DOT</th>
+                                                <th className="table-header">{t('step3.rimType')}</th>
+                                                <th className="table-header">{t('step3.damaged')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr className="hover:bg-gray-50">
+                                                <td className="table-cell">
+                                                    <div className="flex items-center gap-1">
+                                                        <button onClick={() => setEditingTireIndex(null)} className="p-1 text-primary hover:bg-primary/10 rounded font-medium text-sm">
+                                                            {t('step4.edit')}
+                                                        </button>
+                                                        {store.spareTire.images && store.spareTire.images.length > 0 && (
+                                                            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full shadow-sm whitespace-nowrap">
+                                                                {store.spareTire.images.length} {t('step4.photosAbbr')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="table-cell">{store.spareTire.designation || '-'}</td>
+                                                <td className="table-cell">{store.spareTire.manufacturer || '-'}</td>
+                                                <td className="table-cell">{store.spareTire.tireModel || '-'}</td>
+                                                <td className="table-cell">
+                                                    {store.spareTire.type === 'S' && t('step3.tireSummer')}
+                                                    {store.spareTire.type === 'W' && t('step3.tireWinter')}
+                                                    {store.spareTire.type === 'A' && t('step3.tireAllSeason')}
+                                                    {!store.spareTire.type && '-'}
+                                                </td>
+                                                <td className="table-cell">{store.spareTire.treadDepth || '-'}</td>
+                                                <td className="table-cell uppercase font-mono">{store.spareTire.dotNumber || '-'}</td>
+                                                <td className="table-cell">{store.spareTire.rimType ? t(`step3.rim${store.spareTire.rimType}`, store.spareTire.rimType) : '-'}</td>
+                                                <td className="table-cell">
+                                                    {store.spareTire.damaged ? (
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                                            {t('common.yes')}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                                            {t('common.no')}
                                                         </span>
                                                     )}
-                                                </div>
-                                            </td>
-                                            <td className="table-cell">{store.spareTire.designation || '-'}</td>
-                                            <td className="table-cell">{store.spareTire.manufacturer || '-'}</td>
-                                            <td className="table-cell">{store.spareTire.tireModel || '-'}</td>
-                                            <td className="table-cell">
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Mobile Spare Tire Card */}
+                                <div className="@3xl:hidden bg-gray-50 rounded-lg p-3 space-y-2 border border-blue-100">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-primary">#{t('step3.tireSpareTire')}</span>
+                                            <button onClick={() => setEditingTireIndex(null)} className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-primary transition-colors hover:shadow-sm font-medium text-sm px-3 ml-2">
+                                                {t('step4.edit')}
+                                            </button>
+                                            {store.spareTire.images && store.spareTire.images.length > 0 && (
+                                                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full">
+                                                    {store.spareTire.images.length} {t('step4.photosAbbr')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-800">
+                                        {store.spareTire.designation || t('step3.tireSpareTire')}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2 bg-white/50 p-2 rounded-lg border border-gray-100/50">
+                                        <div>
+                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireManufacturer')}</label>
+                                            <div className="text-sm truncate">{store.spareTire.manufacturer || '-'}</div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireModel')}</label>
+                                            <div className="text-sm truncate">{store.spareTire.tireModel || '-'}</div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireType')}</label>
+                                            <div className="text-sm">
                                                 {store.spareTire.type === 'S' && t('step3.tireSummer')}
                                                 {store.spareTire.type === 'W' && t('step3.tireWinter')}
                                                 {store.spareTire.type === 'A' && t('step3.tireAllSeason')}
                                                 {!store.spareTire.type && '-'}
-                                            </td>
-                                            <td className="table-cell">{store.spareTire.treadDepth || '-'}</td>
-                                            <td className="table-cell uppercase font-mono">{store.spareTire.dotNumber || '-'}</td>
-                                            <td className="table-cell">{store.spareTire.rimType ? t(`step3.rim${store.spareTire.rimType}`, store.spareTire.rimType) : '-'}</td>
-                                            <td className="table-cell">
-                                                {store.spareTire.damaged ? (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                                                        {t('common.yes')}
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                                        {t('common.no')}
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Mobile Spare Tire Card */}
-                            <div className="@3xl:hidden bg-gray-50 rounded-lg p-3 space-y-2 border border-blue-100">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-primary">#{t('step3.tireSpareTire')}</span>
-                                        <button onClick={() => setEditingTireIndex(null)} className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-primary transition-colors hover:shadow-sm font-medium text-sm px-3 ml-2">
-                                            {t('step4.edit')}
-                                        </button>
-                                        {store.spareTire.images && store.spareTire.images.length > 0 && (
-                                            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full">
-                                                {store.spareTire.images.length} {t('step4.photosAbbr')}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="text-sm font-semibold text-gray-800">
-                                    {store.spareTire.designation || t('step3.tireSpareTire')}
-                                </div>
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2 bg-white/50 p-2 rounded-lg border border-gray-100/50">
-                                    <div>
-                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireManufacturer')}</label>
-                                        <div className="text-sm truncate">{store.spareTire.manufacturer || '-'}</div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireModel')}</label>
-                                        <div className="text-sm truncate">{store.spareTire.tireModel || '-'}</div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireType')}</label>
-                                        <div className="text-sm">
-                                            {store.spareTire.type === 'S' && t('step3.tireSummer')}
-                                            {store.spareTire.type === 'W' && t('step3.tireWinter')}
-                                            {store.spareTire.type === 'A' && t('step3.tireAllSeason')}
-                                            {!store.spareTire.type && '-'}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <div>
-                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireTread')}</label>
-                                            <div className="text-sm">{store.spareTire.treadDepth || '-'}</div>
+                                        <div className="flex gap-4">
+                                            <div>
+                                                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireTread')}</label>
+                                                <div className="text-sm">{store.spareTire.treadDepth || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">DOT</label>
+                                                <div className="text-sm">{store.spareTire.dotNumber || '-'}</div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">DOT</label>
-                                            <div className="text-sm">{store.spareTire.dotNumber || '-'}</div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2 mt-1 border-t border-gray-100 pt-1 grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
-                                            <div className="text-sm truncate">{store.spareTire.rimType ? t(`step3.rim${store.spareTire.rimType}`, store.spareTire.rimType) : '-'}</div>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
-                                            <div className="text-sm">{store.spareTire.damaged ? t('common.yes') : t('common.no')}</div>
+                                        <div className="col-span-2 mt-1 border-t border-gray-100 pt-1 grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
+                                                <div className="text-sm truncate">{store.spareTire.rimType ? t(`step3.rim${store.spareTire.rimType}`, store.spareTire.rimType) : '-'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
+                                                <div className="text-sm">{store.spareTire.damaged ? t('common.yes') : t('common.no')}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Second Set of Tires Section */}
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="font-semibold text-gray-700">{t('step3.secondTireSet')}</span>
-                        <FormCheckbox
-                            label={t('step3.addSecondTireSet')}
-                            checked={store.hasSecondTireSet}
-                            onChange={v => store.toggleSecondTireSet(v)}
-                        />
-                    </div>
+                {(!isHidden('hasSecondTireSet') || adminMode) && (
+                    <div className={`mt-6 pt-6 border-t border-gray-100 ${adminMode && isHidden('hasSecondTireSet') ? 'opacity-65' : ''}`}>
+                        <div className="flex items-center gap-3 mb-4 w-full">
+                            <span className={`font-semibold ${adminMode && isHidden('hasSecondTireSet') ? 'line-through text-slate-500' : 'text-gray-700'}`}>{t('step3.secondTireSet')}</span>
+                            <FormCheckbox
+                                name="hasSecondTireSet"
+                                label={t('step3.addSecondTireSet')}
+                                checked={store.hasSecondTireSet}
+                                onChange={v => store.toggleSecondTireSet(v)}
+                                adminMode={adminMode}
+                                onToggleRequired={() => onToggleRequired?.('hasSecondTireSet')}
+                                onToggleHidden={() => onToggleHidden?.('hasSecondTireSet')}
+                                required={isRequired('hasSecondTireSet')}
+                                hidden={isHidden('hasSecondTireSet')}
+                                error={!!getFieldError('hasSecondTireSet')}
+                                className="flex-1"
+                            />
+                        </div>
 
-                    {store.hasSecondTireSet && (
-                        <div className="animate-fade-in space-y-6">
-                            <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('step3.wheelsetSelection')}</label>
-                                    <select
-                                        className="form-input py-2 text-sm"
-                                        value={store.secondTireSetSelection || 'Both'}
-                                        onChange={e => store.updateField('secondTireSetSelection', e.target.value as any)}
-                                    >
-                                        <option value="Both">{t('step3.selectionBoth')}</option>
-                                        <option value="Only Tires">{t('step3.selectionOnlyTires')}</option>
-                                        <option value="Only Rims">{t('step3.selectionOnlyRims')}</option>
-                                    </select>
+                        {(!isHidden('hasSecondTireSet') || adminMode) && store.hasSecondTireSet && (
+                            <div className="animate-fade-in space-y-6">
+                                <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('step3.wheelsetSelection')}</label>
+                                        <select
+                                            className="form-input py-2 text-sm"
+                                            value={store.secondTireSetSelection || 'Both'}
+                                            onChange={e => store.updateField('secondTireSetSelection', e.target.value as any)}
+                                        >
+                                            <option value="Both">{t('step3.selectionBoth')}</option>
+                                            <option value="Only Tires">{t('step3.selectionOnlyTires')}</option>
+                                            <option value="Only Rims">{t('step3.selectionOnlyRims')}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            {/* Desktop Second Set Table */}
-                            <div className="hidden @3xl:block overflow-x-auto -mx-4 @3xl:mx-0">
-                                <table className="w-full min-w-[1000px]">
-                                    <thead>
-                                        <tr>
-                                            <th className="table-header w-32">{t('step4.photoActions')}</th>
-                                            <th className="table-header w-12">{t('step3.tireAxle')}</th>
-                                            <th className="table-header">{t('step3.tireSide')}</th>
-                                            <th className="table-header">{t('step3.tireDesignation')}</th>
-                                            <th className="table-header">{t('step3.tireManufacturer')}</th>
-                                            <th className="table-header">{t('step3.tireModel')}</th>
-                                            <th className="table-header">{t('step3.tireType')}</th>
-                                            <th className="table-header">{t('step3.tireTread')}</th>
-                                            <th className="table-header">DOT</th>
-                                            {store.secondTireSetSelection !== 'Only Tires' && (
-                                                <th className="table-header">{t('step3.rimType')}</th>
-                                            )}
-                                            {store.secondTireSetSelection !== 'Only Rims' && (
-                                                <th className="table-header">{t('step3.damaged')}</th>
-                                            )}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {store.secondTires.map((tire, i) => {
-                                            const photoCount = (tire.images || []).length;
-                                            return (
-                                                <tr key={i} className="hover:bg-gray-50 group">
-                                                    <td className="table-cell">
-                                                        <div className="flex items-center gap-1">
-                                                            <button onClick={() => setEditingSecondTireIndex(i)} className="p-1 text-primary hover:bg-primary/10 rounded font-medium text-sm">
+                                {/* Desktop Second Set Table */}
+                                <div className="hidden @3xl:block overflow-x-auto -mx-4 @3xl:mx-0">
+                                    <table className="w-full min-w-[1000px]">
+                                        <thead>
+                                            <tr>
+                                                <th className="table-header w-32">{t('step4.photoActions')}</th>
+                                                <th className="table-header w-12">{t('step3.tireAxle')}</th>
+                                                <th className="table-header">{t('step3.tireSide')}</th>
+                                                <th className="table-header">{t('step3.tireDesignation')}</th>
+                                                <th className="table-header">{t('step3.tireManufacturer')}</th>
+                                                <th className="table-header">{t('step3.tireModel')}</th>
+                                                <th className="table-header">{t('step3.tireType')}</th>
+                                                <th className="table-header">{t('step3.tireTread')}</th>
+                                                <th className="table-header">DOT</th>
+                                                {store.secondTireSetSelection !== 'Only Tires' && (
+                                                    <th className="table-header">{t('step3.rimType')}</th>
+                                                )}
+                                                {store.secondTireSetSelection !== 'Only Rims' && (
+                                                    <th className="table-header">{t('step3.damaged')}</th>
+                                                )}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {store.secondTires.map((tire, i) => {
+                                                const photoCount = (tire.images || []).length;
+                                                return (
+                                                    <tr key={i} className="hover:bg-gray-50 group">
+                                                        <td className="table-cell">
+                                                            <div className="flex items-center gap-1">
+                                                                <button onClick={() => setEditingSecondTireIndex(i)} className="p-1 text-primary hover:bg-primary/10 rounded font-medium text-sm">
+                                                                    {t('step4.edit')}
+                                                                </button>
+                                                                {photoCount > 0 && (
+                                                                    <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full shadow-sm whitespace-nowrap">
+                                                                        {photoCount} {t('step4.photosAbbr')}
+                                                                    </span>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => {
+                                                                        store.copySecondTireToNext(i);
+                                                                        toast.success(t('step3.copySuccess'));
+                                                                    }}
+                                                                    className="p-1 text-primary hover:bg-primary/10 rounded transition-colors flex-shrink-0"
+                                                                    title={t('step3.copyToAxle', 'Copy to next')}
+                                                                >
+                                                                    <Copy className="w-4 h-4" />
+                                                                </button>
+                                                                <div className="flex items-center gap-1 border-l border-gray-200 pl-1">
+                                                                    <label className="p-1 text-gray-400 hover:text-primary hover:bg-primary/5 rounded cursor-pointer transition-all" title={t('step4.takePhoto')}>
+                                                                        <Camera className="w-4 h-4" />
+                                                                        <input type="file" accept="image/*" capture="environment" onChange={e => handleTireQuickPhoto(e, i, true)} className="hidden" />
+                                                                    </label>
+                                                                    <label className="p-1 text-gray-400 hover:text-primary hover:bg-primary/5 rounded cursor-pointer transition-all" title={t('step4.choosePhoto')}>
+                                                                        <ImagePlus className="w-4 h-4" />
+                                                                        <input type="file" multiple accept="image/*" onChange={e => handleTireQuickPhoto(e, i, true)} className="hidden" />
+                                                                    </label>
+                                                                </div>
+                                                                {tire.images && tire.images.length > 0 && (
+                                                                    <div className="flex items-center gap-1 ml-1 border-l border-gray-200 pl-1">
+                                                                        {tire.images.map((img, idx) => (
+                                                                            <PhotoThumbnail
+                                                                                key={idx}
+                                                                                src={img}
+                                                                                includeInPdf={store.isImageIncludedInPdf(img)}
+                                                                                onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                                                onRemove={() => removeTirePhoto(i, idx, true)}
+                                                                                onUpdate={(newSrc) => updateTirePhoto(i, idx, newSrc, true)}
+                                                                                className="w-24 h-16 sm:w-28 sm:h-20"
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="table-cell font-bold">{tire.axle}</td>
+                                                        <td className="table-cell">{tire.side === 'links' ? t('common.left') : t('common.right')}</td>
+                                                        <td className="table-cell">{tire.designation || '-'}</td>
+                                                        <td className="table-cell">{tire.manufacturer || '-'}</td>
+                                                        <td className="table-cell">{tire.tireModel || '-'}</td>
+                                                        <td className="table-cell">
+                                                            {tire.type === 'S' && t('step3.tireSummer')}
+                                                            {tire.type === 'W' && t('step3.tireWinter')}
+                                                            {tire.type === 'A' && t('step3.tireAllSeason')}
+                                                            {!tire.type && '-'}
+                                                        </td>
+                                                        <td className="table-cell">{tire.treadDepth || '-'}</td>
+                                                        <td className="table-cell uppercase font-mono">{tire.dotNumber || '-'}</td>
+                                                        {store.secondTireSetSelection !== 'Only Tires' && (
+                                                            <td className="table-cell">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</td>
+                                                        )}
+                                                        {store.secondTireSetSelection !== 'Only Rims' && (
+                                                            <td className="table-cell">
+                                                                {tire.damaged ? (
+                                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                                                        {t('common.yes')}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                                                        {t('common.no')}
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Mobile Second Set Cards */}
+                                <div className="@3xl:hidden space-y-3">
+                                    {store.secondTires.map((tire, i) => {
+                                        const photoCount = (tire.images || []).length;
+                                        return (
+                                            <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-100">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-primary">#{i + 1}</span>
+                                                        <div className="flex items-center gap-1 ml-2">
+                                                            <button onClick={() => setEditingSecondTireIndex(i)} className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-primary transition-colors hover:shadow-sm font-medium text-sm px-3">
                                                                 {t('step4.edit')}
                                                             </button>
                                                             {photoCount > 0 && (
-                                                                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full shadow-sm whitespace-nowrap">
+                                                                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full whitespace-nowrap">
                                                                     {photoCount} {t('step4.photosAbbr')}
                                                                 </span>
                                                             )}
-                                                            <button
-                                                                onClick={() => {
-                                                                    store.copySecondTireToNext(i);
-                                                                    toast.success(t('step3.copySuccess'));
-                                                                }}
-                                                                className="p-1 text-primary hover:bg-primary/10 rounded transition-colors flex-shrink-0"
-                                                                title={t('step3.copyToAxle', 'Copy to next')}
-                                                            >
-                                                                <Copy className="w-4 h-4" />
-                                                            </button>
-                                                            <div className="flex items-center gap-1 border-l border-gray-200 pl-1">
-                                                                <label className="p-1 text-gray-400 hover:text-primary hover:bg-primary/5 rounded cursor-pointer transition-all" title={t('step4.takePhoto')}>
-                                                                    <Camera className="w-4 h-4" />
-                                                                    <input type="file" accept="image/*" capture="environment" onChange={e => handleTireQuickPhoto(e, i, true)} className="hidden" />
-                                                                </label>
-                                                                <label className="p-1 text-gray-400 hover:text-primary hover:bg-primary/5 rounded cursor-pointer transition-all" title={t('step4.choosePhoto')}>
-                                                                    <ImagePlus className="w-4 h-4" />
-                                                                    <input type="file" multiple accept="image/*" onChange={e => handleTireQuickPhoto(e, i, true)} className="hidden" />
-                                                                </label>
-                                                            </div>
-                                                            {tire.images && tire.images.length > 0 && (
-                                                                <div className="flex items-center gap-1 ml-1 border-l border-gray-200 pl-1">
-                                                                    {tire.images.map((img, idx) => (
-                                                                        <PhotoThumbnail
-                                                                            key={idx}
-                                                                            src={img}
-                                                                            includeInPdf={store.isImageIncludedInPdf(img)}
-                                                                            onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
-                                                                            onRemove={() => removeTirePhoto(i, idx, true)}
-                                                                            onUpdate={(newSrc) => updateTirePhoto(i, idx, newSrc, true)}
-                                                                            className="w-24 h-16 sm:w-28 sm:h-20"
-                                                                        />
-                                                                    ))}
-                                                                </div>
-                                                            )}
                                                         </div>
-                                                    </td>
-                                                    <td className="table-cell font-bold">{tire.axle}</td>
-                                                    <td className="table-cell">{tire.side === 'links' ? t('common.left') : t('common.right')}</td>
-                                                    <td className="table-cell">{tire.designation || '-'}</td>
-                                                    <td className="table-cell">{tire.manufacturer || '-'}</td>
-                                                    <td className="table-cell">{tire.tireModel || '-'}</td>
-                                                    <td className="table-cell">
-                                                        {tire.type === 'S' && t('step3.tireSummer')}
-                                                        {tire.type === 'W' && t('step3.tireWinter')}
-                                                        {tire.type === 'A' && t('step3.tireAllSeason')}
-                                                        {!tire.type && '-'}
-                                                    </td>
-                                                    <td className="table-cell">{tire.treadDepth || '-'}</td>
-                                                    <td className="table-cell uppercase font-mono">{tire.dotNumber || '-'}</td>
-                                                    {store.secondTireSetSelection !== 'Only Tires' && (
-                                                        <td className="table-cell">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</td>
-                                                    )}
-                                                    {store.secondTireSetSelection !== 'Only Rims' && (
-                                                        <td className="table-cell">
-                                                            {tire.damaged ? (
-                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                                                                    {t('common.yes')}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                                                    {t('common.no')}
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                    )}
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Mobile Second Set Cards */}
-                            <div className="@3xl:hidden space-y-3">
-                                {store.secondTires.map((tire, i) => {
-                                    const photoCount = (tire.images || []).length;
-                                    return (
-                                        <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-100">
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-primary">#{i + 1}</span>
-                                                    <div className="flex items-center gap-1 ml-2">
-                                                        <button onClick={() => setEditingSecondTireIndex(i)} className="p-1.5 bg-white border border-gray-200 rounded-lg cursor-pointer text-primary transition-colors hover:shadow-sm font-medium text-sm px-3">
-                                                            {t('step4.edit')}
-                                                        </button>
-                                                        {photoCount > 0 && (
-                                                            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full whitespace-nowrap">
-                                                                {photoCount} {t('step4.photosAbbr')}
-                                                            </span>
-                                                        )}
                                                     </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        store.copySecondTireToNext(i);
-                                                        toast.success(t('step3.copySuccess'));
-                                                    }}
-                                                    className="flex items-center gap-1 text-[10px] bg-primary/10 px-2 py-0.5 rounded text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-                                                >
-                                                    <Copy className="w-3 h-3" />
-                                                    {t('step3.copyToAxle', 'Copy to next')}
-                                                </button>
-                                            </div>
-                                            <div className="text-sm font-semibold text-gray-800">
-                                                {t('step3.axleLabel', { axle: tire.axle, side: tire.side === 'links' ? t('common.left') : t('common.right') })}
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2 bg-white/50 p-2 rounded-lg border border-gray-100/50">
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireManufacturer')}</label>
-                                                    <div className="text-sm truncate">{tire.manufacturer || '-'}</div>
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireModel')}</label>
-                                                    <div className="text-sm truncate">{tire.tireModel || '-'}</div>
-                                                </div>
-                                                {store.secondTireSetSelection === 'Both' && (
-                                                    <div className="col-span-2 mt-1 border-t border-gray-100 pt-1 grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
-                                                            <div className="text-sm truncate">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</div>
+                                                    <button
+                                                        onClick={() => {
+                                                            store.copySecondTireToNext(i);
+                                                            toast.success(t('step3.copySuccess'));
+                                                        }}
+                                                        className="p-1 text-primary hover:bg-primary/10 rounded transition-colors flex-shrink-0"
+                                                        title={t('step3.copyToAxle', 'Copy to next')}
+                                                    >
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
+                                                    <div className="flex items-center gap-1 border-l border-gray-200 pl-1">
+                                                        <label className="p-1 text-gray-400 hover:text-primary hover:bg-primary/5 rounded cursor-pointer transition-all" title={t('step4.takePhoto')}>
+                                                            <Camera className="w-4 h-4" />
+                                                            <input type="file" accept="image/*" capture="environment" onChange={e => handleTireQuickPhoto(e, i, true)} className="hidden" />
+                                                        </label>
+                                                        <label className="p-1 text-gray-400 hover:text-primary hover:bg-primary/5 rounded cursor-pointer transition-all" title={t('step4.choosePhoto')}>
+                                                            <ImagePlus className="w-4 h-4" />
+                                                            <input type="file" multiple accept="image/*" onChange={e => handleTireQuickPhoto(e, i, true)} className="hidden" />
+                                                        </label>
+                                                    </div>
+                                                    {tire.images && tire.images.length > 0 && (
+                                                        <div className="flex items-center gap-1 ml-1 border-l border-gray-200 pl-1">
+                                                            {tire.images.map((img, idx) => (
+                                                                <PhotoThumbnail
+                                                                    key={idx}
+                                                                    src={img}
+                                                                    includeInPdf={store.isImageIncludedInPdf(img)}
+                                                                    onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
+                                                                    onRemove={() => removeTirePhoto(i, idx, true)}
+                                                                    onUpdate={(newSrc) => updateTirePhoto(i, idx, newSrc, true)}
+                                                                    className="w-24 h-16 sm:w-28 sm:h-20"
+                                                                />
+                                                            ))}
                                                         </div>
-                                                        <div>
+                                                    )}
+                                                </div>
+                                                <div className="text-sm font-semibold text-gray-800">
+                                                    {t('step3.tireAxle')} {tire.axle} {tire.side === 'links' ? t('common.left') : t('common.right')}
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2 bg-white/50 p-2 rounded-lg border border-gray-100/50">
+                                                    <div>
+                                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireManufacturer')}</label>
+                                                        <div className="text-sm truncate">{tire.manufacturer || '-'}</div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.tireModel')}</label>
+                                                        <div className="text-sm truncate">{tire.tireModel || '-'}</div>
+                                                    </div>
+                                                    {store.secondTireSetSelection === 'Both' && (
+                                                        <div className="col-span-2 mt-1 border-t border-gray-100 pt-1 grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
+                                                                <div className="text-sm truncate">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</div>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
+                                                                <div className="text-sm">{tire.damaged ? t('common.yes') : t('common.no')}</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {store.secondTireSetSelection === 'Only Tires' && (
+                                                        <div className="col-span-2 mt-1 border-t border-gray-100 pt-1">
                                                             <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
                                                             <div className="text-sm">{tire.damaged ? t('common.yes') : t('common.no')}</div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                                {store.secondTireSetSelection === 'Only Tires' && (
-                                                    <div className="col-span-2 mt-1 border-t border-gray-100 pt-1">
-                                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.damaged')}</label>
-                                                        <div className="text-sm">{tire.damaged ? t('common.yes') : t('common.no')}</div>
-                                                    </div>
-                                                )}
-                                                {store.secondTireSetSelection === 'Only Rims' && (
-                                                    <div className="col-span-2 mt-1 border-t border-gray-100 pt-1">
-                                                        <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
-                                                        <div className="text-sm truncate">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</div>
-                                                    </div>
-                                                )}
+                                                    )}
+                                                    {store.secondTireSetSelection === 'Only Rims' && (
+                                                        <div className="col-span-2 mt-1 border-t border-gray-100 pt-1">
+                                                            <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('step3.rimType')}</label>
+                                                            <div className="text-sm truncate">{tire.rimType ? t(`step3.rim${tire.rimType}`, tire.rimType) : '-'}</div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
             </Card>
 
 

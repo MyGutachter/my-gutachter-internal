@@ -1,5 +1,5 @@
 import html2pdf from 'html2pdf.js';
-import { AlertCircle, Calculator, Camera, CheckCircle, Eye, History, Loader2, Mail, Printer, RefreshCw, Upload, User, Zap } from 'lucide-react';
+import { AlertCircle, Calculator, Camera, CheckCircle, Eye, EyeOff, History, Loader2, Mail, Printer, RefreshCw, Upload, User, Zap } from 'lucide-react';
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -27,12 +27,13 @@ interface Step5Props {
     onSave?: () => Promise<void> | void;
     adminMode?: boolean;
     onToggleRequired?: (fieldName: string) => Promise<void>;
+    onToggleHidden?: (fieldName: string) => Promise<void>;
 }
 
 /** Check if a signature value is a backend-persisted URL (not a fresh base64 drawing) */
 const isBackendSignature = (sig: string) => !!sig && sig.startsWith('/api/');
 
-const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequired }) => {
+const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequired, onToggleHidden }) => {
     const { t, i18n } = useTranslation();
     const store = useReportStore();
     const { showValidationErrors, setShowValidationErrors, setCurrentStep } = useUIStore();
@@ -65,7 +66,8 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
         return true;
     };
     const isVehicleEvaluation = store.claimType === 'Fahrzeugbewertung';
-    const isRequired = (fieldName: string) => store.fieldConfigs?.find(c => c.fieldName === fieldName)?.required;
+    const isRequired = (fieldName: string) => store.fieldConfigs?.find((c: any) => c.fieldName === fieldName)?.required;
+    const isHidden = (fieldName: string) => store.fieldConfigs?.find((c: any) => c.fieldName === fieldName)?.hidden;
     const lang = (i18n.language || 'de') as 'de' | 'en';
     const [generating, setGenerating] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -998,190 +1000,316 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
 
             <SectionTitle>{t('step5.signatures')}</SectionTitle>
             <Card>
-                <div
-                    className={`mb-6 p-4 rounded-lg border-2 transition-all ${
-                        showValidationErrors && validationErrors['expertAssessmentStatus']
-                            ? 'border-red-500 bg-red-50/10 ring-2 ring-red-500/10'
-                            : 'bg-gray-50 border-gray-200'
-                    }`}
-                    data-fieldname="expertAssessmentStatus"
-                >
-                    <div className="flex items-center justify-between mb-3 ">
-                        <h4 className="text-sm font-semibold text-gray-700">{t('step5.expertAssessment')}</h4>
-                        {adminMode && (
-                            <button
-                                onClick={() => onToggleRequired?.('expertAssessmentStatus')}
-                                className={`flex items-center gap-1.5 px-2 py-1 rounded transition-all text-[10px] font-bold uppercase tracking-wider
-                                    ${isRequired('expertAssessmentStatus')
-                                        ? 'bg-primary text-white shadow-sm'
-                                        : 'bg-white text-gray-400 border border-gray-200 hover:border-primary/30 hover:text-primary'
-                                    }`}
-                            >
-                                <CheckCircle className="w-3 h-3" />
-                                {t('admin.mandatory')}
-                            </button>
+                {(!isHidden('expertAssessmentStatus') || adminMode) && (
+                    <div
+                        className={`mb-6 p-4 rounded-lg border-2 transition-all ${
+                            showValidationErrors && validationErrors['expertAssessmentStatus']
+                                ? 'border-red-500 bg-red-50/10 ring-2 ring-red-500/10'
+                                : 'bg-gray-50 border-gray-200'
+                        } ${isHidden('expertAssessmentStatus') && adminMode ? 'opacity-50 border-dashed' : ''}`}
+                        data-fieldname="expertAssessmentStatus"
+                    >
+                        <div className="flex items-center justify-between mb-3 ">
+                            <h4 className="text-sm font-semibold text-gray-700">{t('step5.expertAssessment')}</h4>
+                            {adminMode && (
+                                <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                    <button
+                                        type="button"
+                                        onClick={() => onToggleHidden?.('expertAssessmentStatus')}
+                                        title={isHidden('expertAssessmentStatus') ? t('admin.hidden') : t('admin.visible')}
+                                        className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                            isHidden('expertAssessmentStatus')
+                                                ? 'bg-slate-700 text-slate-200 border border-slate-600'
+                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                        }`}
+                                    >
+                                        {isHidden('expertAssessmentStatus') ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
+                                        {isHidden('expertAssessmentStatus') ? t('admin.hidden') : t('admin.visible')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => onToggleRequired?.('expertAssessmentStatus')}
+                                        className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                            isRequired('expertAssessmentStatus')
+                                                ? 'bg-amber-500 text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-500 border border-slate-200 hover:border-amber-400 hover:text-amber-600'
+                                        }`}
+                                    >
+                                        <CheckCircle className="w-2.5 h-2.5" />
+                                        {t('admin.mandatory')}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap gap-6">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="radio"
+                                    name="expertAssessment"
+                                    className="w-4 h-4 text-primary-blue border-gray-300 focus:ring-primary-blue"
+                                    checked={store.expertAssessmentStatus === 'accepted'}
+                                    onChange={() => store.updateField('expertAssessmentStatus', 'accepted')}
+                                />
+                                <span className="text-sm font-medium text-gray-700 group-hover:text-primary-blue transition-colors">
+                                    {t('step5.expertAccepted')}
+                                </span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="radio"
+                                    name="expertAssessment"
+                                    className="w-4 h-4 text-primary-blue border-gray-300 focus:ring-primary-blue"
+                                    checked={store.expertAssessmentStatus === 'not_accepted'}
+                                    onChange={() => store.updateField('expertAssessmentStatus', 'not_accepted')}
+                                />
+                                <span className="text-sm font-medium text-gray-700 group-hover:text-primary-blue transition-colors">
+                                    {t('step5.expertNotAccepted')}
+                                </span>
+                            </label>
+                        </div>
+                        {showValidationErrors && validationErrors['expertAssessmentStatus'] && (
+                            <p className="text-red-500 text-xs mt-2 font-bold">{t('validation.required', 'Einschätzung ist erforderlich')}</p>
                         )}
                     </div>
-                    <div className="flex flex-wrap gap-6">
-                        <label className="flex items-center gap-2 cursor-pointer group">
-                            <input
-                                type="radio"
-                                name="expertAssessment"
-                                className="w-4 h-4 text-primary-blue border-gray-300 focus:ring-primary-blue"
-                                checked={store.expertAssessmentStatus === 'accepted'}
-                                onChange={() => store.updateField('expertAssessmentStatus', 'accepted')}
-                            />
-                            <span className="text-sm font-medium text-gray-700 group-hover:text-primary-blue transition-colors">
-                                {t('step5.expertAccepted')}
-                            </span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer group">
-                            <input
-                                type="radio"
-                                name="expertAssessment"
-                                className="w-4 h-4 text-primary-blue border-gray-300 focus:ring-primary-blue"
-                                checked={store.expertAssessmentStatus === 'not_accepted'}
-                                onChange={() => store.updateField('expertAssessmentStatus', 'not_accepted')}
-                            />
-                            <span className="text-sm font-medium text-gray-700 group-hover:text-primary-blue transition-colors">
-                                {t('step5.expertNotAccepted')}
-                            </span>
-                        </label>
-                    </div>
-                    {showValidationErrors && validationErrors['expertAssessmentStatus'] && (
-                        <p className="text-red-500 text-xs mt-2 font-bold">{t('validation.required', 'Einschätzung ist erforderlich')}</p>
-                    )}
-                </div>
+                )}
 
                 <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-4">
-                    <div className="space-y-2 text-left" data-fieldname={showValidationErrors && validationErrors['signatureDriver'] ? "signatureDriver" : undefined}>
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{t('step5.sigDriver')}</span>
-                            {adminMode && (
-                                <button
-                                    onClick={() => onToggleRequired?.('signatureDriver')}
-                                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider
-                                        ${isRequired('signatureDriver')
-                                            ? 'bg-primary text-white shadow-sm'
-                                            : 'bg-white text-gray-400 border border-gray-200 hover:border-primary/30 hover:text-primary'
-                                        }`}
-                                >
-                                    <CheckCircle className="w-2.5 h-2.5" />
-                                    {t('admin.mandatory')}
-                                </button>
+                    {(!isHidden('signatureDriver') || adminMode) && (
+                        <div
+                            className={`space-y-2 text-left ${isHidden('signatureDriver') && adminMode ? 'opacity-50 border border-dashed border-slate-300 p-2 rounded-lg' : ''}`}
+                            data-fieldname={showValidationErrors && validationErrors['signatureDriver'] ? "signatureDriver" : undefined}
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{t('step5.sigDriver')}</span>
+                                {adminMode && (
+                                    <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleHidden?.('signatureDriver')}
+                                            title={isHidden('signatureDriver') ? t('admin.hidden') : t('admin.visible')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                                isHidden('signatureDriver')
+                                                    ? 'bg-slate-700 text-slate-200 border border-slate-600'
+                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                            }`}
+                                        >
+                                            {isHidden('signatureDriver') ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
+                                            {isHidden('signatureDriver') ? t('admin.hidden') : t('admin.visible')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleRequired?.('signatureDriver')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                                isRequired('signatureDriver')
+                                                    ? 'bg-amber-500 text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-500 border border-slate-200 hover:border-amber-400 hover:text-amber-600'
+                                            }`}
+                                        >
+                                            <CheckCircle className="w-2.5 h-2.5" />
+                                            {t('admin.mandatory')}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            <input
+                                className={`form-input py-2 text-sm w-full ${
+                                    showValidationErrors && validationErrors['signatureDriver'] && !store.signatureNames.driver
+                                        ? 'border-2 border-red-500 bg-red-50/10 focus:border-red-600'
+                                        : ''
+                                }`}
+                                value={store.signatureNames.driver}
+                                onChange={e => store.updateSignatureName('driver', e.target.value)}
+                                placeholder={t('step5.sigDriverNamePlaceholder')}
+                            />
+                            <SignaturePad
+                                name="signatureDriver"
+                                error={!!(showValidationErrors && validationErrors['signatureDriver'] && !store.signatures.driver)}
+                                label={t('step5.sigDriver')}
+                                value={store.signatures.driver}
+                                onChange={v => store.updateSignature('driver', v)}
+                                hideLabel
+                                readOnly
+                                onClick={() => handleOpenSignatureModal('driver')}
+                            />
+                            {store.signatures.driver && (
+                                <div className="flex gap-2 mt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenSignatureModal('driver')}
+                                        className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/5 border border-primary/20 rounded hover:bg-primary/10 transition-colors"
+                                    >
+                                        {t('common.edit')}
+                                    </button>
+                                </div>
                             )}
                         </div>
-                        <input
-                            className={`form-input py-2 text-sm w-full ${
-                                showValidationErrors && validationErrors['signatureDriver'] && !store.signatureNames.driver
-                                    ? 'border-2 border-red-500 bg-red-50/10 focus:border-red-600'
-                                    : ''
-                            }`}
-                            value={store.signatureNames.driver}
-                            onChange={e => store.updateSignatureName('driver', e.target.value)}
-                            placeholder={t('step5.sigDriverNamePlaceholder')}
-                        />
-                        <SignaturePad
-                            name="signatureDriver"
-                            error={!!(showValidationErrors && validationErrors['signatureDriver'] && !store.signatures.driver)}
-                            label={t('step5.sigDriver')}
-                            value={store.signatures.driver}
-                            onChange={v => store.updateSignature('driver', v)}
-                            hideLabel
-                            readOnly
-                            onClick={() => handleOpenSignatureModal('driver')}
-                        />
-                        {store.signatures.driver && (
-                            <div className="flex gap-2 mt-1">
-                                <button
-                                    type="button"
-                                    onClick={() => handleOpenSignatureModal('driver')}
-                                    className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/5 border border-primary/20 rounded hover:bg-primary/10 transition-colors"
-                                >
-                                    {t('common.edit')}
-                                </button>
+                    )}
+                    {(!isHidden('signatureReceiver') || adminMode) && (
+                        <div
+                            className={`space-y-2 text-left ${isHidden('signatureReceiver') && adminMode ? 'opacity-50 border border-dashed border-slate-300 p-2 rounded-lg' : ''}`}
+                            data-fieldname={showValidationErrors && validationErrors['signatureReceiver'] ? "signatureReceiver" : undefined}
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{t('step5.sigReceiver')}</span>
+                                {adminMode && (
+                                    <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleHidden?.('signatureReceiver')}
+                                            title={isHidden('signatureReceiver') ? t('admin.hidden') : t('admin.visible')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                                isHidden('signatureReceiver')
+                                                    ? 'bg-slate-700 text-slate-200 border border-slate-600'
+                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                            }`}
+                                        >
+                                            {isHidden('signatureReceiver') ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
+                                            {isHidden('signatureReceiver') ? t('admin.hidden') : t('admin.visible')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleRequired?.('signatureReceiver')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                                isRequired('signatureReceiver')
+                                                    ? 'bg-amber-500 text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-500 border border-slate-200 hover:border-amber-400 hover:text-amber-600'
+                                            }`}
+                                        >
+                                            <CheckCircle className="w-2.5 h-2.5" />
+                                            {t('admin.mandatory')}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                    <div className="space-y-2 text-left" data-fieldname={showValidationErrors && validationErrors['signatureReceiver'] ? "signatureReceiver" : undefined}>
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{t('step5.sigReceiver')}</span>
-                            {adminMode && (
-                                <button
-                                    onClick={() => onToggleRequired?.('signatureReceiver')}
-                                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider
-                                        ${isRequired('signatureReceiver')
-                                            ? 'bg-primary text-white shadow-sm'
-                                            : 'bg-white text-gray-400 border border-gray-200 hover:border-primary/30 hover:text-primary'
-                                        }`}
-                                >
-                                    <CheckCircle className="w-2.5 h-2.5" />
-                                    {t('admin.mandatory')}
-                                </button>
+                            <input
+                                className={`form-input py-2 text-sm w-full ${
+                                    showValidationErrors && validationErrors['signatureReceiver'] && !store.signatureNames.receiver
+                                        ? 'border-2 border-red-500 bg-red-50/10 focus:border-red-600'
+                                        : ''
+                                }`}
+                                value={store.signatureNames.receiver}
+                                onChange={e => store.updateSignatureName('receiver', e.target.value)}
+                                placeholder={t('step5.sigReceiverNamePlaceholder')}
+                            />
+                            <SignaturePad
+                                name="signatureReceiver"
+                                error={!!(showValidationErrors && validationErrors['signatureReceiver'] && !store.signatures.receiver)}
+                                label={t('step5.sigReceiver')}
+                                value={store.signatures.receiver}
+                                onChange={v => store.updateSignature('receiver', v)}
+                                hideLabel
+                                readOnly
+                                onClick={() => handleOpenSignatureModal('receiver')}
+                            />
+                            {store.signatures.receiver && (
+                                <div className="flex gap-2 mt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenSignatureModal('receiver')}
+                                        className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/5 border border-primary/20 rounded hover:bg-primary/10 transition-colors"
+                                    >
+                                        {t('common.edit')}
+                                    </button>
+                                </div>
                             )}
                         </div>
-                        <input
-                            className={`form-input py-2 text-sm w-full ${
-                                showValidationErrors && validationErrors['signatureReceiver'] && !store.signatureNames.receiver
-                                    ? 'border-2 border-red-500 bg-red-50/10 focus:border-red-600'
-                                    : ''
-                            }`}
-                            value={store.signatureNames.receiver}
-                            onChange={e => store.updateSignatureName('receiver', e.target.value)}
-                            placeholder={t('step5.sigReceiverNamePlaceholder')}
-                        />
-                        <SignaturePad
-                            name="signatureReceiver"
-                            error={!!(showValidationErrors && validationErrors['signatureReceiver'] && !store.signatures.receiver)}
-                            label={t('step5.sigReceiver')}
-                            value={store.signatures.receiver}
-                            onChange={v => store.updateSignature('receiver', v)}
-                            hideLabel
-                            readOnly
-                            onClick={() => handleOpenSignatureModal('receiver')}
-                        />
-                        {store.signatures.receiver && (
-                            <div className="flex gap-2 mt-1">
-                                <button
-                                    type="button"
-                                    onClick={() => handleOpenSignatureModal('receiver')}
-                                    className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/5 border border-primary/20 rounded hover:bg-primary/10 transition-colors"
-                                >
-                                    {t('common.edit')}
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-gray-100 space-y-6">
                     <div className="flex flex-wrap items-center gap-8">
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                            <div className={`w-10 h-5 rounded-full p-1 transition-colors ${store.isAuthorizedPerson ? 'bg-primary' : 'bg-gray-300'}`}>
-                                <div className={`bg-white w-3 h-3 rounded-full transition-transform ${store.isAuthorizedPerson ? 'translate-x-5' : 'translate-x-0'}`} />
+                        {(!isHidden('isAuthorizedPerson') || adminMode) && (
+                            <div className={`relative flex items-center gap-3 ${isHidden('isAuthorizedPerson') && adminMode ? 'opacity-50 border border-dashed border-slate-300 p-2 rounded-lg' : ''}`}>
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className={`w-10 h-5 rounded-full p-1 transition-colors ${store.isAuthorizedPerson ? 'bg-primary' : 'bg-gray-300'}`}>
+                                        <div className={`bg-white w-3 h-3 rounded-full transition-transform ${store.isAuthorizedPerson ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={store.isAuthorizedPerson}
+                                        onChange={(e) => store.updateField('isAuthorizedPerson', e.target.checked)}
+                                    />
+                                    <span className="text-sm font-semibold text-gray-700 group-hover:text-primary transition-colors">
+                                        {t('step5.authorizedPerson')}
+                                    </span>
+                                </label>
+                                {adminMode && (
+                                    <div className="flex items-center gap-1.5 ml-2" onClick={e => e.stopPropagation()}>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleHidden?.('isAuthorizedPerson')}
+                                            title={isHidden('isAuthorizedPerson') ? t('admin.hidden', 'Ausgeblendet') : t('admin.visible', 'Sichtbar')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                                isHidden('isAuthorizedPerson')
+                                                    ? 'bg-slate-700 text-slate-200 border border-slate-600'
+                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                            }`}
+                                        >
+                                            {isHidden('isAuthorizedPerson') ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
+                                            {isHidden('isAuthorizedPerson') ? t('admin.hidden', 'Ausgeblendet') : t('admin.visible', 'Sichtbar')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleRequired?.('isAuthorizedPerson')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                                isRequired('isAuthorizedPerson')
+                                                    ? 'bg-amber-500 text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-500 border border-slate-200 hover:border-amber-400 hover:text-amber-600'
+                                            }`}
+                                        >
+                                            <CheckCircle className="w-2.5 h-2.5" />
+                                            {t('admin.mandatory', 'Pflicht')}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                            <input
-                                type="checkbox"
-                                className="hidden"
-                                checked={store.isAuthorizedPerson}
-                                onChange={(e) => store.updateField('isAuthorizedPerson', e.target.checked)}
-                            />
-                            <span className="text-sm font-semibold text-gray-700 group-hover:text-primary transition-colors">
-                                {t('step5.authorizedPerson')}
-                            </span>
-                        </label>
+                        )}
 
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                            <input
-                                type="checkbox"
-                                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary transition-all cursor-pointer"
-                                checked={store.customerPresent}
-                                onChange={(e) => store.updateField('customerPresent', e.target.checked)}
-                            />
-                            <span className="text-sm font-semibold text-gray-700 group-hover:text-primary transition-colors">
-                                {t('step5.customerPresent')}
-                            </span>
-                        </label>
+                        {(!isHidden('customerPresent') || adminMode) && (
+                            <div className={`relative flex items-center gap-3 ${isHidden('customerPresent') && adminMode ? 'opacity-50 border border-dashed border-slate-300 p-2 rounded-lg' : ''}`}>
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary transition-all cursor-pointer"
+                                        checked={store.customerPresent}
+                                        onChange={(e) => store.updateField('customerPresent', e.target.checked)}
+                                    />
+                                    <span className="text-sm font-semibold text-gray-700 group-hover:text-primary transition-colors">
+                                        {t('step5.customerPresent')}
+                                    </span>
+                                </label>
+                                {adminMode && (
+                                    <div className="flex items-center gap-1.5 ml-2" onClick={e => e.stopPropagation()}>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleHidden?.('customerPresent')}
+                                            title={isHidden('customerPresent') ? t('admin.hidden', 'Ausgeblendet') : t('admin.visible', 'Sichtbar')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                                isHidden('customerPresent')
+                                                    ? 'bg-slate-700 text-slate-200 border border-slate-600'
+                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                            }`}
+                                        >
+                                            {isHidden('customerPresent') ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
+                                            {isHidden('customerPresent') ? t('admin.hidden', 'Ausgeblendet') : t('admin.visible', 'Sichtbar')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleRequired?.('customerPresent')}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all text-[9px] font-bold uppercase tracking-wider ${
+                                                isRequired('customerPresent')
+                                                    ? 'bg-amber-500 text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-500 border border-slate-200 hover:border-amber-400 hover:text-amber-600'
+                                            }`}
+                                        >
+                                            <CheckCircle className="w-2.5 h-2.5" />
+                                            {t('admin.mandatory', 'Pflicht')}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {store.isAuthorizedPerson && (

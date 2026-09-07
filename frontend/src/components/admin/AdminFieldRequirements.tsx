@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReportStore, ReportStoreProvider, createAdminReportStore } from '../../store/reportStore';
-import { RefreshCw, FileText, Smartphone, AlertCircle, Layout, Save, ChevronRight, Settings, CheckCircle2, Users, ChevronDown, Camera, ToggleLeft, ToggleRight, ChevronUp, Plus, Trash2, GripVertical } from 'lucide-react';
+import { Eye, EyeOff, RefreshCw, FileText, Smartphone, AlertCircle, Layout, Save, ChevronRight, Settings, CheckCircle2, Users, ChevronDown, Camera, ToggleLeft, ToggleRight, ChevronUp, Plus, Trash2, GripVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
@@ -23,19 +23,18 @@ const AdminFieldRequirementsContent: React.FC = () => {
     const [customers, setCustomers] = useState<GlobalConfig[]>([]);
 
     // ── Photo Slot State ──────────────────────────────────────────────────────
-    type PhotoSlot = { id: string; label: string; required: boolean; isCustom: boolean };
+    type PhotoSlot = { id: string; label: string; required: boolean; hidden: boolean; isCustom: boolean };
 
     const DEFAULT_SLOTS: PhotoSlot[] = [
-        { id: 'diag_fl', label: 'Übersicht diagonal vorne links', required: false, isCustom: false },
-        { id: 'diag_rl', label: 'Übersicht diagonal hinten links', required: false, isCustom: false },
-        { id: 'diag_rr', label: 'Übersicht diagonal hinten rechts', required: false, isCustom: false },
-        { id: 'diag_fr', label: 'Übersicht diagonal vorne rechts', required: false, isCustom: false },
-        // These two are ALWAYS required by default — admin can turn them off but not remove them
-        { id: 'mileage_photo', label: 'Kilometerstand / Tacho', required: true, isCustom: false },
-        { id: 'vin_photo', label: 'Fahrzeug-Ident.-Nr. / Typschild', required: true, isCustom: false },
-        { id: 'interior_door', label: 'Fahrzeuginnenraum durch die Fahrertür', required: false, isCustom: false },
-        { id: 'sill_left', label: 'Schweller links', required: false, isCustom: false },
-        { id: 'sill_right', label: 'Schweller rechts', required: false, isCustom: false },
+        { id: 'diag_fl', label: 'Übersicht diagonal vorne links', required: false, hidden: false, isCustom: false },
+        { id: 'diag_rl', label: 'Übersicht diagonal hinten links', required: false, hidden: false, isCustom: false },
+        { id: 'diag_rr', label: 'Übersicht diagonal hinten rechts', required: false, hidden: false, isCustom: false },
+        { id: 'diag_fr', label: 'Übersicht diagonal vorne rechts', required: false, hidden: false, isCustom: false },
+        { id: 'mileage_photo', label: 'Kilometerstand / Tacho', required: true, hidden: false, isCustom: false },
+        { id: 'vin_photo', label: 'Fahrzeug-Ident.-Nr. / Typschild', required: true, hidden: false, isCustom: false },
+        { id: 'interior_door', label: 'Fahrzeuginnenraum durch die Fahrertür', required: false, hidden: false, isCustom: false },
+        { id: 'sill_left', label: 'Schweller links', required: false, hidden: false, isCustom: false },
+        { id: 'sill_right', label: 'Schweller rechts', required: false, hidden: false, isCustom: false },
     ];
 
     const [photoSlots, setPhotoSlots] = useState<PhotoSlot[]>(DEFAULT_SLOTS);
@@ -71,14 +70,19 @@ const AdminFieldRequirementsContent: React.FC = () => {
                 id: c.fieldName,
                 label: c.label || c.fieldName,
                 required: c.required ?? false,
+                hidden: c.hidden ?? false,
                 isCustom: c.isCustom ?? false,
             })));
         } else {
-            // Merge defaults with required state from fieldConfigs
-            setPhotoSlots(DEFAULT_SLOTS.map(s => ({
-                ...s,
-                required: fieldConfigs?.find((c: any) => c.fieldName === s.id)?.required ?? s.required,
-            })));
+            // Merge defaults with state from fieldConfigs
+            setPhotoSlots(DEFAULT_SLOTS.map(s => {
+                const cfg = fieldConfigs?.find((c: any) => c.fieldName === s.id);
+                return {
+                    ...s,
+                    required: cfg?.required ?? s.required,
+                    hidden: cfg?.hidden ?? s.hidden,
+                };
+            }));
         }
         setSlotsDirty(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,9 +92,9 @@ const AdminFieldRequirementsContent: React.FC = () => {
         fetchFieldConfigs(appliedCustomerNumber);
     }, [fetchFieldConfigs, appliedCustomerNumber]);
 
-    const handleToggle = async (fieldName: string) => {
-        const config = fieldConfigs?.find(c => c.fieldName === fieldName);
-        const isCurrentlyRequired = config ? config.required : false;
+    const handleToggleRequired = async (fieldName: string) => {
+        const config = fieldConfigs?.find((c: any) => c.fieldName === fieldName);
+        const isCurrentlyRequired = config ? (config.required ?? false) : false;
 
         try {
             let step = 1;
@@ -99,7 +103,25 @@ const AdminFieldRequirementsContent: React.FC = () => {
             if (activeTab === 'step4') step = 4;
             if (activeTab === 'step5') step = 5;
 
-            await updateFieldConfig(fieldName, !isCurrentlyRequired, step, appliedCustomerNumber);
+            await updateFieldConfig(fieldName, { required: !isCurrentlyRequired, hidden: config?.hidden ?? false, stepNumber: step }, step, appliedCustomerNumber);
+            toast.success(t('admin.requirements.fieldUpdated', { fieldName }), { duration: 1000 });
+        } catch (error) {
+            toast.error(t('admin.requirements.failedUpdate'));
+        }
+    };
+
+    const handleToggleHidden = async (fieldName: string) => {
+        const config = fieldConfigs?.find((c: any) => c.fieldName === fieldName);
+        const isCurrentlyHidden = config ? (config.hidden ?? false) : false;
+
+        try {
+            let step = 1;
+            if (activeTab === 'step2') step = 2;
+            if (activeTab === 'step3') step = 3;
+            if (activeTab === 'step4') step = 4;
+            if (activeTab === 'step5') step = 5;
+
+            await updateFieldConfig(fieldName, { hidden: !isCurrentlyHidden, required: config?.required ?? false, stepNumber: step }, step, appliedCustomerNumber);
             toast.success(t('admin.requirements.fieldUpdated', { fieldName }), { duration: 1000 });
         } catch (error) {
             toast.error(t('admin.requirements.failedUpdate'));
@@ -123,6 +145,13 @@ const AdminFieldRequirementsContent: React.FC = () => {
         setSlotsDirty(true);
     };
 
+    const toggleSlotHidden = (idx: number) => {
+        const next = [...photoSlots];
+        next[idx] = { ...next[idx], hidden: !next[idx].hidden };
+        setPhotoSlots(next);
+        setSlotsDirty(true);
+    };
+
     const removeCustomSlot = (idx: number) => {
         setPhotoSlots(prev => prev.filter((_, i) => i !== idx));
         setSlotsDirty(true);
@@ -132,7 +161,7 @@ const AdminFieldRequirementsContent: React.FC = () => {
         const label = newSlotLabel.trim();
         if (!label) return;
         const id = `custom_photo_${Date.now()}`;
-        setPhotoSlots(prev => [...prev, { id, label, required: false, isCustom: true }]);
+        setPhotoSlots(prev => [...prev, { id, label, required: false, hidden: false, isCustom: true }]);
         setNewSlotLabel('');
         setShowAddForm(false);
         setSlotsDirty(true);
@@ -142,7 +171,7 @@ const AdminFieldRequirementsContent: React.FC = () => {
         setSavingSlots(true);
         try {
             await updatePhotoSlotConfigs(
-                photoSlots.map((s, i) => ({ id: s.id, label: s.label, required: s.required, sortOrder: i, isCustom: s.isCustom })),
+                photoSlots.map((s, i) => ({ id: s.id, label: s.label, required: s.required, hidden: s.hidden, sortOrder: i, isCustom: s.isCustom })),
                 appliedCustomerNumber || undefined
             );
             setSlotsDirty(false);
@@ -155,7 +184,9 @@ const AdminFieldRequirementsContent: React.FC = () => {
     };
     // ─────────────────────────────────────────────────────────────────────────
 
-    const requiredCount = photoSlots.filter(s => s.required).length;
+    const activeCount = photoSlots.filter(s => !s.hidden).length;
+    const requiredCount = photoSlots.filter(s => s.required && !s.hidden).length;
+    const hiddenCount = photoSlots.filter(s => s.hidden).length;
 
     const renderStep = () => {
         return (
@@ -167,9 +198,9 @@ const AdminFieldRequirementsContent: React.FC = () => {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.4, ease: "easeOut" }}
                 >
-                    {activeTab === 'step1' && <Step1_OrderInfo adminMode onToggleRequired={handleToggle} />}
-                    {activeTab === 'step2' && <Step2_VehicleID adminMode onToggleRequired={handleToggle} />}
-                    {activeTab === 'step3' && <Step3_Condition adminMode onToggleRequired={handleToggle} />}
+                    {activeTab === 'step1' && <Step1_OrderInfo adminMode onToggleRequired={handleToggleRequired} onToggleHidden={handleToggleHidden} />}
+                    {activeTab === 'step2' && <Step2_VehicleID adminMode onToggleRequired={handleToggleRequired} onToggleHidden={handleToggleHidden} />}
+                    {activeTab === 'step3' && <Step3_Condition adminMode onToggleRequired={handleToggleRequired} onToggleHidden={handleToggleHidden} />}
                     {activeTab === 'step4' && (
                         <div className="space-y-5">
                             {/* ── Mandatory Photos Panel ── */}
@@ -181,9 +212,12 @@ const AdminFieldRequirementsContent: React.FC = () => {
                                             <Camera className="w-4 h-4 text-amber-600" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-black text-slate-800">Pflichtfotos — Schritt 4</p>
+                                            <p className="text-sm font-black text-slate-800">Fotopositionen & Pflichtfotos — Schritt 4</p>
                                             <p className="text-xs text-slate-500">
-                                                <span className="font-bold text-orange-600">{requiredCount}</span> von {photoSlots.length} als Pflicht &bull; Reihenfolge per ↑↓ ändern
+                                                <span className="font-bold text-emerald-700">{activeCount} aktiv</span>
+                                                {hiddenCount > 0 && <span className="text-slate-400"> ({hiddenCount} ausgeblendet)</span>}
+                                                {' &bull; '}<span className="font-bold text-orange-600">{requiredCount} als Pflicht</span>
+                                                {' &bull; Reihenfolge per ↑↓ ändern'}
                                             </p>
                                         </div>
                                     </div>
@@ -250,14 +284,18 @@ const AdminFieldRequirementsContent: React.FC = () => {
                                         <div
                                             key={slot.id}
                                             className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                                                slot.required ? 'bg-orange-50/40' : 'bg-white hover:bg-slate-50/50'
+                                                slot.hidden
+                                                    ? 'bg-slate-100/60 opacity-60'
+                                                    : (slot.required ? 'bg-orange-50/40' : 'bg-white hover:bg-slate-50/50')
                                             }`}
                                         >
                                             {/* Position + Drag hint */}
                                             <div className="flex items-center gap-1.5 flex-shrink-0">
                                                 <GripVertical className="w-3.5 h-3.5 text-slate-300" />
                                                 <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
-                                                    slot.required ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-500'
+                                                    slot.hidden
+                                                        ? 'bg-slate-200 text-slate-400'
+                                                        : (slot.required ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-500')
                                                 }`}>
                                                     {idx + 1}
                                                 </div>
@@ -266,12 +304,28 @@ const AdminFieldRequirementsContent: React.FC = () => {
                                             {/* Label */}
                                             <div className="flex-1 min-w-0">
                                                 <p className={`text-[12px] font-bold truncate ${
-                                                    slot.required ? 'text-orange-800' : 'text-slate-700'
+                                                    slot.hidden
+                                                        ? 'line-through text-slate-400'
+                                                        : (slot.required ? 'text-orange-800' : 'text-slate-700')
                                                 }`}>{slot.label}</p>
                                                 {slot.isCustom && (
                                                     <span className="text-[9px] font-black text-amber-500 uppercase tracking-wide">Benutzerdefiniert</span>
                                                 )}
                                             </div>
+
+                                            {/* Visibility toggle pill */}
+                                            <button
+                                                onClick={() => toggleSlotHidden(idx)}
+                                                title={slot.hidden ? 'Fotoposition einblenden' : 'Fotoposition ausblenden'}
+                                                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wide border transition-all active:scale-95 flex-shrink-0 ${
+                                                    slot.hidden
+                                                        ? 'bg-slate-200 border-slate-300 text-slate-600 hover:bg-slate-300'
+                                                        : 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'
+                                                }`}
+                                            >
+                                                {slot.hidden ? <EyeOff className="w-3 h-3 text-slate-500" /> : <Eye className="w-3 h-3 text-emerald-600" />}
+                                                {slot.hidden ? 'Ausgeblendet' : 'Sichtbar'}
+                                            </button>
 
                                             {/* Required toggle pill */}
                                             <button
@@ -325,16 +379,16 @@ const AdminFieldRequirementsContent: React.FC = () => {
                                 <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-start gap-2">
                                     <AlertCircle className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
                                     <p className="text-[10px] text-slate-500 leading-relaxed">
-                                        Verwende ↑↓ zum Umsortieren. Klicke <strong>Reihenfolge speichern</strong> um Änderungen zu übernehmen. Pflichtfotos blockieren den Fortschritt wenn nicht hochgeladen.
+                                        Verwende ↑↓ zum Umsortieren. Klicke <strong>Reihenfolge speichern</strong> um Änderungen zu übernehmen. Pflichtfotos blockieren den Fortschritt wenn nicht hochgeladen. Ausgeblendete Fotos werden weder im Bericht noch in VideoXpert angezeigt.
                                     </p>
                                 </div>
                             </div>
 
                             {/* Full Step 4 form for any other field toggles */}
-                            <Step4_Damages adminMode onToggleRequired={handleToggle} />
+                            <Step4_Damages adminMode onToggleRequired={handleToggleRequired} onToggleHidden={handleToggleHidden} />
                         </div>
                     )}
-                    {activeTab === 'step5' && <Step5_Summary adminMode onToggleRequired={handleToggle} />}
+                    {activeTab === 'step5' && <Step5_Summary adminMode onToggleRequired={handleToggleRequired} onToggleHidden={handleToggleHidden} />}
                 </motion.div>
             </AnimatePresence>
         );

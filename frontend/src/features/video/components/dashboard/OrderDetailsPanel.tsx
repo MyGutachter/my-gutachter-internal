@@ -1,12 +1,14 @@
-import { Car, CheckSquare, Download, FileText, Image as ImageIcon, MessageSquare, Video as VideoIcon } from 'lucide-react';
+import { Car, CheckSquare, Download, FileText, Image as ImageIcon, MessageSquare, Plus, Trash2, Video as VideoIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL, getOrderImages, getOrderParts, getRecordingUrls } from '../../services/orderService';
+import { API_BASE_URL, deleteScreenshot, getOrderImages, getOrderParts, getRecordingUrls } from '../../services/orderService';
 import type { Order } from '../../types';
 import { CarOverlay, getPartIdFromKey } from '../../CarOverlay';
 import CarInspectionLoader from '../../CarInspectionLoader';
 import ImagePopup from '../modals/ImagePopup';
 import { UvvCertificateViewer } from './UvvCertificateViewer';
+import AddPhotoModal from '../modals/AddPhotoModal';
+
 
 /**
  * Video Expert order details panel (T7.8) — faithful port. Tabs Details/2D/Images/Video.
@@ -19,6 +21,7 @@ interface OrderDetailsPanelProps {
 
 const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) => {
     const [activeTab, setActiveTab] = useState('details');
+    const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState(false);
     const [popupState, setPopupState] = useState<{ isOpen: boolean; imageUrl: string; title?: string }>({
         isOpen: false,
         imageUrl: '',
@@ -384,7 +387,19 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                 )}
 
                 {activeTab === 'images' && (
-                    <div className="h-full w-full overflow-y-auto custom-scrollbar p-4 relative">
+                    <div className="h-full w-full overflow-y-auto custom-scrollbar p-4 relative flex flex-col">
+                        <div className="flex justify-between items-center mb-3 pb-2 border-b border-[var(--color-border-primary)] shrink-0">
+                            <span className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                                {t('order.numberOfPhotos', { defaultValue: 'Number of Photos' })}: {Object.keys(savedScreenshots).length}
+                            </span>
+                            <button
+                                onClick={() => setIsAddPhotoModalOpen(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/90 text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
+                            >
+                                <Plus size={14} />
+                                <span>{t('addPhoto.title', { defaultValue: 'Foto hinzufügen' })}</span>
+                            </button>
+                        </div>
                         {isLoading && (
                             <div className="absolute inset-0 bg-[var(--color-bg-card)]/80 backdrop-blur-sm z-50 flex items-center justify-center">
                                 <CarInspectionLoader size="md" />
@@ -421,19 +436,42 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-                                                <ImageIcon size={14} />
+                                            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm(t('common.confirmDelete', { defaultValue: 'Möchten Sie dieses Foto wirklich löschen?' }))) {
+                                                            await deleteScreenshot(order.id, partKey);
+                                                            setImagesLoaded(false);
+                                                            setPartsLoaded(false);
+                                                        }
+                                                    }}
+                                                    className="bg-red-600/80 hover:bg-red-600 text-white p-1 rounded-md transition-colors"
+                                                    title={t('common.delete', { defaultValue: 'Löschen' })}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                                <div className="bg-black/50 text-white p-1 rounded-md">
+                                                    <ImageIcon size={14} />
+                                                </div>
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-[var(--color-text-muted)]">
+                            <div className="h-full flex flex-col items-center justify-center text-[var(--color-text-muted)] py-12">
                                 <div className="bg-[var(--color-bg-secondary)] p-4 rounded-full mb-3">
                                     <ImageIcon size={32} className="opacity-50" />
                                 </div>
-                                <p className="text-sm font-medium">{t('order.noImages', { defaultValue: 'No images available' })}</p>
+                                <p className="text-sm font-medium mb-3">{t('order.noImages', { defaultValue: 'No images available' })}</p>
+                                <button
+                                    onClick={() => setIsAddPhotoModalOpen(true)}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/90 text-white rounded-xl text-xs font-bold transition-all shadow-md"
+                                >
+                                    <Plus size={14} />
+                                    <span>{t('addPhoto.title', { defaultValue: 'Foto hinzufügen' })}</span>
+                                </button>
                             </div>
                         )}
                     </div>
@@ -509,6 +547,15 @@ const OrderDetailsPanel = ({ order, onUpdateStatus }: OrderDetailsPanelProps) =>
                 onClose={handleClosePopup}
                 imageUrl={popupState.imageUrl}
                 title={popupState.title}
+            />
+            <AddPhotoModal
+                isOpen={isAddPhotoModalOpen}
+                onClose={() => setIsAddPhotoModalOpen(false)}
+                orderId={order.id}
+                onSuccess={() => {
+                    setImagesLoaded(false);
+                    setPartsLoaded(false);
+                }}
             />
         </div>
     );

@@ -13,10 +13,11 @@ import SectionTitle from '../ui/SectionTitle';
 
 interface Props {
     adminMode?: boolean;
-    onToggleRequired?: (fieldName: string) => Promise<void>;
+    onToggleRequired?: (fieldName: string) => Promise<void> | void;
+    onToggleHidden?: (fieldName: string) => Promise<void> | void;
 }
 
-const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
+const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleHidden }) => {
     const { t } = useTranslation();
     const store = useReportStore();
     const { showValidationErrors } = useUIStore();
@@ -24,7 +25,8 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
     const getFieldError = (fieldName: string) => {
         return showValidationErrors && validationErrors[fieldName] ? t('validation.required', 'Pflichtfeld') : undefined;
     };
-    const isRequired = (fieldName: string) => store.fieldConfigs.find(c => c.fieldName === fieldName)?.required;
+    const isRequired = (fieldName: string) => store.fieldConfigs?.find((c: any) => c.fieldName === fieldName)?.required;
+    const isHidden = (fieldName: string) => store.fieldConfigs?.find((c: any) => c.fieldName === fieldName)?.hidden;
     const { expertName, isVideoxpert } = useAuthStore();
     const [claimTypes, setClaimTypes] = React.useState<{ value: string; label: string }[]>([]);
     const [loadingTypes, setLoadingTypes] = React.useState(false);
@@ -165,6 +167,7 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
     const applyCustomerRates = async (customerNum: string) => {
         if (!customerNum) {
             await store.fetchGlobalConfig();
+            await store.fetchFieldConfigs();
             setConfigStatus('idle');
             return;
         }
@@ -237,67 +240,72 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
         }
     };
 
-
-
-
     return (
         <div className="animate-fade-in">
             <SectionTitle>{t('step1.title')}</SectionTitle>
             <Card>
-                <div className="grid grid-cols-1 @3xl:grid-cols-2 @5xl:grid-cols-3 gap-x-6">
-                    <div className="col-span-full mb-4">
-                        <FormSelect
-                            name="claimType"
-                            error={getFieldError('claimType')}
-                            label={t('step1.claimType')}
-                            value={store.claimType}
-                            onChange={v => store.updateField('claimType', v as any)}
-                            options={claimTypes.length > 0 ? claimTypes : [
-                                { value: store.claimType, label: (store.claimType ? t(`step1.claimTypes.${store.claimType}`, store.claimType) : t('common.loading')) as string }
-                            ]}
-                            disabled={loadingTypes || adminMode}
-                            adminMode={adminMode}
-                            onToggleRequired={() => onToggleRequired?.('claimType')}
-                            required={isRequired('claimType')}
-                        />
-                        {store.claimType === 'Fahrzeugbewertung' && (
-                            <p className="text-sm text-orange-600 mt-1">{t('step1.priceNote')}</p>
-                        )}
-                    </div>
-                    <div className="col-span-full mb-4">
-                        <FormSelect
-                            name="omtContactSelect"
-                            error={getFieldError('omtContactSelect')}
-                            label={t('step1.omtContactSelect')}
-                            value={selectedContactId}
-                            onChange={handleContactChange}
-                            options={customerContacts}
-                            disabled={loadingContacts || adminMode}
-                            adminMode={adminMode}
-                            onToggleRequired={() => onToggleRequired?.('omtContactSelect')}
-                            required={isRequired('omtContactSelect')}
-                        />
-                        {/* Config status badge */}
-                        {configStatus !== 'idle' && (
-                            <div className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md w-fit ${configStatus === 'loading' ? 'bg-gray-100 text-gray-500' :
-                                configStatus === 'customer' ? 'bg-green-50 text-green-700 border border-green-200' :
-                                    'bg-amber-50 text-amber-700 border border-amber-200'
-                                }`}>
-                                {configStatus === 'loading' && (
-                                    <><span className="w-2.5 h-2.5 rounded-full border-2 border-gray-400 border-t-transparent animate-spin inline-block" />
-                                        {t('step1.configLoading')}</>
-                                )}
-                                {configStatus === 'customer' && (
-                                    <><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-                                        {t('step1.configCustomer')}</>
-                                )}
-                                {configStatus === 'default' && (
-                                    <><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                                        {t('step1.configDefault')}</>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                <div className="grid grid-cols-1 @3xl:grid-cols-2 @5xl:grid-cols-3 gap-x-6 gap-y-5">
+                    {(!isHidden('claimType') || adminMode) && (
+                        <div>
+                            <FormSelect
+                                name="claimType"
+                                error={getFieldError('claimType')}
+                                label={t('step1.claimType')}
+                                value={store.claimType}
+                                onChange={v => store.updateField('claimType', v as any)}
+                                options={claimTypes.length > 0 ? claimTypes : [
+                                    { value: store.claimType, label: (store.claimType ? t(`step1.claimTypes.${store.claimType}`, store.claimType) : t('common.loading')) as string }
+                                ]}
+                                disabled={loadingTypes || adminMode}
+                                adminMode={adminMode}
+                                onToggleRequired={() => onToggleRequired?.('claimType')}
+                                onToggleHidden={() => onToggleHidden?.('claimType')}
+                                required={isRequired('claimType')}
+                                hidden={isHidden('claimType')}
+                            />
+                            {store.claimType === 'Fahrzeugbewertung' && (
+                                <p className="text-sm text-orange-600 mt-1">{t('step1.priceNote')}</p>
+                            )}
+                        </div>
+                    )}
+                    {(!isHidden('omtContactSelect') || adminMode) && (
+                        <div>
+                            <FormSelect
+                                name="omtContactSelect"
+                                error={getFieldError('omtContactSelect')}
+                                label={t('step1.omtContactSelect')}
+                                value={selectedContactId}
+                                onChange={handleContactChange}
+                                options={customerContacts}
+                                disabled={loadingContacts || adminMode}
+                                adminMode={adminMode}
+                                onToggleRequired={() => onToggleRequired?.('omtContactSelect')}
+                                onToggleHidden={() => onToggleHidden?.('omtContactSelect')}
+                                required={isRequired('omtContactSelect')}
+                                hidden={isHidden('omtContactSelect')}
+                            />
+                            {/* Config status badge */}
+                            {configStatus !== 'idle' && (
+                                <div className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md w-fit ${configStatus === 'loading' ? 'bg-gray-100 text-gray-500' :
+                                    configStatus === 'customer' ? 'bg-green-50 text-green-700 border border-green-200' :
+                                        'bg-amber-50 text-amber-700 border border-amber-200'
+                                    }`}>
+                                    {configStatus === 'loading' && (
+                                        <><span className="w-2.5 h-2.5 rounded-full border-2 border-gray-400 border-t-transparent animate-spin inline-block" />
+                                            {t('step1.configLoading')}</>
+                                    )}
+                                    {configStatus === 'customer' && (
+                                        <><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+                                            {t('step1.configCustomer')}</>
+                                    )}
+                                    {configStatus === 'default' && (
+                                        <><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                                            {t('step1.configDefault')}</>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <FormInput
                         name="caseNumber"
                         error={getFieldError('caseNumber')}
@@ -309,7 +317,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.caseNumberPlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('caseNumber')}
+                        onToggleHidden={() => onToggleHidden?.('caseNumber')}
                         required={isRequired('caseNumber')}
+                        hidden={isHidden('caseNumber')}
                     />
 
                     <FormInput
@@ -321,7 +331,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.licensePlatePlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('licensePlate')}
+                        onToggleHidden={() => onToggleHidden?.('licensePlate')}
                         required={isRequired('licensePlate')}
+                        hidden={isHidden('licensePlate')}
                     />
 
                     <FormInput
@@ -334,7 +346,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.customerNumberPlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('customerNumber')}
+                        onToggleHidden={() => onToggleHidden?.('customerNumber')}
                         required={isRequired('customerNumber')}
+                        hidden={isHidden('customerNumber')}
                     />
 
                     <FormInput
@@ -346,7 +360,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.contractNumberPlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('contractNumber')}
+                        onToggleHidden={() => onToggleHidden?.('contractNumber')}
                         required={isRequired('contractNumber')}
+                        hidden={isHidden('contractNumber')}
                     />
 
                     <FormSelect
@@ -358,7 +374,23 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         options={concernOptions}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('concernType')}
-                        required={isRequired('concernType') || false}
+                        onToggleHidden={() => onToggleHidden?.('concernType')}
+                        required={isRequired('concernType')}
+                        hidden={isHidden('concernType')}
+                    />
+
+                    <FormInput
+                        name="concernCompany"
+                        error={getFieldError('concernCompany')}
+                        label={t('step1.concernCompany', 'Konzernunternehmen')}
+                        value={store.concernCompany || ''}
+                        onChange={v => store.updateField('concernCompany', v)}
+                        placeholder={t('step1.concernCompanyPlaceholder', 'Konzernunternehmen…')}
+                        adminMode={adminMode}
+                        onToggleRequired={() => onToggleRequired?.('concernCompany')}
+                        onToggleHidden={() => onToggleHidden?.('concernCompany')}
+                        required={isRequired('concernCompany')}
+                        hidden={isHidden('concernCompany')}
                     />
 
                     <FormInput
@@ -370,7 +402,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.clientNamePlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('clientName')}
-                        required={isRequired('clientName') || false}
+                        onToggleHidden={() => onToggleHidden?.('clientName')}
+                        required={isRequired('clientName')}
+                        hidden={isHidden('clientName')}
                     />
 
                     <FormInput
@@ -385,7 +419,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.clientStreetPlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('clientStreet')}
-                        required={isRequired('clientStreet') || false}
+                        onToggleHidden={() => onToggleHidden?.('clientStreet')}
+                        required={isRequired('clientStreet')}
+                        hidden={isHidden('clientStreet')}
                     />
 
                     <FormInput
@@ -400,7 +436,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.clientHouseNumberPlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('clientHouseNumber')}
-                        required={isRequired('clientHouseNumber') || false}
+                        onToggleHidden={() => onToggleHidden?.('clientHouseNumber')}
+                        required={isRequired('clientHouseNumber')}
+                        hidden={isHidden('clientHouseNumber')}
                     />
 
                     <FormInput
@@ -412,7 +450,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.clientZipPlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('clientZip')}
-                        required={isRequired('clientZip') || false}
+                        onToggleHidden={() => onToggleHidden?.('clientZip')}
+                        required={isRequired('clientZip')}
+                        hidden={isHidden('clientZip')}
                     />
 
                     <FormInput
@@ -424,7 +464,38 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.clientCityPlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('clientCity')}
-                        required={isRequired('clientCity') || false}
+                        onToggleHidden={() => onToggleHidden?.('clientCity')}
+                        required={isRequired('clientCity')}
+                        hidden={isHidden('clientCity')}
+                    />
+
+                    <FormInput
+                        name="customerEmail"
+                        error={getFieldError('customerEmail')}
+                        label={t('step1.customerEmail', 'Kunden-E-Mail')}
+                        value={store.customerEmail || ''}
+                        onChange={v => store.updateField('customerEmail', v)}
+                        type="email"
+                        placeholder="kunde@beispiel.de"
+                        adminMode={adminMode}
+                        onToggleRequired={() => onToggleRequired?.('customerEmail')}
+                        onToggleHidden={() => onToggleHidden?.('customerEmail')}
+                        required={isRequired('customerEmail')}
+                        hidden={isHidden('customerEmail')}
+                    />
+
+                    <FormInput
+                        name="contactPersonName"
+                        error={getFieldError('contactPersonName')}
+                        label={t('step1.contactPersonName', 'Ansprechpartner vor Ort')}
+                        value={store.contactPersonName || ''}
+                        onChange={v => store.updateField('contactPersonName', v)}
+                        placeholder={t('step1.contactPersonPlaceholder', 'Name des Ansprechpartners…')}
+                        adminMode={adminMode}
+                        onToggleRequired={() => onToggleRequired?.('contactPersonName')}
+                        onToggleHidden={() => onToggleHidden?.('contactPersonName')}
+                        required={isRequired('contactPersonName')}
+                        hidden={isHidden('contactPersonName')}
                     />
 
                     <FormInput
@@ -436,7 +507,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         type="date"
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('orderDate')}
-                        required={isRequired('orderDate') || false}
+                        onToggleHidden={() => onToggleHidden?.('orderDate')}
+                        required={isRequired('orderDate')}
+                        hidden={isHidden('orderDate')}
                     />
 
                     <FormInput
@@ -448,7 +521,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         type="date"
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('inspectionDate')}
-                        required={isRequired('inspectionDate') || false}
+                        onToggleHidden={() => onToggleHidden?.('inspectionDate')}
+                        required={isRequired('inspectionDate')}
+                        hidden={isHidden('inspectionDate')}
                     />
 
                     <FormInput
@@ -460,7 +535,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         type="time"
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('inspectionTime')}
-                        required={isRequired('inspectionTime') || false}
+                        onToggleHidden={() => onToggleHidden?.('inspectionTime')}
+                        required={isRequired('inspectionTime')}
+                        hidden={isHidden('inspectionTime')}
                     />
 
                     <FormInput
@@ -472,7 +549,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.inspectionLocationPlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('inspectionLocation')}
-                        required={isRequired('inspectionLocation') || false}
+                        onToggleHidden={() => onToggleHidden?.('inspectionLocation')}
+                        required={isRequired('inspectionLocation')}
+                        hidden={isHidden('inspectionLocation')}
                     />
 
                     <FormInput
@@ -484,7 +563,9 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         placeholder={t('step1.inspectorNamePlaceholder')}
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('inspectorName')}
+                        onToggleHidden={() => onToggleHidden?.('inspectorName')}
                         required={isRequired('inspectorName')}
+                        hidden={isHidden('inspectorName')}
                     />
 
                     <FormInput
@@ -496,9 +577,11 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                         type="date"
                         adminMode={adminMode}
                         onToggleRequired={() => onToggleRequired?.('valuationDate')}
-                        required={isRequired('valuationDate') || false}
+                        onToggleHidden={() => onToggleHidden?.('valuationDate')}
+                        required={isRequired('valuationDate')}
+                        hidden={isHidden('valuationDate')}
                     />
-                    {useAuthStore.getState().role === 'ADMIN' && (
+                    {(useAuthStore.getState().role === 'ADMIN' || adminMode) && (
                         <FormSelect
                             name="status"
                             label={t('orders.table.status')}
@@ -510,6 +593,11 @@ const Step1_OrderInfo: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                 { value: 'COMPLETED', label: t('orders.statusValues.COMPLETED') as string },
                                 { value: 'CANCELLED', label: t('orders.statusValues.CANCELLED') as string }
                             ]}
+                            adminMode={adminMode}
+                            onToggleRequired={() => onToggleRequired?.('status')}
+                            onToggleHidden={() => onToggleHidden?.('status')}
+                            required={isRequired('status')}
+                            hidden={isHidden('status')}
                         />
                     )}
                 </div>

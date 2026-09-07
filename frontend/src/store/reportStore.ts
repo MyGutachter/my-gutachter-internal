@@ -6,7 +6,7 @@ import { BODY_PARTS } from '../constants/bodyParts';
 import { DEFAULT_GLOBAL_CONFIG } from '../constants/configDefaults';
 import { lookupEstimatePrice, mapRepairCodeStringToEstimateId } from '../constants/estimateRepairCodes';
 import { calcLackstundensatz, DEFAULT_KAROSSERIE_STUNDENSATZ } from '../constants/hourlyRates';
-import type { DamageItem, DamageType, GlobalConfig, LackberechnungsartType, MinderwertRow, PaintMeasurement, RepairMethodType, RepairPosition, RepairTableEntry, RepairType, ReportData, ReportPhoto, SignatureNames, Signatures, TireInfo, VehicleCategoryType } from '../types/report.types';
+import type { DamageItem, DamageType, FieldConfig, GlobalConfig, LackberechnungsartType, MinderwertRow, PaintMeasurement, RepairMethodType, RepairPosition, RepairTableEntry, RepairType, ReportData, ReportPhoto, SignatureNames, Signatures, TireInfo, VehicleCategoryType } from '../types/report.types';
 import { getAutomaticDevaluations } from '../utils/automaticDevaluationService';
 import { formatDate, formatMonthYear, normalizeDate, todayISO } from '../utils/dateFormatter';
 import { generateCaseNumber } from '../utils/generateCaseNumber';
@@ -238,7 +238,7 @@ const initialState: ReportData = {
     customerPresent: false,
     status: 'OPEN',
     omtSyncStatus: 'PENDING',
-    fieldConfigs: [] as any[],
+    fieldConfigs: [] as FieldConfig[],
     versions: [],
     initialData: null,
     vehicleBaseValue: 0,
@@ -295,8 +295,8 @@ interface ReportStore extends ReportData {
     setAllData: (data: Partial<ReportData>) => void;
     setGlobalConfig: (config: GlobalConfig) => void;
     fetchFieldConfigs: (customerNumber?: string) => Promise<void>;
-    updateFieldConfig: (fieldName: string, required: boolean, stepNumber: number, customerNumber?: string) => Promise<void>;
-    updatePhotoSlotConfigs: (slots: Array<{ id: string; label: string; required: boolean; sortOrder: number; isCustom?: boolean }>, customerNumber?: string) => Promise<void>;
+    updateFieldConfig: (fieldName: string, configOrRequired: boolean | { required?: boolean; hidden?: boolean; stepNumber?: number }, stepNumber?: number, customerNumber?: string) => Promise<void>;
+    updatePhotoSlotConfigs: (slots: Array<{ id: string; label: string; required: boolean; hidden?: boolean; sortOrder: number; isCustom?: boolean }>, customerNumber?: string) => Promise<void>;
     getPhotoSlots: () => Array<{ id: string; label: string }>;
     fetchAndApplyCustomerRates: (customerNumber: string) => Promise<boolean>;
     saveCurrentRatesAsCustomerDefault: (customerNumber: string) => Promise<boolean>;
@@ -309,7 +309,7 @@ interface ReportStore extends ReportData {
     getEffectiveRepairTypes: () => RepairType[];
     getEffectiveRepairSurcharges: () => Record<string, number>;
     recalculateVehicleValue: () => void;
-    fieldConfigs: any[];
+    fieldConfigs: FieldConfig[];
     globalConfig: GlobalConfig | null;
     _hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
@@ -1009,8 +1009,12 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                         d.id === photo.damageId ? { ...d, images: [...(d.images || []), photo.data] } : d
                     );
                 }
+                const photoWithPdf = {
+                    includeInPdf: photo.includeInPdf !== undefined ? photo.includeInPdf : true,
+                    ...photo
+                };
                 return {
-                    photos: [...state.photos, photo],
+                    photos: [...state.photos, photoWithPdf],
                     damages: updatedDamages
                 };
             }),
@@ -1781,19 +1785,31 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
             getStepValidationErrors: (step: number) => {
                 const s = get();
                 const errors: Record<string, string> = {};
-                // mileage_photo and vin_photo are required by default.
-                // They can only be made optional if admin explicitly saved them
-                // via the photo-slot panel (isPhotoSlot: true) with required: false.
-                const isPhotoSlotRequired = (fieldName: string): boolean => {
-                    if (fieldName === 'mileage_photo' || fieldName === 'vin_photo') return true; // always required
-                    const cfg = s.fieldConfigs.find(c => c.fieldName === fieldName);
-                    if (cfg && (cfg as any).isPhotoSlot === true) return cfg.required;
-                    return true; // always required unless photo-slot config says otherwise
+
+                const isHidden = (fieldName: string): boolean => {
+                    const cfg = s.fieldConfigs?.find(c => c.fieldName === fieldName);
+                    return cfg?.hidden === true;
                 };
+
+                const isPhotoSlotRequired = (fieldName: string): boolean => {
+                    const cfg = s.fieldConfigs?.find(c => c.fieldName === fieldName);
+                    if (cfg && (cfg as any).isPhotoSlot === true) {
+                        if (cfg.hidden === true) return false;
+                        return cfg.required ?? false;
+                    }
+                    if (fieldName === 'mileage_photo' || fieldName === 'vin_photo') {
+                        if (cfg?.hidden === true) return false;
+                        if (cfg?.required !== undefined) return cfg.required;
+                        return true;
+                    }
+                    return cfg?.required ?? true;
+                };
+
                 const MILEAGE_VIN_IDS = new Set(['mileage_photo', 'vin_photo']);
                 const isRequired = (fieldName: string) => {
+                    if (isHidden(fieldName)) return false;
                     if (MILEAGE_VIN_IDS.has(fieldName)) return isPhotoSlotRequired(fieldName);
-                    const cfg = s.fieldConfigs.find(c => c.fieldName === fieldName);
+                    const cfg = s.fieldConfigs?.find(c => c.fieldName === fieldName);
                     return cfg?.required;
                 };
 
@@ -1817,26 +1833,29 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                         'claimType', 'caseNumber', 'licensePlate', 'customerNumber',
                         'contractNumber', 'concernType', 'concernCompany', 'clientName',
                         'clientStreet', 'clientHouseNumber', 'clientZip', 'clientCity',
+                        'customerEmail', 'contactPersonName',
                         'orderDate', 'inspectionDate', 'inspectionTime', 'inspectionLocation',
-                        'inspectorName', 'valuationDate'
+                        'inspectorName', 'valuationDate', 'status'
                     ];
                     checkRequired(step1Fields);
                 }
                 if (step === 2) {
                     const step2Fields = [
-                        'vin', 'firstRegistration', 'lastRegistration', 'mileage',
+                        'vin', 'manufacturer', 'baseModel', 'subModel', 'firstRegistration', 'lastRegistration', 'mileage',
                         'nextHU', 'bodyType', 'doors', 'seats', 'keyNumber',
                         'fuelType', 'cylinders', 'powerKw', 'displacement',
                         'emissionClass', 'driveType', 'transmission', 'wheels',
                         'colorDescription', 'upholsteryDescription', 'identificationImages',
-                        'vehicleCategory'
+                        'vehicleCategory', 'targetKeysCount', 'actualKeysCount', 'workshopKeysCount', 'remoteControlsCount'
                     ];
                     checkRequired(step2Fields);
 
-                    // Vehicle Category is ALWAYS mandatory
-                    const vc = s.vehicleCategory;
-                    if (!vc) {
-                        errors['vehicleCategory'] = 'Required';
+                    // Vehicle Category is mandatory by default unless hidden or explicitly not required
+                    if (!isHidden('vehicleCategory') && isRequired('vehicleCategory')) {
+                        const vc = s.vehicleCategory;
+                        if (!vc) {
+                            errors['vehicleCategory'] = 'Required';
+                        }
                     }
                 }
                 if (step === 3) {
@@ -1861,14 +1880,14 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                     // Conditional: Charging Cable (only for EV/Hybrid)
                     const fuel = (s.fuelType || '').toLowerCase();
                     const showChargingCable = fuel.includes('elektro') || fuel.includes('hybrid') || fuel.includes('phev');
-                    if (showChargingCable && isRequired('chargingCable') && !s.chargingCable) {
+                    if (showChargingCable && isRequired('chargingCable') && !isHidden('chargingCable') && !s.chargingCable) {
                         errors['chargingCable'] = 'Required';
                     }
 
                     // Complex equipment fields
                     const equipmentFields = ['breakdownKit', 'firstAidKit', 'warningTriangle', 'safetyVest'];
                     for (const f of equipmentFields) {
-                        if (isRequired(f)) {
+                        if (isRequired(f) && !isHidden(f)) {
                             const val = (s as any)[f];
                             if (!val || !val.status) {
                                 errors[f] = 'Required';
@@ -1876,25 +1895,38 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                         }
                     }
 
-                    // Paint Measurements logic
-                    const paintRequired = isRequired('noPaintIssuesDetected');
-
-                    if (!s.noPaintIssuesDetected) {
-                        const hasMeasurements = s.paintMeasurements && s.paintMeasurements.length > 0;
-                        if (paintRequired && !hasMeasurements) {
-                            errors['noPaintIssuesDetected'] = 'Required';
+                    if (isRequired('spareTire') && !isHidden('spareTire')) {
+                        if (!s.spareTire || !s.spareTire.present) {
+                            errors['spareTire'] = 'Required';
                         }
-                        if (hasMeasurements) {
-                            const measurementsValid = s.paintMeasurements.every(p => {
-                                const hasBodyPart = p.bodyPart && String(p.bodyPart).trim() !== '';
-                                const hasMicrons = Number(p.measuredMicrons) > 0;
-                                const hasImages = p.images && p.images.length > 0;
-                                const hasDamageDesc = !p.damageKnown || (p.repairDamage && String(p.repairDamage).trim() !== '');
-                                return hasBodyPart && hasMicrons && hasImages && hasDamageDesc;
-                            });
+                    }
 
-                            if (!measurementsValid) {
-                                errors['paintMeasurements'] = 'Required';
+                    if (isRequired('hasSecondTireSet') && !isHidden('hasSecondTireSet')) {
+                        if (!s.hasSecondTireSet) {
+                            errors['hasSecondTireSet'] = 'Required';
+                        }
+                    }
+
+                    // Paint Measurements logic
+                    if (!isHidden('paintMeasurements') && !isHidden('noPaintIssuesDetected')) {
+                        const paintRequired = isRequired('noPaintIssuesDetected') || isRequired('paintMeasurements');
+                        if (!s.noPaintIssuesDetected) {
+                            const hasMeasurements = s.paintMeasurements && s.paintMeasurements.length > 0;
+                            if (paintRequired && !hasMeasurements) {
+                                errors['noPaintIssuesDetected'] = 'Required';
+                            }
+                            if (hasMeasurements) {
+                                const measurementsValid = s.paintMeasurements.every(p => {
+                                    const hasBodyPart = p.bodyPart && String(p.bodyPart).trim() !== '';
+                                    const hasMicrons = Number(p.measuredMicrons) > 0;
+                                    const hasImages = p.images && p.images.length > 0;
+                                    const hasDamageDesc = !p.damageKnown || (p.repairDamage && String(p.repairDamage).trim() !== '');
+                                    return hasBodyPart && hasMicrons && hasImages && hasDamageDesc;
+                                });
+
+                                if (!measurementsValid) {
+                                    errors['paintMeasurements'] = 'Required';
+                                }
                             }
                         }
                     }
@@ -1913,18 +1945,18 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                         { id: 'sill_right', label: 'Schweller rechts', en: 'Right sill' }
                     ];
 
-                    // Check if admin has configured photo slots; if so, use them (sorted by sortOrder)
-                    const configuredSlots = s.fieldConfigs
+                    const configuredSlots = (s.fieldConfigs ?? [])
                         .filter((c: any) => c.isPhotoSlot === true)
                         .sort((a: any, b: any) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
 
                     const mandatoryPhotoIds = configuredSlots.length > 0
-                        ? configuredSlots.map((c: any) => ({ id: c.fieldName, label: c.label || c.fieldName, en: c.label || c.fieldName }))
+                        ? configuredSlots.map((c: any) => ({ id: c.fieldName, label: c.label || c.fieldName, en: c.label || c.fieldName, hidden: c.hidden }))
                         : DEFAULT_PHOTO_SLOTS;
 
-                    // Validate all mandatory photos uniformly via isRequired()
+                    // Validate all mandatory photos uniformly via isRequired() - skip if hidden
                     for (const item of mandatoryPhotoIds) {
-                        if (!isRequired(item.id)) continue; // only validate if admin marked as required
+                        if (isHidden(item.id)) continue;
+                        if (!isRequired(item.id)) continue;
 
                         let exists: boolean;
                         if (item.id === 'mileage_photo') {
@@ -1939,7 +1971,7 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                             exists = s.photos.some(p =>
                                 p.mandatoryPhotoId === item.id ||
                                 p.label === item.label ||
-                                p.label === item.en
+                                p.label === (item as any).en
                             );
                         }
 
@@ -1948,23 +1980,28 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                         }
                     }
 
-                    const damagesValid = s.damages.every(d =>
-                        (d.description && d.description.trim() !== '') ||
-                        (d.images && d.images.length > 0)
-                    );
-                    if (!damagesValid) {
-                        errors['damages'] = 'Required';
+                    if (!isHidden('damages')) {
+                        const damagesValid = s.damages.every(d =>
+                            (d.description && d.description.trim() !== '') ||
+                            (d.images && d.images.length > 0)
+                        );
+                        if (!damagesValid) {
+                            errors['damages'] = 'Required';
+                        }
                     }
                 }
                 if (step === 5) {
-                    if (isRequired('expertAssessmentStatus') && !s.expertAssessmentStatus) {
+                    if (!isHidden('expertAssessmentStatus') && isRequired('expertAssessmentStatus') && !s.expertAssessmentStatus) {
                         errors['expertAssessmentStatus'] = 'Required';
                     }
-                    if (isRequired('signatureDriver') && (!s.signatures.driver || !s.signatureNames.driver)) {
+                    if (!isHidden('signatureDriver') && isRequired('signatureDriver') && (!s.signatures.driver || !s.signatureNames.driver)) {
                         errors['signatureDriver'] = 'Required';
                     }
-                    if (isRequired('signatureReceiver') && (!s.signatures.receiver || !s.signatureNames.receiver)) {
+                    if (!isHidden('signatureReceiver') && isRequired('signatureReceiver') && (!s.signatures.receiver || !s.signatureNames.receiver)) {
                         errors['signatureReceiver'] = 'Required';
+                    }
+                    if (!isHidden('signatureInspector') && isRequired('signatureInspector') && (!s.signatures.inspector || !s.signatureNames.inspector)) {
+                        errors['signatureInspector'] = 'Required';
                     }
                 }
                 return errors;
@@ -1978,6 +2015,7 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                 if (!customerNumber) return false;
                 try {
                     const api = (await import('../utils/api')).default;
+                    await get().fetchFieldConfigs(customerNumber);
                     const res = await api.get(`/config/customer/${customerNumber}`);
                     if (res.data && Object.keys(res.data).length > 0) {
                         const config = res.data as GlobalConfig;
@@ -2012,7 +2050,6 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
             },
 
             updatePhotoSlotConfigs: async (slots, customerNumber) => {
-                const ALWAYS_REQUIRED = new Set(['mileage_photo', 'vin_photo']);
                 try {
                     const api = (await import('../utils/api')).default;
                     const url = customerNumber ? `/field-configs/customer/${customerNumber}` : '/field-configs';
@@ -2020,7 +2057,8 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                     for (const slot of slots) {
                         await api.post(url, {
                             fieldName: slot.id,
-                            required: ALWAYS_REQUIRED.has(slot.id) ? true : slot.required,
+                            required: slot.required,
+                            hidden: slot.hidden ?? false,
                             stepNumber: 4,
                             label: slot.label,
                             sortOrder: slot.sortOrder,
@@ -2038,8 +2076,6 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
 
             getPhotoSlots: () => {
                 const s = get();
-                // mileage_photo and vin_photo are always required by default
-                const ALWAYS_REQUIRED_DEFAULTS = new Set(['mileage_photo', 'vin_photo']);
                 const DEFAULT_SLOTS = [
                     { id: 'diag_fl', label: 'Übersicht diagonal vorne links' },
                     { id: 'diag_rl', label: 'Übersicht diagonal hinten links' },
@@ -2051,14 +2087,15 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                     { id: 'sill_left', label: 'Schweller links' },
                     { id: 'sill_right', label: 'Schweller rechts' },
                 ];
-                const configured = s.fieldConfigs
-                    .filter((c: any) => c.isPhotoSlot === true)
+                const configured = (s.fieldConfigs ?? [])
+                    .filter((c: any) => c.isPhotoSlot === true && c.hidden !== true)
                     .sort((a: any, b: any) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
                     .map((c: any) => ({ id: c.fieldName, label: c.label || c.fieldName }));
                 if (configured.length > 0) return configured;
-                // When using defaults, reflect the always-required state in the slot objects
-                // so Step4 can show the correct required styling without any admin config
-                return DEFAULT_SLOTS;
+                return DEFAULT_SLOTS.filter(slot => {
+                    const cfg = s.fieldConfigs?.find((c: any) => c.fieldName === slot.id);
+                    return cfg?.hidden !== true;
+                });
             },
 
             fetchFieldConfigs: async (customerNumber?: string) => {
@@ -2072,19 +2109,20 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                 }
             },
 
-            updateFieldConfig: async (fieldName: string, required: boolean, stepNumber: number, customerNumber?: string) => {
+            updateFieldConfig: async (fieldName: string, configOrRequired: boolean | { required?: boolean; hidden?: boolean; stepNumber?: number }, stepNumber?: number, customerNumber?: string) => {
                 try {
                     const api = (await import('../utils/api')).default;
                     const url = customerNumber ? `/field-configs/customer/${customerNumber}` : '/field-configs';
-                    await api.post(url, { fieldName, required, stepNumber });
-                    const configs = [...get().fieldConfigs];
-                    const idx = configs.findIndex(c => c.fieldName === fieldName);
-                    if (idx > -1) {
-                        configs[idx] = { ...configs[idx], required };
+                    let payload: any = { fieldName };
+                    if (typeof configOrRequired === 'boolean') {
+                        payload.required = configOrRequired;
+                        payload.stepNumber = stepNumber ?? 1;
                     } else {
-                        configs.push({ fieldName, required, stepNumber, customerNumber });
+                        payload = { ...payload, ...configOrRequired };
+                        if (stepNumber && !payload.stepNumber) payload.stepNumber = stepNumber;
                     }
-                    set({ fieldConfigs: configs });
+                    await api.post(url, payload);
+                    await get().fetchFieldConfigs(customerNumber);
                 } catch (err) {
                     console.error('Failed to update field config', err);
                     throw err;

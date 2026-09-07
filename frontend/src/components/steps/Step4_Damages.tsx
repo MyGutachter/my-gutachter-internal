@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Box, Camera, CheckCircle, ChevronDown, DoorClosed, FileText, GripVertical, ImagePlus, LayoutDashboard, Pencil, Plus, RefreshCw, Search, Settings, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Box, Camera, CheckCircle, ChevronDown, DoorClosed, Eye, EyeOff, FileText, GripVertical, ImagePlus, LayoutDashboard, Pencil, Plus, RefreshCw, Search, Settings, Trash2, X } from 'lucide-react';
 import SecureImage from '../ui/SecureImage';
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
@@ -60,7 +60,8 @@ const BODY_TO_OVERLAY: Record<string, string> = {
 
 interface Props {
     adminMode?: boolean;
-    onToggleRequired?: (fieldName: string) => Promise<void>;
+    onToggleRequired?: (fieldName: string) => Promise<void> | void;
+    onToggleHidden?: (fieldName: string) => Promise<void> | void;
 }
 
 const translatePhotoLabel = (label: string, t: any, lang: 'de' | 'en' = 'de') => {
@@ -69,7 +70,7 @@ const translatePhotoLabel = (label: string, t: any, lang: 'de' | 'en' = 'de') =>
 };
 
 
-const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
+const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleHidden }) => {
     const { t, i18n } = useTranslation();
     const store = useReportStore();
 
@@ -92,18 +93,27 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
     const isVehicleEvaluation = store.claimType === 'Fahrzeugbewertung';
     const { setCurrentStep, showValidationErrors } = useUIStore();
     const validationErrors = store.getStepValidationErrors(4);
-    // mileage_photo and vin_photo are always required by default.
-    // Only a photo-slot admin config (isPhotoSlot: true) with required: false can override this.
+    const isHidden = (fieldName: string): boolean => {
+        const cfg = store.fieldConfigs?.find((c: any) => c.fieldName === fieldName);
+        return cfg?.hidden === true;
+    };
+    // mileage_photo and vin_photo are always required by default unless hidden or overridden.
     const isPhotoSlotRequired = (fieldName: string): boolean => {
-        if (fieldName === 'mileage_photo' || fieldName === 'vin_photo') return true; // always required
-        const cfg = store.fieldConfigs.find(c => c.fieldName === fieldName);
-        if (cfg && (cfg as any).isPhotoSlot === true) return cfg.required;
+        if (isHidden(fieldName)) return false;
+        if (fieldName === 'mileage_photo' || fieldName === 'vin_photo') {
+            const cfg = store.fieldConfigs?.find((c: any) => c.fieldName === fieldName);
+            if (cfg && (cfg as any).isPhotoSlot === true) return cfg.required ?? true;
+            return true;
+        }
+        const cfg = store.fieldConfigs?.find((c: any) => c.fieldName === fieldName);
+        if (cfg && (cfg as any).isPhotoSlot === true) return cfg.required ?? true;
         return true; // default required
     };
     const MILEAGE_VIN_IDS = new Set(['mileage_photo', 'vin_photo']);
     const isRequired = (fieldName: string) => {
+        if (isHidden(fieldName)) return false;
         if (MILEAGE_VIN_IDS.has(fieldName)) return isPhotoSlotRequired(fieldName);
-        const cfg = store.fieldConfigs.find(c => c.fieldName === fieldName);
+        const cfg = store.fieldConfigs?.find((c: any) => c.fieldName === fieldName);
         return cfg?.required;
     };
     const [activeComponentId, setActiveComponentId] = React.useState<string | null>(null);
@@ -127,6 +137,14 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
         s.lastRegistrationImages?.forEach((img: string) => urls.add(img));
         return urls;
     };
+
+    useEffect(() => {
+        if (store.caseNumber) {
+            store.reSyncPhotosWithVideoXpert().catch((err) => {
+                console.error('Auto photo sync error:', err);
+            });
+        }
+    }, [store.caseNumber]);
 
     const handleReSyncPhotos = () => {
         setShowConfirmSync(true);
@@ -484,9 +502,11 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
     const hasVinPhoto =
         (store.identificationImages && store.identificationImages.length > 0) ||
         store.photos.some(p => p.mandatoryPhotoId === 'vin_photo');
+    const isMileageHidden = isHidden('mileage_photo');
+    const isVinHidden = isHidden('vin_photo');
     const missingStep2Photos = [
-        ...(!hasMileagePhoto ? [t('step4.mileage_photo', 'Kilometerstand / Tacho')] : []),
-        ...(!hasVinPhoto ? [t('step4.vin_photo', 'Fahrzeug-Ident.-Nr. / Typschild')] : []),
+        ...(!hasMileagePhoto && !isMileageHidden ? [t('step4.mileage_photo', 'Kilometerstand / Tacho')] : []),
+        ...(!hasVinPhoto && !isVinHidden ? [t('step4.vin_photo', 'Fahrzeug-Ident.-Nr. / Typschild')] : []),
     ];
 
     return (
@@ -525,6 +545,9 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
             <SectionTitle>{t('step4.mandatoryPhotos')}</SectionTitle>
             <div className="grid grid-cols-1 @@7xl:grid-cols-2 @5xl:grid-cols-4 gap-4">
                 {MANDATORY_PHOTOS.map(photo => {
+                    const isPhotoHidden = isHidden(photo.id);
+                    if (!adminMode && isPhotoHidden) return null;
+
                     const isPhotoRequired = isRequired(photo.id);
                     // Find all photos for this category (show newest first)
                     // For mileage/vin, also include images captured on Page 2 that live in
@@ -540,6 +563,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     label: t('step4.mileage_photo'),
                                     fileName: `mileage_${i}.jpg`,
                                     mandatoryPhotoId: 'mileage_photo',
+                                    includeInPdf: true,
                                 } as any);
                             }
                         });
@@ -552,6 +576,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                     label: t('step4.vin_photo'),
                                     fileName: `vin_${i}.jpg`,
                                     mandatoryPhotoId: 'vin_photo',
+                                    includeInPdf: true,
                                 } as any);
                             }
                         });
@@ -567,21 +592,25 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                             data-fieldname={isPhotoInvalid ? photo.id : undefined}
                             className={`flex flex-col border-2 transition-all ${
                                 adminMode
-                                    ? (isPhotoRequired ? 'border-orange-400 bg-orange-50/40 ring-2 ring-orange-300/30' : 'border-dashed border-gray-300 bg-white')
+                                    ? isPhotoHidden
+                                        ? 'opacity-60 bg-slate-50 border-dashed border-slate-300'
+                                        : (isPhotoRequired ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300/30' : 'border-dashed border-gray-300 bg-white')
                                     : isPhotoInvalid
                                         ? 'border-red-500 bg-red-50/10 ring-2 ring-red-500/10'
-                                        : (done ? 'border-gray-200 bg-white' : (isPhotoRequired ? 'border-dashed border-orange-300 bg-orange-50/30' : 'border-gray-200 bg-white shadow-sm hover:shadow-md'))
+                                        : (done ? 'border-gray-200 bg-white' : (isPhotoRequired ? 'border-dashed border-amber-300 bg-amber-50/30' : 'border-gray-200 bg-white shadow-sm hover:shadow-md'))
                             }`}
                         >
                             {/* Card Header */}
                             <div className={`px-2.5 py-1.5 border-b flex justify-between items-center ${
                                 adminMode
-                                    ? (isPhotoRequired ? 'bg-orange-100/60' : 'bg-gray-50')
-                                    : isPhotoInvalid ? 'bg-red-100/50' : (done ? 'bg-gray-50' : (isPhotoRequired ? 'bg-orange-100/50' : 'bg-white'))
+                                    ? isPhotoHidden
+                                        ? 'bg-slate-100'
+                                        : (isPhotoRequired ? 'bg-amber-100/60' : 'bg-gray-50')
+                                    : isPhotoInvalid ? 'bg-red-100/50' : (done ? 'bg-gray-50' : (isPhotoRequired ? 'bg-amber-100/50' : 'bg-white'))
                             }`}>
                                 <div className="flex flex-col truncate pr-2">
                                     <span className="text-[11px] font-bold text-gray-800 truncate" title={photo.label}>{photo.label}</span>
-                                    {!adminMode && isPhotoRequired && !done && <span className="text-[10px] text-orange-600 font-semibold uppercase">{t('admin.mandatory')}</span>}
+                                    {!adminMode && isPhotoRequired && !done && <span className="text-[10px] text-amber-600 font-semibold uppercase">{t('admin.mandatory')}</span>}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {!adminMode && done && (
@@ -590,20 +619,40 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired }) => {
                                         </div>
                                     )}
                                     {adminMode && (
-                                        <button
-                                            onClick={() => onToggleRequired?.(photo.id)}
-                                            title={isPhotoRequired ? 'Click to make optional' : 'Click to make required'}
-                                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide border transition-all active:scale-95 ${
-                                                isPhotoRequired
-                                                    ? 'bg-orange-500 border-orange-500 text-white shadow-sm hover:bg-orange-600'
-                                                    : 'bg-white border-gray-300 text-gray-400 hover:border-orange-400 hover:text-orange-500'
-                                            }`}
-                                        >
-                                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                                isPhotoRequired ? 'bg-white' : 'bg-gray-300'
-                                            }`} />
-                                            {isPhotoRequired ? 'Pflicht' : 'Optional'}
-                                        </button>
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onToggleHidden?.(photo.id);
+                                                }}
+                                                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-all ${
+                                                    isPhotoHidden
+                                                        ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-800'
+                                                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                                }`}
+                                                title={isPhotoHidden ? 'Ausgeblendet' : 'Sichtbar'}
+                                            >
+                                                {isPhotoHidden ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-emerald-600" />}
+                                                <span>{isPhotoHidden ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onToggleRequired?.(photo.id);
+                                                }}
+                                                title={isPhotoRequired ? 'Pflichtfeld (Klicken für Optional)' : 'Optional (Klicken für Pflicht)'}
+                                                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide border transition-all active:scale-95 ${
+                                                    isPhotoRequired
+                                                        ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-sm'
+                                                        : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                                                }`}
+                                            >
+                                                <CheckCircle className={`w-3 h-3 ${isPhotoRequired ? 'text-amber-700' : 'text-slate-400'}`} />
+                                                <span>{isPhotoRequired ? 'Pflicht' : 'Optional'}</span>
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>

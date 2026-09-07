@@ -243,6 +243,8 @@
         "manualEntry": "Manuelle Eingabe",
         "targetKeysCount": "Ziel-Schlüssel (Soll)",
         "actualKeysCount": "Tatsächliche Schlüssel (Ist)",
+        "keysTarget": "Ziel-Schlüssel (Soll)",
+        "keysActual": "Tatsächliche Schlüssel (Ist)",
         "systemSet": "System",
         "workshopKeysCount": "Werkstattschlüssel",
         "remoteControlsCount": "Zusatz-FB (Standheizung)",
@@ -959,6 +961,9 @@
         "download": "Herunterladen"
     },
     "admin": {
+        "visible": "Sichtbar",
+        "hidden": "Ausgeblendet",
+        "optional": "Optional",
         "mandatory": "Pflicht",
         "title": "Admin Dashboard",
         "subtitle": "Globale Einstellungen verwalten und Expertenberichte einsehen",
@@ -1490,8 +1495,26 @@
             "front_bumper": "Stoßstange vorne",
             "wheels": "Räder",
             "sills": "Schweller",
+            "documents_equipment": "Dokumente & Ausrüstung",
             "other": "Sonstiges"
         }
+    },
+    "addPhoto": {
+        "title": "Foto hinzufügen",
+        "subtitle": "Post-Call Foto hochladen & Fahrzeugteil zuweisen",
+        "fileLabel": "Bilddatei wählen",
+        "dropText": "Bild hierher ziehen oder klicken",
+        "maxSize": "max. 15MB",
+        "partLabel": "Fahrzeugteil / Kategorie",
+        "customGroup": "Sonstiges",
+        "customOption": "Benutzerdefinierter Name...",
+        "customPlaceholder": "Teilename eingeben (z.B. Kotflügel Vorne Links)",
+        "uploading": "Wird hochgeladen...",
+        "submit": "Hochladen & Speichern",
+        "errorInvalidType": "Bitte wählen Sie eine gültige Bilddatei (JPEG, PNG, WEBP).",
+        "errorNoFile": "Bitte wählen Sie eine Bilddatei zum Hochladen aus.",
+        "errorNoPartName": "Bitte geben Sie einen Fahrzeugteil-Namen an.",
+        "errorUploadFailed": "Fehler beim Hochladen des Fotos. Bitte versuchen Sie es erneut."
     },
     "meeting": {
         "setupTitle": "Meeting einrichten",

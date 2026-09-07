@@ -146,3 +146,29 @@ export const fetchUvvCertificateBlob = async (orderId: string): Promise<Blob> =>
 };
 
 export const getUvvCertificateUrl = (orderId: string) => `${API_BASE_URL}/orders/${orderId}/uvv-certificate`;
+
+/** POST /screenshots — Upload photo with part name for an order. */
+export const uploadScreenshot = async (
+    file: File,
+    partName: string,
+    meetingId: string,
+    userId?: string
+): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('partName', partName);
+    formData.append('meetingId', meetingId);
+    if (userId) {
+        formData.append('userId', userId);
+    }
+    const res = await api.post<string>('/screenshots', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+};
+
+/** DELETE /screenshots/{meetingId}/{filename} — Delete screenshot. */
+export const deleteScreenshot = async (meetingId: string, filename: string): Promise<void> => {
+    await api.delete(`/screenshots/${meetingId}/${filename}`);
+};
+

@@ -1,15 +1,17 @@
-import { ArrowLeft, Calendar, Car, ChevronDown, ChevronUp, Download, Eye, FileText, Image as ImageIcon, Maximize2, RotateCcw, RotateCw, Video as VideoIcon, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Calendar, Car, ChevronDown, ChevronUp, Download, Eye, FileText, Image as ImageIcon, Maximize2, Plus, RotateCcw, RotateCw, Trash2, Video as VideoIcon, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { API_BASE_URL, getOrder, getRecordingUrls, getScreenshots } from '../../services/orderService';
+import { API_BASE_URL, deleteScreenshot, getOrder, getRecordingUrls, getScreenshots } from '../../services/orderService';
 import axiosInstance from '../../../../utils/api';
 import type { Order } from '../../types';
 import { CarOverlay } from '../../CarOverlay';
 import CarInspectionLoader from '../../CarInspectionLoader';
 import MeetingPhotoBar from './MeetingPhotoBar';
 import { UvvCertificateViewer } from './UvvCertificateViewer';
+import AddPhotoModal from '../modals/AddPhotoModal';
+
 
 /**
  * Post-meeting summary (T7.8) — faithful port of VideoExpert MeetingSummary.
@@ -168,6 +170,36 @@ const MeetingSummary = () => {
         setZoom(1);
     }, [viewingScreenshot]);
 
+    const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState(false);
+    const [selectedUploadPartId, setSelectedUploadPartId] = useState<string | undefined>(undefined);
+
+    const refreshScreenshots = async () => {
+        if (!roomId) return;
+        try {
+            const files = await getScreenshots(roomId);
+            const map: Record<string, string> = {};
+            const partsWithScreenshots: string[] = [];
+
+            if (Array.isArray(files)) {
+                const sortedParts = [...ALL_PARTS].sort((a, b) => b.id.length - a.id.length);
+                files.forEach((file) => {
+                    const part = sortedParts.find((p) => file === p.id || file.startsWith(p.id + '_'));
+                    if (part) {
+                        map[file] = file;
+                        partsWithScreenshots.push(file);
+                    } else {
+                        map[file] = file;
+                        partsWithScreenshots.push(file);
+                    }
+                });
+            }
+            setScreenshotMap(map);
+            setSelectedParts(partsWithScreenshots);
+        } catch (err) {
+            console.error('Failed to refresh screenshots:', err);
+        }
+    };
+
     useEffect(() => {
         if (roomId) {
             getOrder(roomId).then((o) => {
@@ -186,6 +218,9 @@ const MeetingSummary = () => {
                     files.forEach((file) => {
                         const part = sortedParts.find((p) => file === p.id || file.startsWith(p.id + '_'));
                         if (part) {
+                            map[file] = file;
+                            partsWithScreenshots.push(file);
+                        } else {
                             map[file] = file;
                             partsWithScreenshots.push(file);
                         }
@@ -338,7 +373,7 @@ const MeetingSummary = () => {
 
     return (
         <div className="flex flex-col h-full w-full bg-[var(--color-bg-secondary)] overflow-hidden min-w-0 relative">
-            <div className="bg-[var(--color-bg-card)] border-b border-[var(--color-border-primary)] p-2 sm:p-4 shrink-0">
+            <div className="bg-[var(--color-bg-card)] border-b border-[var(--color-border-primary)] p-2 sm:p-4 shrink-0 flex items-center justify-between gap-3">
                 <div className="flex space-x-4 sm:space-x-6 overflow-x-auto no-scrollbar">
                     {tabs.map((tab) => (
                         <button
@@ -356,6 +391,16 @@ const MeetingSummary = () => {
                         </button>
                     ))}
                 </div>
+                <button
+                    onClick={() => {
+                        setSelectedUploadPartId(undefined);
+                        setIsAddPhotoModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/90 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg cursor-pointer shrink-0"
+                >
+                    <Plus size={16} />
+                    <span>{t('addPhoto.title', { defaultValue: 'Foto hinzufügen' })}</span>
+                </button>
             </div>
 
             {loading ? (
@@ -533,8 +578,26 @@ const MeetingSummary = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md transform translate-y-2 group-hover:translate-y-0 duration-300">
-                                                <Eye size={16} />
+                                            <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md transform translate-y-2 group-hover:translate-y-0 duration-300">
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm(t('common.confirmDelete', { defaultValue: 'Möchten Sie dieses Foto wirklich löschen?' }))) {
+                                                            await deleteScreenshot(roomId || '', photo.filename);
+                                                            refreshScreenshots();
+                                                            if (viewingScreenshot === photo.filename) {
+                                                                setViewingScreenshot(null);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="bg-red-600/80 hover:bg-red-600 text-white p-1.5 rounded-lg transition-colors cursor-pointer"
+                                                    title={t('common.delete', { defaultValue: 'Löschen' })}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                                <div className="bg-black/50 text-white p-1.5 rounded-lg">
+                                                    <Eye size={16} />
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -904,6 +967,16 @@ const MeetingSummary = () => {
                     {hoveredTablePart.name}
                 </div>
             )}
+
+            <AddPhotoModal
+                isOpen={isAddPhotoModalOpen}
+                onClose={() => setIsAddPhotoModalOpen(false)}
+                orderId={roomId || ''}
+                initialPartId={selectedUploadPartId}
+                onSuccess={() => {
+                    refreshScreenshots();
+                }}
+            />
         </div>
     );
 };
