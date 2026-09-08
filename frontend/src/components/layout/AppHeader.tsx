@@ -54,7 +54,7 @@ const AppHeader: React.FC = () => {
 
                         {/* Mobile Logout - visible only on smallest screens if needed, but we show all below */}
                         <div className="lg:hidden flex items-center">
-                             <button
+                            <button
                                 onClick={handleLogout}
                                 className="p-2 rounded-lg bg-white/10 border border-white/20 hover:bg-red-600/20 transition-colors"
                                 title={t('auth.logout')}

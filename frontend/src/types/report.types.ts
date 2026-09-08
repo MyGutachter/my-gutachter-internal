@@ -166,13 +166,22 @@ export interface SignatureNames {
 }
 
 
+export interface PhotoComponentAssignment {
+    id: string;              // row.id, row.bodyPart or damage.id
+    type: 'minderwert' | 'damage';
+    bodyPart: string;        // e.g. 'hood', 'windshield', 'bumper_front'
+    label: string;           // Translated human-readable label
+    description?: string;
+}
+
 export interface ReportPhoto {
     id: string;
-    data: string; // base64
+    data: string; // base64 or URL
     label: string;
     caption?: string;
     fileName: string;
-    damageId?: string;
+    damageId?: string; // Points to minderwertRow.id/bodyPart or damage.id when assigned to a component
+    damageIds?: string[]; // Multiple assigned components/damages
     mandatoryPhotoId?: string;
     isExternal?: boolean;
     fromVideoExpert?: boolean;

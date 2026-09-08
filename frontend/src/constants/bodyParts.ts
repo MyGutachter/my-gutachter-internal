@@ -113,7 +113,7 @@ const DYNAMIC_PARTS_LOCALIZATION: Record<string, { de: string; en: string }> = {
 
 export function getBodyPartLabel(id: string, lang: 'de' | 'en' = 'de'): string {
     if (!id) return '';
-    
+
     // Normalize ID: lowercase, replace spaces/dashes with underscores
     let normId = id.trim().toLowerCase().replace(/[\s-]+/g, '_');
 

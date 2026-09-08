@@ -7,6 +7,7 @@ import SecureImage from './SecureImage';
 import ModalWrapper from './ModalWrapper';
 import { useTranslation } from 'react-i18next';
 import { Maximize2 } from 'lucide-react';
+import ImageEditorModal from '../image-editor/ImageEditorModal';
 
 interface PhotoThumbnailProps {
     src: string;
@@ -257,8 +258,8 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onToggleIncludeInPdf(!includeInPdf); }}
                             className={`w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-md shadow-sm transition-all hover:scale-105 active:scale-95 shrink-0 ${includeInPdf
-                                    ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                                    : 'bg-amber-600 hover:bg-amber-500 text-white'
+                                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                                : 'bg-amber-600 hover:bg-amber-500 text-white'
                                 }`}
                             title={includeInPdf ? t('common.printInReportTooltip', 'Dieses Bild im PDF-Gutachten drucken') : t('common.toolOnlyTooltip', 'Nur im Tool zur Beweissicherung gespeichert')}
                             aria-label={t('common.togglePrintTooltip', 'Drucken im PDF-Bericht umschalten')}
@@ -292,218 +293,16 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
             </div>
 
 
-            {/* Proper Adjustment Modal */}
-            <ModalWrapper
+            {/* Full Fabric Image Editor Modal */}
+            <ImageEditorModal
                 isOpen={showEditModal}
                 onClose={() => setShowEditModal(false)}
-                title={t('common.editImage', 'Bild anpassen')}
-                headerExtra={!hidePrintOption && onToggleIncludeInPdf ? (
-                    <button
-                        type="button"
-                        onClick={() => onToggleIncludeInPdf(!includeInPdf)}
-                        title={includeInPdf ? t('common.printInReportTooltip', 'Dieses Bild im PDF-Gutachten drucken') : t('common.toolOnlyTooltip', 'Nur im Tool zur Beweissicherung gespeichert')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shadow-sm select-none active:scale-95 ${includeInPdf
-                                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                            }`}
-                    >
-                        {includeInPdf ? <Printer className="w-3.5 h-3.5 text-blue-600" /> : <EyeOff className="w-3.5 h-3.5 text-amber-600" />}
-                        <span className="font-semibold text-[11px] sm:text-xs">
-                            {includeInPdf ? t('common.printInReport', 'Im Bericht drucken') : t('common.toolOnlyEvidence', 'Nur im Tool (Beweis)')}
-                        </span>
-                        <div className={`w-7 h-4 rounded-full transition-colors relative flex items-center px-0.5 ${includeInPdf ? 'bg-blue-600' : 'bg-gray-300'}`}>
-                            <div className={`w-3 h-3 rounded-full bg-white transition-transform ${includeInPdf ? 'translate-x-3' : 'translate-x-0'}`} />
-                        </div>
-                    </button>
-                ) : null}
-            >
-                <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
-                    <div className="relative w-full aspect-[4/3] bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-800 flex items-center justify-center select-none">
-                        <div className="relative" ref={containerRef}>
-                            <SecureImage
-                                src={src}
-                                className={`max-w-full max-h-[50vh] object-contain transition-opacity ${rotating ? 'opacity-50' : 'opacity-100'}`}
-                                draggable={false}
-                            />
-
-                            {isCropping && !rotating && (
-                                <div
-                                    className="absolute border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] z-20 cursor-move"
-                                    onMouseDown={(e) => handleMouseDown(e, 'move')}
-                                    onTouchStart={(e) => handleMouseDown(e, 'move')}
-                                    style={{
-                                        left: `${(cropArea.x / imgDimensions.width) * 100}%`,
-                                        top: `${(cropArea.y / imgDimensions.height) * 100}%`,
-                                        width: `${(cropArea.width / imgDimensions.width) * 100}%`,
-                                        height: `${(cropArea.height / imgDimensions.height) * 100}%`,
-                                    }}
-                                >
-                                    {/* Corner Handles */}
-                                    <div
-                                        className="absolute -top-3 -left-3 w-6 h-6 bg-primary rounded-full border-2 border-white cursor-nwse-resize z-30 shadow-md"
-                                        onMouseDown={(e) => handleMouseDown(e, 'resize', 'top-left')}
-                                        onTouchStart={(e) => handleMouseDown(e, 'resize', 'top-left')}
-                                    />
-                                    <div
-                                        className="absolute -top-3 -right-3 w-6 h-6 bg-primary rounded-full border-2 border-white cursor-nesw-resize z-30 shadow-md"
-                                        onMouseDown={(e) => handleMouseDown(e, 'resize', 'top-right')}
-                                        onTouchStart={(e) => handleMouseDown(e, 'resize', 'top-right')}
-                                    />
-                                    <div
-                                        className="absolute -bottom-3 -left-3 w-6 h-6 bg-primary rounded-full border-2 border-white cursor-nesw-resize z-30 shadow-md"
-                                        onMouseDown={(e) => handleMouseDown(e, 'resize', 'bottom-left')}
-                                        onTouchStart={(e) => handleMouseDown(e, 'resize', 'bottom-left')}
-                                    />
-                                    <div
-                                        className="absolute -bottom-3 -right-3 w-6 h-6 bg-primary rounded-full border-2 border-white cursor-nwse-resize z-30 shadow-md"
-                                        onMouseDown={(e) => handleMouseDown(e, 'resize', 'bottom-right')}
-                                        onTouchStart={(e) => handleMouseDown(e, 'resize', 'bottom-right')}
-                                    />
-
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <div className="bg-primary/80 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
-                                            {Math.round(cropArea.width)} x {Math.round(cropArea.height)}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {isPortrait && !isCropping && (
-                            <div className="absolute top-4 left-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg animate-pulse z-30">
-                                <AlertTriangle className="w-4 h-4" />
-                                {t('common.imageValidation.orientationWarningShort', 'Falsche Ausrichtung')}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="w-full flex flex-col gap-4">
-                        {/* Info & Manual Inputs */}
-                        <div className="flex flex-wrap justify-between items-center px-2 gap-4">
-                            <div className="text-sm text-gray-500 flex items-center gap-2">
-                                <Maximize className="w-4 h-4" />
-                                <span>{Math.round(imgDimensions.width)} x {Math.round(imgDimensions.height)} px</span>
-                                {isExternal && (
-                                    <span className="ml-2 px-1.5 py-0.5 bg-blue-600/90 text-white rounded text-[9px] font-bold tracking-wider select-none uppercase shadow-sm">
-                                        {t('common.external', 'Extern')}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
-                                    <span className="text-[10px] text-gray-400 mr-1">W</span>
-                                    <input
-                                        type="number"
-                                        value={Math.round(cropArea.width)}
-                                        onChange={(e) => {
-                                            const val = parseInt(e.target.value);
-                                            if (val > 0 && val <= imgDimensions.width) {
-                                                setCropArea(prev => ({ ...prev, width: val }));
-                                                setIsCropping(true);
-                                            }
-                                        }}
-                                        className="w-12 bg-transparent text-xs font-bold focus:outline-none"
-                                    />
-                                </div>
-                                <span className="text-gray-300">×</span>
-                                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
-                                    <span className="text-[10px] text-gray-400 mr-1">H</span>
-                                    <input
-                                        type="number"
-                                        value={Math.round(cropArea.height)}
-                                        onChange={(e) => {
-                                            const val = parseInt(e.target.value);
-                                            if (val > 0 && val <= imgDimensions.height) {
-                                                setCropArea(prev => ({ ...prev, height: val }));
-                                                setIsCropping(true);
-                                            }
-                                        }}
-                                        className="w-12 bg-transparent text-xs font-bold focus:outline-none"
-                                    />
-                                </div>
-                                <button
-                                    onClick={() => handleSetAspectRatio(4 / 3)}
-                                    className="ml-2 text-[10px] bg-primary/10 text-primary px-2 py-1 rounded font-bold hover:bg-primary/20 transition-colors"
-                                >
-                                    SET 4:3
-                                </button>
-                            </div>
-
-                            {isCropping && (
-                                <button
-                                    onClick={() => {
-                                        setIsCropping(false);
-                                        setCropArea({ x: 0, y: 0, width: imgDimensions.width, height: imgDimensions.height });
-                                    }}
-                                    className="text-xs text-red-500 hover:underline font-medium"
-                                >
-                                    {t('common.reset', 'Zurücksetzen')}
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Controls */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <button
-                                onClick={() => handleRotate('left')}
-                                disabled={rotating}
-                                className="flex flex-col items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm group"
-                            >
-                                <RotateCcw className="w-5 h-5 text-gray-600 group-hover:text-primary" />
-                                <span className="text-xs font-medium text-gray-600">{t('common.rotateLeft')}</span>
-                            </button>
-
-                            <button
-                                onClick={() => handleRotate('right')}
-                                disabled={rotating}
-                                className="flex flex-col items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm group"
-                            >
-                                <RotateCw className="w-5 h-5 text-gray-600 group-hover:text-primary" />
-                                <span className="text-xs font-medium text-gray-600">{t('common.rotateRight')}</span>
-                            </button>
-
-                            <button
-                                onClick={() => handleSetAspectRatio(4 / 3)}
-                                disabled={rotating}
-                                className={`flex flex-col items-center justify-center gap-2 p-3 border rounded-xl transition-all shadow-sm group ${isCropping ? 'bg-primary/5 border-primary/30' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
-                            >
-                                <Layout className={`w-5 h-5 ${isCropping ? 'text-primary' : 'text-gray-600 group-hover:text-primary'}`} />
-                                <span className="text-xs font-medium text-gray-600">{t('common.setAspectRatio', '4:3 Format')}</span>
-                            </button>
-
-                            {isCropping ? (
-                                <button
-                                    onClick={handleApplyCrop}
-                                    disabled={rotating}
-                                    className="flex flex-col items-center justify-center gap-2 p-3 bg-green-600 text-white border border-green-700 rounded-xl hover:bg-green-700 transition-all shadow-md animate-in zoom-in-95 duration-200"
-                                >
-                                    {rotating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                                    <span className="text-xs font-bold">{t('common.apply', 'Anwenden')}</span>
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setIsCropping(true)}
-                                    disabled={rotating}
-                                    className="flex flex-col items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm group"
-                                >
-                                    <Crop className="w-5 h-5 text-gray-600 group-hover:text-primary" />
-                                    <span className="text-xs font-medium text-gray-600">{t('common.crop', 'Zuschneiden')}</span>
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="w-full pt-4 border-t border-gray-100 flex justify-end">
-                        <button
-                            onClick={() => setShowEditModal(false)}
-                            className="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all shadow-sm"
-                        >
-                            {t('common.done', 'Fertig')}
-                        </button>
-                    </div>
-                </div>
-            </ModalWrapper>
+                imageUrl={secureUrl || src}
+                onSave={(newSrc) => {
+                    onUpdate(newSrc);
+                    setShowEditModal(false);
+                }}
+            />
         </div>
     );
 };

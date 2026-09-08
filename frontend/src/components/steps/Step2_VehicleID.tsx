@@ -1069,7 +1069,7 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired, onToggl
                                         </div>
                                     )}
                                     {store.keysImages && store.keysImages.length > 0 && (
-                                        <div className="flex flex-wrap gap-1.5 ml-2">
+                                        <div className="flex flex-wrap gap-2 ml-2">
                                             {store.keysImages.map((img, idx) => (
                                                 <PhotoThumbnail
                                                     key={idx}
@@ -1078,7 +1078,8 @@ const Step2_VehicleID: React.FC<Props> = ({ adminMode, onToggleRequired, onToggl
                                                     onToggleIncludeInPdf={(incl) => store.toggleImagePdfInclusion(img, undefined, incl)}
                                                     onRemove={() => removeFieldPhoto('keysImages', idx)}
                                                     onUpdate={(newSrc) => updateFieldPhoto('keysImages', idx, newSrc)}
-                                                    className="w-14 h-10"
+                                                    className="w-24 h-16 sm:w-28 sm:h-20"
+                                                    isExternal={store.videoExpertImages?.includes(img)}
                                                 />
                                             ))}
                                         </div>

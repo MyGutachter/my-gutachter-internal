@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^5.2.2",
     "axios": "^1.13.5",
     "clsx": "^2.1.1",
+    "fabric": "^7.4.0",
     "framer-motion": "^12.36.0",
     "html2canvas-pro": "^2.2.3",
     "html2pdf.js": "^0.14.0",

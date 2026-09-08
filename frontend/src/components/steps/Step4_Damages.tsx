@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Box, Camera, CheckCircle, ChevronDown, DoorClosed, Eye, EyeOff, FileText, GripVertical, ImagePlus, LayoutDashboard, Pencil, Plus, RefreshCw, Search, Settings, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Box, Camera, CheckCircle, ChevronDown, DoorClosed, Eye, EyeOff, FileText, GripVertical, ImagePlus, Images, LayoutDashboard, Pencil, Plus, RefreshCw, Search, Settings, Trash2, X } from 'lucide-react';
 import SecureImage from '../ui/SecureImage';
 import React, { useMemo, useEffect } from 'react';
 import toast from 'react-hot-toast';
@@ -22,6 +22,8 @@ import DamageEntryModal from '../ui/DamageEntryModal';
 import ModalWrapper from '../ui/ModalWrapper';
 import PhotoThumbnail from '../ui/PhotoThumbnail';
 import SectionTitle from '../ui/SectionTitle';
+import AssignPhotosModal from '../ui/AssignPhotosModal';
+import PhotoPartAssigner from '../ui/PhotoPartAssigner';
 
 
 const INTERIOR_PART_ICONS: Record<string, React.ComponentType<any>> = {
@@ -124,6 +126,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
     const [showConfirmSync, setShowConfirmSync] = React.useState(false);
     const [showSyncSuccessModal, setShowSyncSuccessModal] = React.useState(false);
     const [newlyAddedPhotos, setNewlyAddedPhotos] = React.useState<string[]>([]);
+    const [assignModalTarget, setAssignModalTarget] = React.useState<{ id: string; name: string } | null>(null);
 
     const getReportAllImages = (s: any) => {
         const urls = new Set<string>();
@@ -264,6 +267,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
         if (!row) return;
         const currentImages = row.images || [];
         const newImages = [...currentImages];
+        const partName = getBodyPartLabel(row.bodyPart, lang) || row.bodyPart;
+
         for (const file of Array.from(files)) {
             try {
                 const validation = await validateImageAspectRatio(file);
@@ -275,6 +280,18 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                 }
                 const compressedData = await compressImage(file, 1200, 1200, 0.7);
                 newImages.push(compressedData);
+
+                if (!store.photos.some(p => p.data === compressedData)) {
+                    store.addPhoto({
+                        id: uuidv4(),
+                        data: compressedData,
+                        label: `${partName} (${t('step4.photosAbbr', 'Foto')} ${newImages.length})`,
+                        fileName: file.name,
+                        damageId: row.bodyPart || id,
+                        damageIds: [row.bodyPart || id],
+                        includeInPdf: true
+                    });
+                }
             } catch (err) {
                 console.error('Failed to compress image:', file.name, err);
                 toast.error(t('step4.compressionError') || `Failed to compress image: ${file.name}`);
@@ -296,6 +313,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
     const handleDamagePhoto = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         const files = e.target.files;
         if (!files) return;
+        const damage = store.damages.find(d => d.id === id);
+        const damageName = damage?.bodyPart ? (getBodyPartLabel(damage.bodyPart, lang) || damage.bodyPart) : (damage?.description || 'Schaden');
 
         for (const file of Array.from(files)) {
             try {
@@ -308,6 +327,18 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                 }
                 const compressedData = await compressImage(file, 1200, 1200, 0.7);
                 store.handleDamagePhoto(id, compressedData);
+
+                if (!store.photos.some(p => p.data === compressedData)) {
+                    store.addPhoto({
+                        id: uuidv4(),
+                        data: compressedData,
+                        label: `${damageName} (${t('step4.photosAbbr', 'Foto')} ${(damage?.images?.length || 0) + 1})`,
+                        fileName: file.name,
+                        damageId: id,
+                        damageIds: [id],
+                        includeInPdf: true
+                    });
+                }
             } catch (err) {
                 console.error('Failed to compress image:', file.name, err);
                 toast.error(t('step4.compressionError') || `Failed to compress image: ${file.name}`);
@@ -463,9 +494,45 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
     const allPhotosForGallery = useMemo(() => {
         const result = [...store.photos];
 
+        // Also add images from minderwertRows if not already in store.photos
+        store.minderwertRows.forEach(row => {
+            const partName = getBodyPartLabel(row.bodyPart, lang) || row.bodyPart;
+            (row.images || []).forEach((data, i) => {
+                if (!result.some(p => p.data === data)) {
+                    result.push({
+                        id: `mw_${row.bodyPart || row.id}_${i}`,
+                        data,
+                        label: `${partName} (${t('step4.photosAbbr', 'Foto')} ${i + 1})`,
+                        damageId: row.bodyPart || row.id,
+                        damageIds: [row.bodyPart || row.id],
+                        isVirtual: false
+                    } as any);
+                }
+            });
+        });
+
+        // Also add images from damages if not already in store.photos
+        (store.damages || []).forEach(d => {
+            const damageName = d.bodyPart
+                ? (getBodyPartLabel(d.bodyPart, lang) || d.bodyPart)
+                : (d.description || d.id);
+            (d.images || []).forEach((data, i) => {
+                if (!result.some(p => p.data === data)) {
+                    result.push({
+                        id: `dmg_${d.id}_${i}`,
+                        data,
+                        label: `${damageName} (${t('step4.photosAbbr', 'Foto')} ${i + 1})`,
+                        damageId: d.id,
+                        damageIds: [d.id],
+                        isVirtual: false
+                    } as any);
+                }
+            });
+        });
+
         // Add virtual photos only if they aren't already in store.photos
         (store.mileageImages || []).forEach((data, i) => {
-            if (!store.photos.some(p => p.data === data)) {
+            if (!result.some(p => p.data === data)) {
                 result.push({
                     id: `mileage_v_${i}`,
                     data,
@@ -477,7 +544,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
         });
 
         (store.identificationImages || []).forEach((data, i) => {
-            if (!store.photos.some(p => p.data === data)) {
+            if (!result.some(p => p.data === data)) {
                 result.push({
                     id: `vin_v_${i}`,
                     data,
@@ -489,7 +556,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
         });
 
         return result;
-    }, [store.photos, store.mileageImages, store.identificationImages, t]);
+    }, [store.photos, store.minderwertRows, store.damages, store.mileageImages, store.identificationImages, lang, t]);
 
     const totalDamagesMinderwert = store.damages.reduce((sum: number, d: any) => sum + (d.minderwertBrutto || 0), 0);
     const totalRowsMinderwert = store.minderwertRows.reduce((sum: number, r: any) => sum + (r.minderwertBrutto || 0), 0);
@@ -590,24 +657,22 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                             key={photo.id}
                             ref={el => { componentRefs.current[photo.id] = el; }}
                             data-fieldname={isPhotoInvalid ? photo.id : undefined}
-                            className={`flex flex-col border-2 transition-all ${
-                                adminMode
+                            className={`flex flex-col border-2 transition-all ${adminMode
                                     ? isPhotoHidden
                                         ? 'opacity-60 bg-slate-50 border-dashed border-slate-300'
                                         : (isPhotoRequired ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300/30' : 'border-dashed border-gray-300 bg-white')
                                     : isPhotoInvalid
                                         ? 'border-red-500 bg-red-50/10 ring-2 ring-red-500/10'
                                         : (done ? 'border-gray-200 bg-white' : (isPhotoRequired ? 'border-dashed border-amber-300 bg-amber-50/30' : 'border-gray-200 bg-white shadow-sm hover:shadow-md'))
-                            }`}
+                                }`}
                         >
                             {/* Card Header */}
-                            <div className={`px-2.5 py-1.5 border-b flex justify-between items-center ${
-                                adminMode
+                            <div className={`px-2.5 py-1.5 border-b flex justify-between items-center ${adminMode
                                     ? isPhotoHidden
                                         ? 'bg-slate-100'
                                         : (isPhotoRequired ? 'bg-amber-100/60' : 'bg-gray-50')
                                     : isPhotoInvalid ? 'bg-red-100/50' : (done ? 'bg-gray-50' : (isPhotoRequired ? 'bg-amber-100/50' : 'bg-white'))
-                            }`}>
+                                }`}>
                                 <div className="flex flex-col truncate pr-2">
                                     <span className="text-[11px] font-bold text-gray-800 truncate" title={photo.label}>{photo.label}</span>
                                     {!adminMode && isPhotoRequired && !done && <span className="text-[10px] text-amber-600 font-semibold uppercase">{t('admin.mandatory')}</span>}
@@ -626,11 +691,10 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                     e.stopPropagation();
                                                     onToggleHidden?.(photo.id);
                                                 }}
-                                                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-all ${
-                                                    isPhotoHidden
+                                                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide transition-all ${isPhotoHidden
                                                         ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-800'
                                                         : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                                                }`}
+                                                    }`}
                                                 title={isPhotoHidden ? 'Ausgeblendet' : 'Sichtbar'}
                                             >
                                                 {isPhotoHidden ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-emerald-600" />}
@@ -643,11 +707,10 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                     onToggleRequired?.(photo.id);
                                                 }}
                                                 title={isPhotoRequired ? 'Pflichtfeld (Klicken für Optional)' : 'Optional (Klicken für Pflicht)'}
-                                                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide border transition-all active:scale-95 ${
-                                                    isPhotoRequired
+                                                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide border transition-all active:scale-95 ${isPhotoRequired
                                                         ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-sm'
                                                         : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 <CheckCircle className={`w-3 h-3 ${isPhotoRequired ? 'text-amber-700' : 'text-slate-400'}`} />
                                                 <span>{isPhotoRequired ? 'Pflicht' : 'Optional'}</span>
@@ -948,7 +1011,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                             </thead>
                             <tbody>
                                 {/* 1. Pre-filled Body Parts (MinderwertRows) */}
-                                {store.minderwertRows.filter(r => !r.isCustom).map(row => {
+                                {store.minderwertRows.filter(r => !r.isCustom && BODY_PARTS.some(p => p.id === (r.bodyPart || r.id))).map(row => {
                                     const isActive = row.bodyPart === activeComponentId;
                                     const mw = row.minderwertBrutto || 0;
 
@@ -978,6 +1041,20 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                             <ImagePlus className="w-3.5 h-3.5" />
                                                             <input type="file" multiple accept="image/*" onChange={e => handleMinderwertPhoto(e, row.id)} className="hidden" />
                                                         </label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setAssignModalTarget({
+                                                                    id: row.id,
+                                                                    name: t(`bodyParts.${row.bodyPart}`, row.bodyPart)
+                                                                });
+                                                            }}
+                                                            className="p-1.5 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95"
+                                                            title={t('step4.assignFromExisting', 'Aus vorhandenen Fotos zuweisen')}
+                                                        >
+                                                            <Images className="w-3.5 h-3.5" />
+                                                        </button>
                                                     </div>
                                                     {row.images && row.images.length > 0 && (
                                                         <div className="flex flex-wrap justify-center gap-1.5 mt-0.5">
@@ -1130,7 +1207,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                 <>
                                                     <td className="table-cell">
                                                         <div className="flex items-center gap-1">
-                                                        {/* {row.repairCostBrutto}
+                                                            {/* {row.repairCostBrutto}
                                                         {Math.round(calcBrutto(row.repairCost) * 100) / 100} */}
                                                             <input
                                                                 className={`form-input py-1 w-full text-xs font-mono text-right bg-transparent border-gray-200 focus:bg-white ${row.repairCodeIndex > 0 ? 'text-primary font-bold' : ''}`}
@@ -1157,8 +1234,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                                     row.anrechnung === 'kein'
                                                                         ? 'keine'
                                                                         : row.anrechnung === 'pro-rata'
-                                                                        ? 'anteilig'
-                                                                        : (row.anrechnung || 'keine')
+                                                                            ? 'anteilig'
+                                                                            : (row.anrechnung || 'keine')
                                                                 }
                                                                 onClick={e => e.stopPropagation()}
                                                                 onChange={e => store.updateMinderwertRow(row.id, { anrechnung: e.target.value as any })}
@@ -1238,11 +1315,10 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                         <tr
                                             key={damage.id}
                                             data-fieldname={isInvalid ? "damages" : undefined}
-                                            className={`hover:bg-gray-50 border-b transition-colors ${
-                                                isInvalid
+                                            className={`hover:bg-gray-50 border-b transition-colors ${isInvalid
                                                     ? 'bg-red-50/10 border-red-500 border-2'
                                                     : (isActive ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' : '')
-                                            }`}
+                                                }`}
                                             onClick={() => setActiveComponentId(damage.id)}
                                         >
                                             <td className="table-cell pl-4" ref={el => { componentRefs.current[damage.id] = el; }}>
@@ -1301,6 +1377,20 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                             <ImagePlus className="w-3.5 h-3.5" />
                                                             <input type="file" multiple accept="image/*" onChange={e => handleDamagePhoto(e, damage.id)} className="hidden" />
                                                         </label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setAssignModalTarget({
+                                                                    id: damage.id,
+                                                                    name: damage.bodyPart ? t(`bodyParts.${damage.bodyPart}`, damage.bodyPart) : damage.description || t('step4.damageDesc', 'Schaden')
+                                                                });
+                                                            }}
+                                                            className="p-1.5 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95"
+                                                            title={t('step4.assignFromExisting', 'Aus vorhandenen Fotos zuweisen')}
+                                                        >
+                                                            <Images className="w-3.5 h-3.5" />
+                                                        </button>
                                                     </div>
                                                     {damage.images && damage.images.length > 0 && (
                                                         <div className="flex flex-wrap justify-center gap-1.5 mt-0.5">
@@ -1324,9 +1414,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                 <input
                                                     type="text"
                                                     placeholder={t('minderwert.damageCol')}
-                                                    className={`form-input py-1 text-xs w-full bg-transparent focus:bg-white ${
-                                                        isInvalid ? 'border-2 border-red-500 bg-red-50/10 focus:border-red-600' : 'border-gray-200'
-                                                    }`}
+                                                    className={`form-input py-1 text-xs w-full bg-transparent focus:bg-white ${isInvalid ? 'border-2 border-red-500 bg-red-50/10 focus:border-red-600' : 'border-gray-200'
+                                                        }`}
                                                     value={damage.description || ''}
                                                     onClick={e => e.stopPropagation()}
                                                     onChange={e => store.updateDamage(damage.id, { description: e.target.value })}
@@ -1433,8 +1522,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                                     damage.anrechnung === 'kein'
                                                                         ? 'keine'
                                                                         : damage.anrechnung === 'pro-rata'
-                                                                        ? 'anteilig'
-                                                                        : (damage.anrechnung || 'keine')
+                                                                            ? 'anteilig'
+                                                                            : (damage.anrechnung || 'keine')
                                                                 }
                                                                 onClick={e => e.stopPropagation()}
                                                                 onChange={e => store.updateDamage(damage.id, { anrechnung: e.target.value as any })}
@@ -1526,7 +1615,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
 
                     {/* Mobile Cards - Hidden on Desktop */}
                     <div className="@5xl:hidden space-y-3 px-1 pb-4">
-                        {[...store.minderwertRows.filter(r => !r.isCustom), ...store.damages].map((item: any) => {
+                        {[...store.minderwertRows.filter(r => !r.isCustom && BODY_PARTS.some(p => p.id === (r.bodyPart || r.id))), ...store.damages].map((item: any) => {
                             // Correctly identify if this is a user-added damage entry (should have a delete button)
                             const isUserAdded = store.damages.some(d => d.id === item.id);
                             const mw = item.minderwertBrutto || 0;
@@ -1541,11 +1630,10 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                     key={item.id}
                                     ref={el => { componentRefs.current[cardKey] = el; }}
                                     data-fieldname={isCardInvalid ? "damages" : undefined}
-                                    className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-300 shadow-sm bg-white ${
-                                        isCardInvalid
+                                    className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-300 shadow-sm bg-white ${isCardInvalid
                                             ? 'border-red-500 bg-red-50/10 ring-2 ring-red-500/10'
                                             : (isActive ? 'border-primary ring-4 ring-primary/5' : 'border-gray-100')
-                                    }`}
+                                        }`}
                                 >
                                     {/* Card Header — click to expand/collapse */}
                                     <button
@@ -1807,8 +1895,8 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                                                 item.anrechnung === 'kein'
                                                                                     ? 'keine'
                                                                                     : item.anrechnung === 'pro-rata'
-                                                                                    ? 'anteilig'
-                                                                                    : (item.anrechnung || 'keine')
+                                                                                        ? 'anteilig'
+                                                                                        : (item.anrechnung || 'keine')
                                                                             }
                                                                             onClick={e => e.stopPropagation()}
                                                                             onChange={e => !isUserAdded ? store.updateMinderwertRow(item.id, { anrechnung: e.target.value as any }) : store.updateDamage(item.id, { anrechnung: e.target.value as any })}
@@ -1865,6 +1953,23 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                                     <ImagePlus className="w-4 h-4" />
                                                                     <input type="file" multiple accept="image/*" onChange={e => !isUserAdded ? handleMinderwertPhoto(e, item.id) : handleDamagePhoto(e, item.id)} className="hidden" />
                                                                 </label>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setAssignModalTarget({
+                                                                            id: item.id,
+                                                                            name: isUserAdded
+                                                                                ? (item.bodyPart ? t(`bodyParts.${item.bodyPart}`, item.bodyPart) : item.description || t('step4.damageDesc', 'Schaden'))
+                                                                                : t(`bodyParts.${item.bodyPart}`, item.bodyPart)
+                                                                        });
+                                                                    }}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-primary transition-all shadow-sm active:scale-95"
+                                                                    title={t('step4.assignFromExisting', 'Aus vorhandenen Fotos zuweisen')}
+                                                                >
+                                                                    <Images className="w-4 h-4" />
+                                                                    <span className="text-[11px] font-bold">{t('step4.assignFromExisting', 'Zuweisen')}</span>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                         <div className="flex flex-wrap justify-end gap-1.5">
@@ -2060,7 +2165,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                             />
                                         </div>
 
-                                        <div className="px-0.5 mt-2 pt-2 border-t border-gray-100 space-y-1.5">
+                                        <div className="px-0.5 mt-2 pt-2 border-t border-gray-100 space-y-2">
                                             {isVirtual ? (
                                                 <div className="py-0.5 text-[10px] font-semibold text-gray-500 italic truncate">{translatePhotoLabel(p.label, t, lang)}</div>
                                             ) : (
@@ -2081,6 +2186,13 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                     </div>
                                                 </>
                                             )}
+
+                                            {/* Direct Multi-Part Component Assignment */}
+                                            <PhotoPartAssigner
+                                                photoId={p.id}
+                                                photoData={p.data}
+                                                compact={true}
+                                            />
                                         </div>
                                     </motion.div>
                                 );
@@ -2096,11 +2208,10 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                     type="button"
                     disabled={isSyncingPhotos}
                     onClick={handleReSyncPhotos}
-                    className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg shadow-sm border transition-all active:scale-95 ${
-                        isSyncingPhotos
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg shadow-sm border transition-all active:scale-95 ${isSyncingPhotos
                             ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                             : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                        }`}
                 >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSyncingPhotos ? 'animate-spin' : ''}`} />
                     {isSyncingPhotos ? t('step4.syncing', 'Synchronisiere...') : t('step4.reSyncPhotos', 'Fotos mit VideoXpert neu synchronisieren')}
@@ -2183,6 +2294,15 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                     </div>
                 </div>
             </ModalWrapper>
+
+            {assignModalTarget && (
+                <AssignPhotosModal
+                    isOpen={true}
+                    onClose={() => setAssignModalTarget(null)}
+                    targetComponentId={assignModalTarget.id}
+                    targetComponentName={assignModalTarget.name}
+                />
+            )}
         </div>
     );
 };

@@ -8,33 +8,66 @@ const blobToDataUrl = (blob: Blob): Promise<string> =>
         reader.readAsDataURL(blob);
     });
 
+const safeDataUrlCache = new Map<string, string>();
+const inFlightRequests = new Map<string, Promise<string>>();
+
 export const toSafeDataUrl = async (url: string): Promise<string> => {
+    if (!url) return '';
     if (url.startsWith("data:")) {
         return url;
     }
 
-    // Blob URLs (blob:https://...) — fetch directly, same origin, no auth needed.
-    if (url.startsWith("blob:")) {
-        const res = await fetch(url);
-        return blobToDataUrl(await res.blob());
+    if (safeDataUrlCache.has(url)) {
+        return safeDataUrlCache.get(url)!;
     }
 
-    // Fallback to axios if the endpoint actually requires authentication.
-    let requestUrl = url.includes("/api/")
-        ? url.substring(url.indexOf("/api/") + 4)
-        : url;
-
-    // For screenshots and report photos, request with follow=false to return direct bytes/blob
-    if (requestUrl.includes("screenshots/") || requestUrl.includes("reports/photos/")) {
-        const separator = requestUrl.includes("?") ? "&" : "?";
-        requestUrl = `${requestUrl}${separator}follow=false`;
+    if (inFlightRequests.has(url)) {
+        return inFlightRequests.get(url)!;
     }
 
-    const response = await api.get(requestUrl, {
-        responseType: "blob",
-    });
+    const fetchPromise = (async () => {
+        // Blob URLs (blob:https://...) — fetch directly, same origin, no auth needed.
+        if (url.startsWith("blob:")) {
+            try {
+                const res = await fetch(url);
+                const dataUrl = await blobToDataUrl(await res.blob());
+                safeDataUrlCache.set(url, dataUrl);
+                return dataUrl;
+            } catch (e) {
+                console.error("Failed to fetch blob URL", e);
+                return url;
+            }
+        }
 
-    return blobToDataUrl(response.data);
+        // Fallback to axios if the endpoint actually requires authentication.
+        try {
+            let requestUrl = url.includes("/api/")
+                ? url.substring(url.indexOf("/api/") + 4)
+                : url;
+
+            // For screenshots and report photos, request with follow=false to return direct bytes/blob
+            if (requestUrl.includes("screenshots/") || requestUrl.includes("reports/photos/")) {
+                const separator = requestUrl.includes("?") ? "&" : "?";
+                requestUrl = `${requestUrl}${separator}follow=false`;
+            }
+
+            const response = await api.get(requestUrl, {
+                responseType: "blob",
+            });
+
+            const dataUrl = await blobToDataUrl(response.data);
+            safeDataUrlCache.set(url, dataUrl);
+            return dataUrl;
+        } catch (err) {
+            console.warn("Could not convert URL to safe DataURL via API, using original URL", err);
+            return url;
+        } finally {
+            inFlightRequests.delete(url);
+        }
+    })();
+
+    inFlightRequests.set(url, fetchPromise);
+    return fetchPromise;
 };
 
 /**

@@ -1,19 +1,28 @@
-import { X, Download } from 'lucide-react';
+import { X, Download, Pencil } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import ImageEditorModal from '../../../../components/image-editor/ImageEditorModal';
 
-/** Full-screen image lightbox (T7.8) — faithful port, unchanged. */
+/** Full-screen image lightbox (T7.8) with built-in image editing capability. */
 interface ImagePopupProps {
     isOpen: boolean;
     onClose: () => void;
     imageUrl: string;
     altText?: string;
     title?: string;
+    onSaveEdited?: (newImageUrl: string) => void;
 }
 
-const ImagePopup: React.FC<ImagePopupProps> = ({ isOpen, onClose, imageUrl, altText, title }) => {
+const ImagePopup: React.FC<ImagePopupProps> = ({ isOpen, onClose, imageUrl, altText, title, onSaveEdited }) => {
     const { t } = useTranslation();
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentImage, setCurrentImage] = useState(imageUrl);
+
+    useEffect(() => {
+        setCurrentImage(imageUrl);
+    }, [imageUrl]);
+
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
@@ -28,45 +37,69 @@ const ImagePopup: React.FC<ImagePopupProps> = ({ isOpen, onClose, imageUrl, altT
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-            <div
-                className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
-                onClick={onClose}
-                aria-label="Close modal overlay"
-            ></div>
+        <>
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
+                    onClick={onClose}
+                    aria-label="Close modal overlay"
+                ></div>
 
-            <div className="relative bg-[var(--color-bg-card)] rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up z-10">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-primary)] bg-[var(--color-bg-card)] shadow-sm z-20">
-                    <h3 className="text-sm font-bold text-[var(--color-text-primary)] truncate pr-4">
-                        {title || t('modals.imagePopup.title', { defaultValue: 'Image Preview' })}
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={() => window.open(imageUrl, '_blank')}
-                            className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/10 rounded-lg transition-colors cursor-pointer"
-                            title={t('modals.imagePopup.openOriginal', { defaultValue: 'Open original' })}
-                        >
-                            <Download size={18} />
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="p-1.5 text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                            title={t('modals.imagePopup.close', { defaultValue: 'Close' })}
-                        >
-                            <X size={18} />
-                        </button>
+                <div className="relative bg-[var(--color-bg-card)] rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up z-10">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-primary)] bg-[var(--color-bg-card)] shadow-sm z-20">
+                        <h3 className="text-sm font-bold text-[var(--color-text-primary)] truncate pr-4">
+                            {title || t('modals.imagePopup.title', { defaultValue: 'Image Preview' })}
+                        </h3>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 shadow-sm"
+                                title="Bild bearbeiten (Edit)"
+                            >
+                                <Pencil size={14} />
+                                <span>Bearbeiten</span>
+                            </button>
+                            <button
+                                onClick={() => window.open(currentImage, '_blank')}
+                                className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/10 rounded-lg transition-colors cursor-pointer"
+                                title={t('modals.imagePopup.openOriginal', { defaultValue: 'Open original' })}
+                            >
+                                <Download size={18} />
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="p-1.5 text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                title={t('modals.imagePopup.close', { defaultValue: 'Close' })}
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-auto custom-scrollbar bg-[var(--color-bg-secondary)] flex items-center justify-center p-4 relative min-h-[300px]">
+                        <img
+                            src={currentImage}
+                            alt={altText || t('modals.imagePopup.preview', { defaultValue: 'Preview' })}
+                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-sm"
+                        />
                     </div>
                 </div>
-
-                <div className="flex-1 overflow-auto custom-scrollbar bg-[var(--color-bg-secondary)] flex items-center justify-center p-4 relative min-h-[300px]">
-                    <img
-                        src={imageUrl}
-                        alt={altText || t('modals.imagePopup.preview', { defaultValue: 'Preview' })}
-                        className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-sm"
-                    />
-                </div>
             </div>
-        </div>,
+
+            {/* Image Editor Modal */}
+            <ImageEditorModal
+                isOpen={isEditing}
+                onClose={() => setIsEditing(false)}
+                imageUrl={currentImage}
+                onSave={(editedUrl) => {
+                    setCurrentImage(editedUrl);
+                    if (onSaveEdited) {
+                        onSaveEdited(editedUrl);
+                    }
+                    setIsEditing(false);
+                }}
+            />
+        </>,
         document.body
     );
 };
