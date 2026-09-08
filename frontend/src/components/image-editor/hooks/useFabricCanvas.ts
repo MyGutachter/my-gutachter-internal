@@ -43,6 +43,15 @@ export interface ActiveShapeProperties {
     type: string;
 }
 
+export interface CanvasTextItem {
+    id: string;
+    text: string;
+    fill: string;
+    backgroundColor?: string;
+    fontSize: number;
+    fontFamily: string;
+}
+
 export function isTextObject(obj: any): boolean {
     if (!obj) return false;
     const type = (obj.type || '').toLowerCase();
@@ -127,6 +136,12 @@ export interface EditorOverlayState {
     scaleY: number;
     /** The original clean image DataURL (before any edits were baked in) */
     originalDataUrl: string;
+    corrections?: CorrectionsState;
+    activeFilterPreset?: string;
+    globalBlur?: number;
+    baseImageAngle?: number;
+    flipX?: boolean;
+    flipY?: boolean;
 }
 
 export function normalizeImageKey(url: string): string {
@@ -178,9 +193,136 @@ export const fabricJsonStore = {
         memoryOverlayStore.set(url, state);
         try {
             sessionStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(state));
-        } catch { /* ignore quota errors */ }
+        } catch {
+            try {
+                // If quota exceeded (due to massive base64 originalDataUrl), store metadata without huge dataURL
+                const fallback = { ...state, originalDataUrl: '' };
+                sessionStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(fallback));
+            } catch { /* ignore quota errors */ }
+        }
     },
 };
+
+export function getPresetFilters(presetId: string): fabric.filters.BaseFilter<string>[] {
+    const filters: fabric.filters.BaseFilter<string>[] = [];
+    switch (presetId) {
+        case 'none': break;
+        case 'duotone_purple_yellow': filters.push(new fabric.filters.HueRotation({ rotation: 0.6 })); filters.push(new fabric.filters.Saturation({ saturation: 0.5 })); break;
+        case 'duotone_blue_red': filters.push(new fabric.filters.HueRotation({ rotation: -0.6 })); filters.push(new fabric.filters.Contrast({ contrast: 0.3 })); break;
+        case 'duotone_magenta_cyan': filters.push(new fabric.filters.HueRotation({ rotation: 0.8 })); filters.push(new fabric.filters.Saturation({ saturation: 0.4 })); break;
+        case 'duotone_dark_gold': filters.push(new fabric.filters.Sepia()); filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); filters.push(new fabric.filters.Contrast({ contrast: 0.2 })); break;
+        case 'bw_grayscale': case 'grayscale': filters.push(new fabric.filters.Grayscale()); break;
+        case 'bw_high_contrast': filters.push(new fabric.filters.Grayscale()); filters.push(new fabric.filters.Contrast({ contrast: 0.4 })); break;
+        case 'bw_noir': filters.push(new fabric.filters.Grayscale()); filters.push(new fabric.filters.Contrast({ contrast: 0.5 })); filters.push(new fabric.filters.Brightness({ brightness: -0.1 })); break;
+        case 'bw_sepia_mono': filters.push(new fabric.filters.Grayscale()); filters.push(new fabric.filters.Sepia()); break;
+        case 'bw_silvertone': filters.push(new fabric.filters.Grayscale()); filters.push(new fabric.filters.Brightness({ brightness: 0.15 })); break;
+        case 'vintage_polaroid': case 'vintage': filters.push(new fabric.filters.Sepia()); filters.push(new fabric.filters.Contrast({ contrast: 0.15 })); filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); break;
+        case 'vintage_sunny70s': filters.push(new fabric.filters.HueRotation({ rotation: 0.1 })); filters.push(new fabric.filters.Brightness({ brightness: 0.15 })); filters.push(new fabric.filters.Saturation({ saturation: 0.2 })); break;
+        case 'vintage_oldtimer': filters.push(new fabric.filters.Sepia()); filters.push(new fabric.filters.HueRotation({ rotation: -0.2 })); filters.push(new fabric.filters.Contrast({ contrast: 0.2 })); break;
+        case 'vintage_inferno': filters.push(new fabric.filters.HueRotation({ rotation: 0.4 })); filters.push(new fabric.filters.Contrast({ contrast: 0.3 })); filters.push(new fabric.filters.Saturation({ saturation: 0.4 })); break;
+        case 'vintage_snappy': filters.push(new fabric.filters.Saturation({ saturation: 0.5 })); filters.push(new fabric.filters.Contrast({ contrast: 0.25 })); break;
+        case 'smooth_soft': filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); filters.push(new fabric.filters.Contrast({ contrast: -0.1 })); break;
+        case 'smooth_glamour': filters.push(new fabric.filters.Brightness({ brightness: 0.15 })); filters.push(new fabric.filters.Saturation({ saturation: 0.15 })); break;
+        case 'smooth_matte': filters.push(new fabric.filters.Contrast({ contrast: -0.25 })); filters.push(new fabric.filters.Brightness({ brightness: 0.05 })); break;
+        case 'smooth_faded': filters.push(new fabric.filters.Saturation({ saturation: -0.3 })); filters.push(new fabric.filters.Contrast({ contrast: -0.15 })); break;
+        case 'cold_ice': case 'cold': filters.push(new fabric.filters.HueRotation({ rotation: -0.3 })); filters.push(new fabric.filters.Brightness({ brightness: 0.05 })); break;
+        case 'cold_cyan': filters.push(new fabric.filters.HueRotation({ rotation: -0.4 })); filters.push(new fabric.filters.Saturation({ saturation: 0.2 })); break;
+        case 'cold_deep_blue': filters.push(new fabric.filters.HueRotation({ rotation: -0.5 })); filters.push(new fabric.filters.Contrast({ contrast: 0.2 })); break;
+        case 'cold_nordic': filters.push(new fabric.filters.HueRotation({ rotation: -0.2 })); filters.push(new fabric.filters.Saturation({ saturation: -0.2 })); break;
+        case 'warm_sunset': filters.push(new fabric.filters.HueRotation({ rotation: 0.15 })); filters.push(new fabric.filters.Saturation({ saturation: 0.3 })); filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); break;
+        case 'warm_amber': filters.push(new fabric.filters.Sepia()); filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); break;
+        case 'warm_golden': filters.push(new fabric.filters.HueRotation({ rotation: 0.1 })); filters.push(new fabric.filters.Brightness({ brightness: 0.2 })); break;
+        case 'warm_summer': filters.push(new fabric.filters.Saturation({ saturation: 0.4 })); filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); break;
+        case 'legacy_invert': case 'invert': filters.push(new fabric.filters.Invert()); break;
+        case 'legacy_technicolor': filters.push(new fabric.filters.Contrast({ contrast: 0.4 })); filters.push(new fabric.filters.Saturation({ saturation: 0.6 })); break;
+        case 'legacy_kodachrome': filters.push(new fabric.filters.Saturation({ saturation: 0.3 })); filters.push(new fabric.filters.Contrast({ contrast: 0.2 })); break;
+        case 'legacy_techno': filters.push(new fabric.filters.Invert()); filters.push(new fabric.filters.Contrast({ contrast: 0.3 })); break;
+        case 'sepia': filters.push(new fabric.filters.Sepia()); break;
+        case 'brightness_high': filters.push(new fabric.filters.Brightness({ brightness: 0.25 })); break;
+        case 'contrast_high': filters.push(new fabric.filters.Contrast({ contrast: 0.3 })); break;
+    }
+    return filters;
+}
+
+export function rebuildAndApplyFilters(
+    img: fabric.FabricImage | null,
+    canvas: fabric.Canvas | null,
+    corr: CorrectionsState,
+    presetId: string,
+    blurVal: number
+) {
+    if (!img || !canvas) return;
+
+    const filters: fabric.filters.BaseFilter<string>[] = [];
+
+    // 1. Preset filter (if any)
+    const presetFilters = getPresetFilters(presetId);
+    filters.push(...presetFilters);
+
+    // 2. Global blur (if any)
+    if (blurVal > 0) {
+        filters.push(new fabric.filters.Blur({ blur: blurVal / 100 }));
+    }
+
+    // 3. Brightness & Exposure & Highlights & Shadows
+    const totalBrightness = Math.max(-1, Math.min(1,
+        corr.brightness +
+        (corr.exposure * 0.45) +
+        (corr.highlights * 0.2) +
+        (corr.shadows * 0.08)
+    ));
+    if (Math.abs(totalBrightness) > 0.005) {
+        filters.push(new fabric.filters.Brightness({ brightness: totalBrightness }));
+    }
+
+    // 4. Contrast & Highlights
+    const totalContrast = Math.max(-1, Math.min(1,
+        corr.contrast +
+        (corr.clarity * 0.15) -
+        (corr.highlights * 0.1)
+    ));
+    if (Math.abs(totalContrast) > 0.005) {
+        filters.push(new fabric.filters.Contrast({ contrast: totalContrast }));
+    }
+
+    // 5. Saturation
+    if (Math.abs(corr.saturation) > 0.005) {
+        filters.push(new fabric.filters.Saturation({
+            saturation: Math.max(-1, Math.min(1, corr.saturation))
+        }));
+    }
+
+    // 6. Gamma & Shadows (power curve with combined gamma + shadows lift)
+    const combinedGammaVal = corr.gamma + (corr.shadows * 0.5);
+    if (Math.abs(combinedGammaVal) > 0.005) {
+        const g = combinedGammaVal >= 0
+            ? (1 + combinedGammaVal * 1.5)
+            : (1 / (1 + Math.abs(combinedGammaVal) * 1.5));
+        const clampedG = Math.max(0.1, Math.min(4, g));
+        filters.push(new fabric.filters.Gamma({ gamma: [clampedG, clampedG, clampedG] }));
+    }
+
+    // 7. Clarity (Convolution sharpening/softening matrix)
+    if (Math.abs(corr.clarity) > 0.005) {
+        const k = corr.clarity * 0.35;
+        filters.push(new fabric.filters.Convolute({
+            matrix: [
+                0, -k, 0,
+                -k, 1 + 4 * k, -k,
+                0, -k, 0
+            ],
+            opaque: false
+        }));
+    }
+
+    img.filters = filters;
+    try {
+        img.applyFilters();
+    } catch (err) {
+        console.warn('[ImageEditor] Error in applyFilters:', err);
+    }
+    canvas.renderAll();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -211,10 +353,45 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
         brightness: 0, contrast: 0, saturation: 0, gamma: 0,
         clarity: 0, exposure: 0, shadows: 0, highlights: 0,
     });
+    const correctionsRef = useRef<CorrectionsState>({
+        brightness: 0, contrast: 0, saturation: 0, gamma: 0,
+        clarity: 0, exposure: 0, shadows: 0, highlights: 0,
+    });
     const [activeFilterPreset, setActiveFilterPreset] = useState<string>('none');
+    const activeFilterPresetRef = useRef<string>('none');
     const [globalBlur, setGlobalBlur] = useState<number>(0);
+    const globalBlurRef = useRef<number>(0);
     const [selectedTextProperties, setSelectedTextProperties] = useState<ActiveTextProperties | null>(null);
     const [selectedShapeProperties, setSelectedShapeProperties] = useState<ActiveShapeProperties | null>(null);
+    const [canvasTexts, setCanvasTexts] = useState<CanvasTextItem[]>([]);
+
+    const refreshCanvasTexts = useCallback(() => {
+        if (!canvasRef.current) {
+            setCanvasTexts([]);
+            return;
+        }
+        const objs = canvasRef.current.getObjects().filter(obj => obj !== bgImageRef.current && isTextObject(obj));
+        const items: CanvasTextItem[] = objs.map((obj: any, idx: number) => ({
+            id: obj.id || `text_${idx}`,
+            text: obj.text || '',
+            fill: (typeof obj.fill === 'string' ? obj.fill : '#FFFFFF') || '#FFFFFF',
+            backgroundColor: typeof obj.backgroundColor === 'string' ? obj.backgroundColor : 'transparent',
+            fontSize: obj.fontSize || 24,
+            fontFamily: obj.fontFamily || 'Inter',
+        }));
+        setCanvasTexts(items);
+    }, []);
+
+    const selectTextObject = useCallback((index: number) => {
+        if (!canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const objs = canvas.getObjects().filter(obj => obj !== bgImageRef.current && isTextObject(obj));
+        if (objs[index]) {
+            canvas.setActiveObject(objs[index]);
+            setSelectedTextProperties(extractTextProperties(objs[index]));
+            canvas.requestRenderAll();
+        }
+    }, []);
 
     const onSelectionChangeRef = useRef(onSelectionChange);
     useEffect(() => {
@@ -235,7 +412,8 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
         historyIndexRef.current = newHistory.length - 1;
         setCanUndo(newHistory.length > 1 && historyIndexRef.current > 0);
         setCanRedo(false);
-    }, []);
+        refreshCanvasTexts();
+    }, [refreshCanvasTexts]);
 
     const cleanupCanvas = useCallback(() => {
         if (canvasRef.current) {
@@ -277,41 +455,51 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
                         transparentCorners: false,
                     };
 
+                    const cleanOpts: any = { ...adjusted };
+                    delete cleanOpts.type;
+                    delete cleanOpts.version;
+
                     let obj: fabric.Object | null = null;
                     const type = (objData.type || '').toLowerCase();
 
                     if (type === 'rect') {
-                        obj = new fabric.Rect(adjusted);
+                        obj = new fabric.Rect(cleanOpts);
                     } else if (type === 'circle') {
-                        obj = new fabric.Circle(adjusted);
+                        obj = new fabric.Circle(cleanOpts);
                     } else if (type === 'ellipse') {
-                        obj = new fabric.Ellipse(adjusted);
+                        obj = new fabric.Ellipse(cleanOpts);
                     } else if (type === 'triangle') {
-                        obj = new fabric.Triangle(adjusted);
+                        obj = new fabric.Triangle(cleanOpts);
                     } else if (type === 'line') {
                         const x1 = (objData.x1 ?? 0) * ratio;
                         const y1 = (objData.y1 ?? 0) * ratio;
                         const x2 = (objData.x2 ?? 0) * ratio;
                         const y2 = (objData.y2 ?? 0) * ratio;
-                        obj = new fabric.Line([x1, y1, x2, y2], adjusted);
+                        obj = new fabric.Line([x1, y1, x2, y2], cleanOpts);
                     } else if (type === 'path') {
-                        obj = new fabric.Path(objData.path, adjusted);
+                        obj = new fabric.Path(objData.path, cleanOpts);
                     } else if (type === 'textbox') {
                         obj = new fabric.Textbox(objData.text ?? '', {
-                            ...adjusted,
-                            paintFirst: adjusted.paintFirst || 'stroke',
+                            ...cleanOpts,
+                            paintFirst: cleanOpts.paintFirst || 'stroke',
+                            editable: true,
+                            selectable: true,
+                            evented: true,
                         });
                     } else if (type === 'itext' || type === 'text' || type === 'i-text') {
                         obj = new fabric.IText(objData.text ?? '', {
-                            ...adjusted,
-                            paintFirst: adjusted.paintFirst || 'stroke',
+                            ...cleanOpts,
+                            paintFirst: cleanOpts.paintFirst || 'stroke',
+                            editable: true,
+                            selectable: true,
+                            evented: true,
                         });
                     } else if (type === 'polygon') {
                         const points = (objData.points || []).map((p: any) => ({
                             x: (p.x ?? 0) * ratio,
                             y: (p.y ?? 0) * ratio,
                         }));
-                        obj = new fabric.Polygon(points, adjusted);
+                        obj = new fabric.Polygon(points, cleanOpts);
                     } else if (type === 'image' || type === 'fabricimage') {
                         const src = objData.src || (objData as any)._element?.src;
                         if (src) {
@@ -319,14 +507,14 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
                                 const img = await fabric.FabricImage.fromURL(src);
                                 (img as any).src = src;
                                 img.set({
-                                    ...adjusted,
-                                    left: adjusted.left,
-                                    top: adjusted.top,
-                                    scaleX: adjusted.scaleX,
-                                    scaleY: adjusted.scaleY,
-                                    angle: adjusted.angle ?? 0,
-                                    originX: adjusted.originX || 'center',
-                                    originY: adjusted.originY || 'center',
+                                    ...cleanOpts,
+                                    left: cleanOpts.left,
+                                    top: cleanOpts.top,
+                                    scaleX: cleanOpts.scaleX,
+                                    scaleY: cleanOpts.scaleY,
+                                    angle: cleanOpts.angle ?? 0,
+                                    originX: cleanOpts.originX || 'center',
+                                    originY: cleanOpts.originY || 'center',
                                     selectable: true,
                                     evented: true,
                                     cornerColor: '#F97316',
@@ -365,6 +553,7 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
                         if (objData.shadow && !(obj.shadow instanceof fabric.Shadow)) {
                             obj.set('shadow', new fabric.Shadow(objData.shadow));
                         }
+                        obj.setCoords();
                         canvas.add(obj);
                     }
                 } catch (objErr) {
@@ -449,14 +638,40 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
             if (savedState?.overlayObjects) {
                 await applySavedOverlays(canvas, savedState.overlayObjects, savedState.scaleX, scale);
             }
+            refreshCanvasTexts();
+
+            // Restore saved rotation and flip if present
+            if (savedState?.baseImageAngle) {
+                const normalizedAngle = (savedState.baseImageAngle % 360 + 360) % 360;
+                fabricImg.set('angle', normalizedAngle);
+            }
+            if (savedState?.flipX) {
+                fabricImg.set('flipX', true);
+            }
+            if (savedState?.flipY) {
+                fabricImg.set('flipY', true);
+            }
+
+            // Restore saved corrections, filterPreset, and blur
+            const restoredCorrections: CorrectionsState = savedState?.corrections ? { ...savedState.corrections } : {
+                brightness: 0, contrast: 0, saturation: 0, gamma: 0,
+                clarity: 0, exposure: 0, shadows: 0, highlights: 0,
+            };
+            const restoredPreset = savedState?.activeFilterPreset || 'none';
+            const restoredBlur = savedState?.globalBlur || 0;
+
+            correctionsRef.current = restoredCorrections;
+            setCorrections(restoredCorrections);
+            activeFilterPresetRef.current = restoredPreset;
+            setActiveFilterPreset(restoredPreset);
+            globalBlurRef.current = restoredBlur;
+            setGlobalBlur(restoredBlur);
+
+            rebuildAndApplyFilters(fabricImg, canvas, restoredCorrections, restoredPreset, restoredBlur);
 
             canvas.renderAll();
             setIsLoaded(true);
             lastLoadedUrlRef.current = url;
-
-            setCorrections({ brightness: 0, contrast: 0, saturation: 0, gamma: 0, clarity: 0, exposure: 0, shadows: 0, highlights: 0 });
-            setActiveFilterPreset('none');
-            setGlobalBlur(0);
 
             historyRef.current = [];
             historyIndexRef.current = -1;
@@ -872,76 +1087,47 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
 
     const applyFilterPreset = useCallback((presetId: string) => {
         if (!bgImageRef.current || !canvasRef.current) return;
-        const img = bgImageRef.current;
-        img.filters = [];
-
-        switch (presetId) {
-            case 'none': break;
-            case 'duotone_purple_yellow': img.filters.push(new fabric.filters.HueRotation({ rotation: 0.6 })); img.filters.push(new fabric.filters.Saturation({ saturation: 0.5 })); break;
-            case 'duotone_blue_red': img.filters.push(new fabric.filters.HueRotation({ rotation: -0.6 })); img.filters.push(new fabric.filters.Contrast({ contrast: 0.3 })); break;
-            case 'duotone_magenta_cyan': img.filters.push(new fabric.filters.HueRotation({ rotation: 0.8 })); img.filters.push(new fabric.filters.Saturation({ saturation: 0.4 })); break;
-            case 'duotone_dark_gold': img.filters.push(new fabric.filters.Sepia()); img.filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); img.filters.push(new fabric.filters.Contrast({ contrast: 0.2 })); break;
-            case 'bw_grayscale': case 'grayscale': img.filters.push(new fabric.filters.Grayscale()); break;
-            case 'bw_high_contrast': img.filters.push(new fabric.filters.Grayscale()); img.filters.push(new fabric.filters.Contrast({ contrast: 0.4 })); break;
-            case 'bw_noir': img.filters.push(new fabric.filters.Grayscale()); img.filters.push(new fabric.filters.Contrast({ contrast: 0.5 })); img.filters.push(new fabric.filters.Brightness({ brightness: -0.1 })); break;
-            case 'bw_sepia_mono': img.filters.push(new fabric.filters.Grayscale()); img.filters.push(new fabric.filters.Sepia()); break;
-            case 'bw_silvertone': img.filters.push(new fabric.filters.Grayscale()); img.filters.push(new fabric.filters.Brightness({ brightness: 0.15 })); break;
-            case 'vintage_polaroid': case 'vintage': img.filters.push(new fabric.filters.Sepia()); img.filters.push(new fabric.filters.Contrast({ contrast: 0.15 })); img.filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); break;
-            case 'vintage_sunny70s': img.filters.push(new fabric.filters.HueRotation({ rotation: 0.1 })); img.filters.push(new fabric.filters.Brightness({ brightness: 0.15 })); img.filters.push(new fabric.filters.Saturation({ saturation: 0.2 })); break;
-            case 'vintage_oldtimer': img.filters.push(new fabric.filters.Sepia()); img.filters.push(new fabric.filters.HueRotation({ rotation: -0.2 })); img.filters.push(new fabric.filters.Contrast({ contrast: 0.2 })); break;
-            case 'vintage_inferno': img.filters.push(new fabric.filters.HueRotation({ rotation: 0.4 })); img.filters.push(new fabric.filters.Contrast({ contrast: 0.3 })); img.filters.push(new fabric.filters.Saturation({ saturation: 0.4 })); break;
-            case 'vintage_snappy': img.filters.push(new fabric.filters.Saturation({ saturation: 0.5 })); img.filters.push(new fabric.filters.Contrast({ contrast: 0.25 })); break;
-            case 'smooth_soft': img.filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); img.filters.push(new fabric.filters.Contrast({ contrast: -0.1 })); break;
-            case 'smooth_glamour': img.filters.push(new fabric.filters.Brightness({ brightness: 0.15 })); img.filters.push(new fabric.filters.Saturation({ saturation: 0.15 })); break;
-            case 'smooth_matte': img.filters.push(new fabric.filters.Contrast({ contrast: -0.25 })); img.filters.push(new fabric.filters.Brightness({ brightness: 0.05 })); break;
-            case 'smooth_faded': img.filters.push(new fabric.filters.Saturation({ saturation: -0.3 })); img.filters.push(new fabric.filters.Contrast({ contrast: -0.15 })); break;
-            case 'cold_ice': case 'cold': img.filters.push(new fabric.filters.HueRotation({ rotation: -0.3 })); img.filters.push(new fabric.filters.Brightness({ brightness: 0.05 })); break;
-            case 'cold_cyan': img.filters.push(new fabric.filters.HueRotation({ rotation: -0.4 })); img.filters.push(new fabric.filters.Saturation({ saturation: 0.2 })); break;
-            case 'cold_deep_blue': img.filters.push(new fabric.filters.HueRotation({ rotation: -0.5 })); img.filters.push(new fabric.filters.Contrast({ contrast: 0.2 })); break;
-            case 'cold_nordic': img.filters.push(new fabric.filters.HueRotation({ rotation: -0.2 })); img.filters.push(new fabric.filters.Saturation({ saturation: -0.2 })); break;
-            case 'warm_sunset': img.filters.push(new fabric.filters.HueRotation({ rotation: 0.15 })); img.filters.push(new fabric.filters.Saturation({ saturation: 0.3 })); img.filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); break;
-            case 'warm_amber': img.filters.push(new fabric.filters.Sepia()); img.filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); break;
-            case 'warm_golden': img.filters.push(new fabric.filters.HueRotation({ rotation: 0.1 })); img.filters.push(new fabric.filters.Brightness({ brightness: 0.2 })); break;
-            case 'warm_summer': img.filters.push(new fabric.filters.Saturation({ saturation: 0.4 })); img.filters.push(new fabric.filters.Brightness({ brightness: 0.1 })); break;
-            case 'legacy_invert': case 'invert': img.filters.push(new fabric.filters.Invert()); break;
-            case 'legacy_technicolor': img.filters.push(new fabric.filters.Contrast({ contrast: 0.4 })); img.filters.push(new fabric.filters.Saturation({ saturation: 0.6 })); break;
-            case 'legacy_kodachrome': img.filters.push(new fabric.filters.Saturation({ saturation: 0.3 })); img.filters.push(new fabric.filters.Contrast({ contrast: 0.2 })); break;
-            case 'legacy_techno': img.filters.push(new fabric.filters.Invert()); img.filters.push(new fabric.filters.Contrast({ contrast: 0.3 })); break;
-            case 'sepia': img.filters.push(new fabric.filters.Sepia()); break;
-            case 'brightness_high': img.filters.push(new fabric.filters.Brightness({ brightness: 0.25 })); break;
-            case 'contrast_high': img.filters.push(new fabric.filters.Contrast({ contrast: 0.3 })); break;
-        }
-
-        img.applyFilters();
-        canvasRef.current.renderAll();
+        activeFilterPresetRef.current = presetId;
         setActiveFilterPreset(presetId);
+        rebuildAndApplyFilters(
+            bgImageRef.current,
+            canvasRef.current,
+            correctionsRef.current,
+            presetId,
+            globalBlurRef.current
+        );
         saveSnapshot();
     }, [saveSnapshot]);
 
     const applyCorrections = useCallback((newCorrections: Partial<CorrectionsState>) => {
         if (!bgImageRef.current || !canvasRef.current) return;
-        const updated = { ...corrections, ...newCorrections };
+        const updated = { ...correctionsRef.current, ...newCorrections };
+        correctionsRef.current = updated;
         setCorrections(updated);
-        const img = bgImageRef.current;
-        img.filters = [];
-        const totalBrightness = updated.brightness + (updated.exposure * 0.7) + (updated.highlights * 0.25) + (updated.shadows * 0.15);
-        if (totalBrightness !== 0) img.filters.push(new fabric.filters.Brightness({ brightness: Math.max(-1, Math.min(1, totalBrightness)) }));
-        const totalContrast = updated.contrast + (updated.clarity * 0.5);
-        if (totalContrast !== 0) img.filters.push(new fabric.filters.Contrast({ contrast: Math.max(-1, Math.min(1, totalContrast)) }));
-        if (updated.saturation !== 0) img.filters.push(new fabric.filters.Saturation({ saturation: updated.saturation }));
-        if (updated.gamma !== 0) { const g = Math.max(0.1, 1 + updated.gamma); img.filters.push(new fabric.filters.Gamma({ gamma: [g, g, g] })); }
-        img.applyFilters();
-        canvasRef.current.renderAll();
-    }, [corrections]);
+        rebuildAndApplyFilters(
+            bgImageRef.current,
+            canvasRef.current,
+            updated,
+            activeFilterPresetRef.current,
+            globalBlurRef.current
+        );
+    }, []);
+
+    const commitCorrectionsSnapshot = useCallback(() => {
+        saveSnapshot();
+    }, [saveSnapshot]);
 
     const applyGlobalBlur = useCallback((blurVal: number) => {
         if (!bgImageRef.current || !canvasRef.current) return;
+        globalBlurRef.current = blurVal;
         setGlobalBlur(blurVal);
-        const img = bgImageRef.current;
-        img.filters = img.filters.filter(f => !(f instanceof fabric.filters.Blur));
-        if (blurVal > 0) img.filters.push(new fabric.filters.Blur({ blur: blurVal / 100 }));
-        img.applyFilters();
-        canvasRef.current.renderAll();
+        rebuildAndApplyFilters(
+            bgImageRef.current,
+            canvasRef.current,
+            correctionsRef.current,
+            activeFilterPresetRef.current,
+            blurVal
+        );
     }, []);
 
     const applyRotation = useCallback((targetAngle: number) => {
@@ -998,6 +1184,15 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
         try {
             if (baseW && baseH) { canvas.setZoom(1); canvas.setDimensions({ width: baseW, height: baseH }); }
             canvas.discardActiveObject();
+            if (bgImageRef.current) {
+                rebuildAndApplyFilters(
+                    bgImageRef.current,
+                    canvas,
+                    correctionsRef.current,
+                    activeFilterPresetRef.current,
+                    globalBlurRef.current
+                );
+            }
             canvas.renderAll();
             return canvas.toDataURL({ format: format === 'jpeg' ? 'jpeg' : 'png', quality, multiplier: 2 });
         } catch (err) {
@@ -1023,7 +1218,25 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
             const overlayObjects = canvas.getObjects().filter(obj => obj !== bgImageRef.current);
             return {
                 overlayObjects: JSON.stringify(overlayObjects.map(obj => {
-                    const objData = obj.toObject(['src', 'strokeDashArray']);
+                    const objData = obj.toObject([
+                        'src',
+                        'strokeDashArray',
+                        'text',
+                        'fontFamily',
+                        'fontSize',
+                        'fontWeight',
+                        'fontStyle',
+                        'underline',
+                        'linethrough',
+                        'textAlign',
+                        'fill',
+                        'stroke',
+                        'strokeWidth',
+                        'backgroundColor',
+                        'padding',
+                        'paintFirst',
+                        'shadow',
+                    ]);
                     if (obj instanceof fabric.FabricImage || (obj.type || '').toLowerCase() === 'image') {
                         const img = obj as any;
                         const src = img.src || (img.getSrc ? img.getSrc() : img._element?.src);
@@ -1038,6 +1251,12 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
                 // Store the original clean image DataURL so re-editing always
                 // loads the un-baked photo rather than the exported flat JPEG.
                 originalDataUrl: originalCleanDataUrlRef.current,
+                corrections: { ...correctionsRef.current },
+                activeFilterPreset: activeFilterPresetRef.current,
+                globalBlur: globalBlurRef.current,
+                baseImageAngle: bgImageRef.current?.angle || 0,
+                flipX: !!bgImageRef.current?.flipX,
+                flipY: !!bgImageRef.current?.flipY,
             };
         } catch (err) {
             console.error('[ImageEditor] Failed to export overlay JSON', err);
@@ -1127,6 +1346,14 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
             originalCleanDataUrlRef.current = croppedDataUrl;
             lastLoadedUrlRef.current = croppedDataUrl;
 
+            const emptyCorrections = { brightness: 0, contrast: 0, saturation: 0, gamma: 0, clarity: 0, exposure: 0, shadows: 0, highlights: 0 };
+            correctionsRef.current = emptyCorrections;
+            setCorrections(emptyCorrections);
+            activeFilterPresetRef.current = 'none';
+            setActiveFilterPreset('none');
+            globalBlurRef.current = 0;
+            setGlobalBlur(0);
+
             historyRef.current = [];
             historyIndexRef.current = -1;
             saveSnapshot();
@@ -1144,9 +1371,10 @@ export function useFabricCanvas({ imageUrl, onSelectionChange }: UseFabricCanvas
         undo, redo, zoomIn, zoomOut, setZoom,
         deleteSelected, addShape, addArrowSticker, addCustomStickerImage, addText,
         selectedTextProperties, updateActiveText, duplicateActiveObject, deselectAll,
+        canvasTexts, selectTextObject, refreshCanvasTexts,
         selectedShapeProperties, updateActiveShape,
         setDrawingMode, applyFilterPreset, activeFilterPreset,
-        corrections, applyCorrections, globalBlur, applyGlobalBlur,
+        corrections, applyCorrections, commitCorrectionsSnapshot, globalBlur, applyGlobalBlur,
         rotateBaseImage, setBaseImageAngle, flipBaseImage,
         exportCanvas, exportCanvasJson, canvasDimensions,
         applyCrop,

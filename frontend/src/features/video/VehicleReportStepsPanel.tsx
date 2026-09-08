@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Eye, Trash2, CheckCircle, ChevronDown, ChevronUp, Car, FileText, ShieldCheck, Image, ClipboardCheck, Upload } from 'lucide-react';
+import { Camera, Eye, Trash2, CheckCircle, ChevronDown, ChevronUp, Car, FileText, ShieldCheck, Image, ClipboardCheck, Upload, CarFront } from 'lucide-react';
 import { API_BASE_URL } from './videoConfig';
 import type { Order } from './videoTypes';
 import { useReportStore } from '../../store/reportStore';
 import { uploadScreenshot } from './services/orderService';
 
+export const SLOT_TO_GUIDE_INDEX: Record<string, number> = {
+    Overview_diagonal_front_left: 4,
+    Overview_diagonal_front_right: 5,
+    Overview_diagonal_rear_left: 6,
+    Overview_diagonal_rear_right: 7,
+    left_sill: 8,
+    Right_sill: 9,
+};
 
 interface VehicleReportStepsPanelProps {
     order: Order | null;
@@ -13,6 +21,7 @@ interface VehicleReportStepsPanelProps {
     onCapture: (slotId: string) => void;
     onDelete: (filename: string) => void;
     onView: (filename: string) => void;
+    onSelectGuide?: (guideIndex: number) => void;
 }
 
 // ─── Slot and Field Aliases for Field Configuration ──────────────────────────
@@ -144,6 +153,8 @@ const SlotRow = ({
     onDelete,
     onView,
     onUploadSuccess,
+    guideIndex,
+    onSelectGuide,
 }: {
     slot: { id: string; label: string; labelEn: string };
     filename: string | null;
@@ -152,6 +163,8 @@ const SlotRow = ({
     onDelete: (f: string) => void;
     onView: (f: string) => void;
     onUploadSuccess?: () => void;
+    guideIndex?: number;
+    onSelectGuide?: (guideIndex: number) => void;
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -223,6 +236,16 @@ const SlotRow = ({
                     </>
                 ) : (
                     <>
+                        {guideIndex !== undefined && onSelectGuide && (
+                            <button
+                                type="button"
+                                onClick={() => onSelectGuide(guideIndex)}
+                                className="p-1.5 bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-hover)] text-[var(--color-primary-orange)] rounded-lg transition-colors cursor-pointer border border-[var(--color-border-primary)]"
+                                title="Fahrzeug-Hilfslinie für diese Aufnahme aktivieren"
+                            >
+                                <CarFront size={11} />
+                            </button>
+                        )}
                         <button
                             onClick={onCapture}
                             className="flex items-center gap-1 px-2 py-1.5 bg-[var(--color-primary-orange)] hover:bg-[var(--color-primary-orange)]/90 text-white rounded-lg text-[9px] font-bold transition-all shadow-sm cursor-pointer"
@@ -258,9 +281,10 @@ const StepAccordion: React.FC<{
     onDelete: (filename: string) => void;
     onView: (filename: string) => void;
     onUploadSuccess?: () => void;
+    onSelectGuide?: (guideIndex: number) => void;
     isOpen: boolean;
     onToggle: () => void;
-}> = ({ step, order, roomId, savedScreenshots, isHidden, onCapture, onDelete, onView, onUploadSuccess, isOpen, onToggle }) => {
+}> = ({ step, order, roomId, savedScreenshots, isHidden, onCapture, onDelete, onView, onUploadSuccess, onSelectGuide, isOpen, onToggle }) => {
     const Icon = step.icon;
 
     const getFilename = (slotId: string): string | null => {
@@ -345,6 +369,8 @@ const StepAccordion: React.FC<{
                                     onDelete={onDelete}
                                     onView={onView}
                                     onUploadSuccess={onUploadSuccess}
+                                    guideIndex={SLOT_TO_GUIDE_INDEX[slot.id]}
+                                    onSelectGuide={onSelectGuide}
                                 />
                             ))}
                         </div>
@@ -384,6 +410,7 @@ export const VehicleReportStepsPanel: React.FC<VehicleReportStepsPanelProps> = (
     onCapture,
     onDelete,
     onView,
+    onSelectGuide,
 }) => {
     // Start with first two steps open
     const [openSteps, setOpenSteps] = useState<Set<string>>(new Set(['step1', 'step2']));
@@ -457,6 +484,7 @@ export const VehicleReportStepsPanel: React.FC<VehicleReportStepsPanelProps> = (
                         onCapture={onCapture}
                         onDelete={onDelete}
                         onView={onView}
+                        onSelectGuide={onSelectGuide}
                         isOpen={openSteps.has(step.id)}
                         onToggle={() => toggleStep(step.id)}
                     />

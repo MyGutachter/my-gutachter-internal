@@ -83,11 +83,14 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({
         duplicateActiveObject,
         deleteSelected,
         deselectAll,
+        canvasTexts,
+        selectTextObject,
         setDrawingMode,
         applyFilterPreset,
         activeFilterPreset,
         corrections,
         applyCorrections,
+        commitCorrectionsSnapshot,
         globalBlur,
         applyGlobalBlur,
         rotateBaseImage,
@@ -108,6 +111,13 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({
             setDrawingMode(false);
         }
     }, [activeTool, setDrawingMode]);
+
+    // When switching to 'text' tool, if nothing is selected but text objects exist on canvas, auto-select the latest one
+    useEffect(() => {
+        if (activeTool === 'text' && !selectedTextProperties && canvasTexts && canvasTexts.length > 0) {
+            selectTextObject(canvasTexts.length - 1);
+        }
+    }, [activeTool, selectedTextProperties, canvasTexts, selectTextObject]);
 
     // Initialize cropRect when canvas dimensions or crop tool opens
     useEffect(() => {
@@ -294,6 +304,8 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({
                 {activeTool === 'text' && (
                     <TextPanel
                         selectedText={selectedTextProperties}
+                        canvasTexts={canvasTexts}
+                        onSelectText={selectTextObject}
                         onAddText={addText}
                         onUpdateText={updateActiveText}
                         onDuplicateText={duplicateActiveObject}
@@ -312,6 +324,7 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({
                     <CorrectionsPanel
                         corrections={corrections}
                         onChangeCorrections={applyCorrections}
+                        onCommitCorrections={commitCorrectionsSnapshot}
                     />
                 )}
                 {activeTool === 'blur' && (

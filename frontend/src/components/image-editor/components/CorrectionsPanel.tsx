@@ -6,11 +6,13 @@ import type { CorrectionsState } from '../hooks/useFabricCanvas';
 interface CorrectionsPanelProps {
     corrections: CorrectionsState;
     onChangeCorrections: (corrections: Partial<CorrectionsState>) => void;
+    onCommitCorrections?: () => void;
 }
 
 export const CorrectionsPanel: React.FC<CorrectionsPanelProps> = ({
     corrections,
     onChangeCorrections,
+    onCommitCorrections,
 }) => {
     const { t } = useTranslation();
 
@@ -25,23 +27,46 @@ export const CorrectionsPanel: React.FC<CorrectionsPanelProps> = ({
             shadows: 0,
             highlights: 0,
         });
+        onCommitCorrections?.();
     };
 
     const renderSlider = (
         label: string,
-        value: number,
+        value: number = 0,
         onChange: (val: number) => void,
         min = -1,
         max = 1,
-        step = 0.05
+        step = 0.01
     ) => {
-        const displayVal = Math.round(value * 100);
+        const displayVal = Math.round((value ?? 0) * 100);
+        const isModified = Math.abs(displayVal) > 0;
+
         return (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 group">
                 <div className="flex justify-between text-xs font-medium text-gray-300">
-                    <span>{label}</span>
-                    <span className={displayVal !== 0 ? "text-orange-400 font-bold" : "text-gray-400"}>
-                        {displayVal}
+                    <span
+                        className="cursor-pointer hover:text-orange-300 transition-colors select-none"
+                        title={t('imageEditor.corrections.doubleClickReset', 'Doppelklick zum Zurücksetzen')}
+                        onDoubleClick={() => {
+                            onChange(0);
+                            onCommitCorrections?.();
+                        }}
+                    >
+                        {label}
+                    </span>
+                    <span
+                        className={`text-[11px] font-mono cursor-pointer px-1.5 py-0.5 rounded transition-colors ${
+                            isModified
+                                ? "text-orange-400 font-bold bg-orange-500/10 border border-orange-500/30"
+                                : "text-gray-400"
+                        }`}
+                        title={t('imageEditor.corrections.doubleClickReset', 'Doppelklick zum Zurücksetzen')}
+                        onDoubleClick={() => {
+                            onChange(0);
+                            onCommitCorrections?.();
+                        }}
+                    >
+                        {displayVal > 0 ? `+${displayVal}` : displayVal}
                     </span>
                 </div>
                 <input
@@ -49,8 +74,11 @@ export const CorrectionsPanel: React.FC<CorrectionsPanelProps> = ({
                     min={min}
                     max={max}
                     step={step}
-                    value={value}
+                    value={value ?? 0}
                     onChange={(e) => onChange(parseFloat(e.target.value))}
+                    onPointerUp={() => onCommitCorrections?.()}
+                    onKeyUp={() => onCommitCorrections?.()}
+                    onTouchEnd={() => onCommitCorrections?.()}
                     className="w-full h-1.5 bg-gray-700/80 rounded-lg appearance-none cursor-pointer accent-orange-500 hover:accent-orange-400 transition-colors"
                 />
             </div>
@@ -137,4 +165,4 @@ export const CorrectionsPanel: React.FC<CorrectionsPanelProps> = ({
         </div>
     );
 };
-
+export default CorrectionsPanel;

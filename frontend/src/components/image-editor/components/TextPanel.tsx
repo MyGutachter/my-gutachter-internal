@@ -16,10 +16,12 @@ import {
     Layers,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { ActiveTextProperties } from '../hooks/useFabricCanvas';
+import type { ActiveTextProperties, CanvasTextItem } from '../hooks/useFabricCanvas';
 
 export interface TextPanelProps {
     selectedText: ActiveTextProperties | null;
+    canvasTexts?: CanvasTextItem[];
+    onSelectText?: (index: number) => void;
     onAddText: (text: string, options: Partial<ActiveTextProperties>) => void;
     onUpdateText: (options: Partial<ActiveTextProperties>) => void;
     onDuplicateText?: () => void;
@@ -223,6 +225,8 @@ const PRESETS: PresetItem[] = [
 
 export const TextPanel: React.FC<TextPanelProps> = ({
     selectedText,
+    canvasTexts,
+    onSelectText,
     onAddText,
     onUpdateText,
     onDuplicateText,
@@ -469,6 +473,58 @@ export const TextPanel: React.FC<TextPanelProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* Existing Texts on Canvas */}
+            {canvasTexts && canvasTexts.length > 0 && (
+                <div className="space-y-1.5 p-2.5 rounded-xl bg-gray-900/90 border border-gray-700/80 shadow-inner">
+                    <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-orange-400" />
+                            <span>{t('imageEditor.text.existingTexts', 'Texte auf Bild')} ({canvasTexts.length})</span>
+                        </label>
+                        {selectedText && onDeselect && (
+                            <button
+                                type="button"
+                                onClick={onDeselect}
+                                className="text-[10px] text-orange-400 hover:text-orange-300 font-semibold transition-colors flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30"
+                            >
+                                <Plus className="w-2.5 h-2.5" />
+                                {t('imageEditor.text.newTextBtn', 'Neu')}
+                            </button>
+                        )}
+                    </div>
+                    <div className="space-y-1 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+                        {canvasTexts.map((item, idx) => {
+                            const isItemActive = selectedText && selectedText.text === item.text;
+                            return (
+                                <button
+                                    key={item.id || idx}
+                                    type="button"
+                                    onClick={() => onSelectText?.(idx)}
+                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
+                                        isItemActive
+                                            ? 'bg-orange-500/25 border-orange-500 text-white font-semibold ring-1 ring-orange-500/50 shadow-sm'
+                                            : 'bg-gray-800/80 border-gray-700/70 text-gray-300 hover:bg-gray-700/80 hover:text-white'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <span
+                                            className="w-3 h-3 rounded-full border border-gray-500 flex-shrink-0"
+                                            style={{ backgroundColor: item.fill || '#FFFFFF' }}
+                                        />
+                                        <span className="truncate text-xs">
+                                            {item.text || `[Text #${idx + 1}]`}
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] text-gray-400 font-mono flex-shrink-0 ml-2">
+                                        {item.fontSize}px
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Quick Presets / Gutachter Badges */}
             <div className="space-y-1.5">

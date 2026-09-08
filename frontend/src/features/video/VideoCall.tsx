@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { AlertTriangle, Camera, CarFront, ChevronLeft, ChevronRight, Copy, Download, Eye, EyeOff, Gauge, Images, Mail, Mic, MicOff, Phone, RefreshCw, Smartphone, SwitchCamera, Trash2, User, Users, Video, VideoOff, WifiOff, X, Zap, ZapOff, ZoomIn } from 'lucide-react';
+import { AlertTriangle, Camera, CarFront, ChevronLeft, ChevronRight, Copy, Download, Eye, EyeOff, Gauge, Images, LayoutGrid, Mail, Mic, MicOff, Phone, RefreshCw, Smartphone, SwitchCamera, Trash2, User, Users, Video, VideoOff, WifiOff, X, Zap, ZapOff, ZoomIn } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { CarOverlay, getPartIdFromKey } from './CarOverlay';
 import { useWebRTC, type StreamQualityInfo } from './useWebRTC';
 import { UvvChecklistPanel } from './UvvChecklistPanel';
 import { UvvInlineChecklistPanel } from './UvvInlineChecklistPanel';
-import { VehicleReportStepsPanel } from './VehicleReportStepsPanel';
+import { VehicleReportStepsPanel, SLOT_TO_GUIDE_INDEX } from './VehicleReportStepsPanel';
 import ReportFormPage from '../../pages/ReportFormPage';
 import { deleteScreenshot, getOrder, getScreenshots, uploadRecording, uploadScreenshot } from './videoApi';
 import { API_BASE_URL } from './videoConfig';
@@ -23,9 +23,32 @@ import car5 from '../../assets/car_placeholder/car-5.png';
 import car6 from '../../assets/car_placeholder/car-6.png';
 import car7 from '../../assets/car_placeholder/car-7.png';
 import car8 from '../../assets/car_placeholder/car-8.png';
+import car9 from '../../assets/car_placeholder/car-9.png';
+import car10 from '../../assets/car_placeholder/car-10.png';
 import OpenOtherAppTab from '../../components/OpenOtherAppTab';
 
-const CAR_PLACEHOLDERS = [car1, car2, car3, car4, car5, car6, car7, car8];
+export interface CarGuideTemplate {
+    id: string;
+    src: string;
+    labelKey: string;
+    defaultLabel: string;
+    category: 'overview' | 'side' | 'diagonal' | 'skirt';
+}
+
+export const CAR_GUIDES: CarGuideTemplate[] = [
+    { id: 'front', src: car1, labelKey: 'videoCall.guides.front', defaultLabel: 'Frontansicht', category: 'overview' },
+    { id: 'rear', src: car2, labelKey: 'videoCall.guides.rear', defaultLabel: 'Heckansicht', category: 'overview' },
+    { id: 'side_left', src: car3, labelKey: 'videoCall.guides.sideLeft', defaultLabel: 'Seite Links', category: 'side' },
+    { id: 'side_right', src: car4, labelKey: 'videoCall.guides.sideRight', defaultLabel: 'Seite Rechts', category: 'side' },
+    { id: 'diag_fl', src: car5, labelKey: 'videoCall.guides.diagFrontLeft', defaultLabel: 'Schräg Vorne Links', category: 'diagonal' },
+    { id: 'diag_fr', src: car6, labelKey: 'videoCall.guides.diagFrontRight', defaultLabel: 'Schräg Vorne Rechts', category: 'diagonal' },
+    { id: 'diag_rl', src: car7, labelKey: 'videoCall.guides.diagRearLeft', defaultLabel: 'Schräg Hinten Links', category: 'diagonal' },
+    { id: 'diag_rr', src: car8, labelKey: 'videoCall.guides.diagRearRight', defaultLabel: 'Schräg Hinten Rechts', category: 'diagonal' },
+    { id: 'side_skirt_left', src: car9, labelKey: 'videoCall.guides.sideSkirtLeft', defaultLabel: 'Seitenschweller Links', category: 'skirt' },
+    { id: 'side_skirt_right', src: car10, labelKey: 'videoCall.guides.sideSkirtRight', defaultLabel: 'Seitenschweller Rechts', category: 'skirt' },
+];
+
+const CAR_PLACEHOLDERS = CAR_GUIDES.map(g => g.src);
 
 
 // Sub-component for individual remote video
@@ -300,6 +323,7 @@ export const VideoCall = () => {
     const [overlayVisible, setOverlayVisible] = useState(true);
     const [overlayOpacity, setOverlayOpacity] = useState(50);
     const [placeholderIndex, setPlaceholderIndex] = useState<number>(-1);
+    const [showGuideOverview, setShowGuideOverview] = useState(false);
 
     // Flashlight State
     const [isFlashlightOn, setIsFlashlightOn] = useState(false);
@@ -2273,14 +2297,14 @@ export const VideoCall = () => {
                                 )}
 
                                 {placeholderIndex !== -1 && overlayVisible && (
-                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8 z-20">
+                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-2 sm:p-4 landscape:p-1 z-20 overflow-hidden">
                                         <img
                                             src={CAR_PLACEHOLDERS[placeholderIndex]}
-                                            alt="car placeholder guide"
-                                            className="w-full h-full object-contain select-none opacity-transition"
+                                            alt={CAR_GUIDES[placeholderIndex]?.defaultLabel || "car placeholder guide"}
+                                            className="w-full h-full max-h-[92%] max-w-[96%] object-contain select-none opacity-transition pointer-events-none"
                                             style={{
                                                 opacity: overlayOpacity / 100,
-                                                filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.5))',
+                                                filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.75)) drop-shadow(0 0 2px rgba(255,255,255,0.4))',
                                             }}
                                             draggable={false}
                                         />
@@ -2298,14 +2322,14 @@ export const VideoCall = () => {
                                     muted={true}
                                 />
                                 {placeholderIndex !== -1 && overlayVisible && (
-                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8 z-20">
+                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-2 sm:p-4 landscape:p-1 z-20 overflow-hidden">
                                         <img
                                             src={CAR_PLACEHOLDERS[placeholderIndex]}
-                                            alt="car placeholder guide"
-                                            className="w-full h-full object-contain select-none"
+                                            alt={CAR_GUIDES[placeholderIndex]?.defaultLabel || "car placeholder guide"}
+                                            className="w-full h-full max-h-[92%] max-w-[96%] object-contain select-none pointer-events-none"
                                             style={{
                                                 opacity: overlayOpacity / 100,
-                                                filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.5))',
+                                                filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.75)) drop-shadow(0 0 2px rgba(255,255,255,0.4))',
                                             }}
                                             draggable={false}
                                         />
@@ -2335,9 +2359,74 @@ export const VideoCall = () => {
                             </div>
                         )}
 
+                        {/* Guide Overview Modal / Drawer */}
+                        {showGuideOverview && !isGuest && (
+                            <div className="absolute inset-0 z-40 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
+                                <div className="bg-dark-900/95 border border-white/15 rounded-2xl shadow-2xl p-4 sm:p-5 max-w-2xl w-full max-h-[85vh] flex flex-col text-white backdrop-blur-xl">
+                                    <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3 flex-shrink-0">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
+                                                <CarFront size={16} />
+                                            </div>
+                                            <h3 className="text-sm font-bold tracking-tight">
+                                                {t('videoCall.guideOverview', { defaultValue: 'Fahrzeug-Vorlagen Übersicht' })}
+                                            </h3>
+                                            <span className="text-[10px] bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-full font-bold">
+                                                10 {t('videoCall.selectGuide', { defaultValue: 'Winkel' })}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowGuideOverview(false)}
+                                            className="p-1 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+
+                                    {/* Grid of 10 guide angles */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 overflow-y-auto custom-scrollbar p-1">
+                                        {CAR_GUIDES.map((guide, idx) => {
+                                            const isSelected = placeholderIndex === idx;
+                                            return (
+                                                <button
+                                                    key={guide.id}
+                                                    onClick={() => {
+                                                        setPlaceholderIndex(idx);
+                                                        setOverlayVisible(true);
+                                                        sendMessage('sync-overlay', { placeholderIndex: idx, visible: true });
+                                                        setShowGuideOverview(false);
+                                                    }}
+                                                    className={clsx(
+                                                        "group relative flex flex-col items-center p-2 rounded-xl border transition-all text-left cursor-pointer",
+                                                        isSelected
+                                                            ? "bg-primary/25 border-primary shadow-[0_0_12px_rgba(255,107,53,0.35)] ring-1 ring-primary"
+                                                            : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                                                    )}
+                                                >
+                                                    <div className="w-full aspect-video bg-black/60 rounded-lg flex items-center justify-center p-1 overflow-hidden border border-white/5 group-hover:border-white/15 transition-all">
+                                                        <img
+                                                            src={guide.src}
+                                                            alt={guide.defaultLabel}
+                                                            className="w-full h-full object-contain filter drop-shadow group-hover:scale-105 transition-transform"
+                                                        />
+                                                    </div>
+                                                    <span className="text-[11px] font-semibold mt-2 text-center text-white/90 line-clamp-1 w-full">
+                                                        {t(guide.labelKey, { defaultValue: guide.defaultLabel })}
+                                                    </span>
+                                                    <span className="text-[9px] text-white/40 mt-0.5 font-mono">
+                                                        #{idx + 1}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Overlay Controls */}
                         {placeholderIndex !== -1 && (
-                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 z-30 transition-all hover:bg-black/80 shadow-2xl">
+                            <div className="absolute bottom-3 landscape:bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 px-3 py-1.5 sm:px-4 sm:py-2 bg-black/75 backdrop-blur-md rounded-full border border-white/15 z-30 transition-all hover:bg-black/90 shadow-2xl max-w-[95vw]">
                                 <button
                                     onClick={() => {
                                         const next = !overlayVisible;
@@ -2345,12 +2434,12 @@ export const VideoCall = () => {
                                         sendMessage('sync-overlay', { visible: next });
                                     }}
                                     className={clsx(
-                                        "p-1.5 rounded-full transition-all",
+                                        "p-1.5 rounded-full transition-all flex-shrink-0 cursor-pointer",
                                         overlayVisible ? "bg-primary text-white" : "bg-dark-700 text-gray-400 hover:text-white"
                                     )}
                                     title={overlayVisible ? t('videoCall.hideOverlay') : t('videoCall.showOverlay')}
                                 >
-                                    {overlayVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+                                    {overlayVisible ? <Eye size={15} /> : <EyeOff size={15} />}
                                 </button>
 
                                 {(!isGuest) && (
@@ -2358,34 +2447,54 @@ export const VideoCall = () => {
                                         <button
                                             onClick={() => {
                                                 let nextIndex = placeholderIndex - 1;
-                                                if (nextIndex < -1) nextIndex = CAR_PLACEHOLDERS.length - 1;
+                                                if (nextIndex < 0) nextIndex = CAR_PLACEHOLDERS.length - 1;
                                                 setPlaceholderIndex(nextIndex);
                                                 sendMessage('sync-overlay', { placeholderIndex: nextIndex });
                                             }}
-                                            className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                                            className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all cursor-pointer"
                                             title={t('videoCall.prevPlaceholder')}
                                         >
-                                            <ChevronLeft size={18} />
+                                            <ChevronLeft size={16} />
                                         </button>
-                                        <span className="text-[10px] font-bold text-white/50 w-12 text-center uppercase tracking-tighter">
-                                            {`Guide ${placeholderIndex + 1}`}
-                                        </span>
+
+                                        <button
+                                            onClick={() => setShowGuideOverview(prev => !prev)}
+                                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
+                                            title={t('videoCall.guideOverview', { defaultValue: 'Fahrzeug-Vorlagen Übersicht' })}
+                                        >
+                                            <LayoutGrid size={13} className="text-primary flex-shrink-0" />
+                                            <span className="text-[11px] font-semibold text-white/90 max-w-[120px] sm:max-w-[170px] truncate">
+                                                {t(CAR_GUIDES[placeholderIndex]?.labelKey || '', { defaultValue: CAR_GUIDES[placeholderIndex]?.defaultLabel || `Guide ${placeholderIndex + 1}` })}
+                                            </span>
+                                            <span className="text-[10px] text-white/50 font-mono">
+                                                {`(${placeholderIndex + 1}/${CAR_PLACEHOLDERS.length})`}
+                                            </span>
+                                        </button>
+
                                         <button
                                             onClick={() => {
                                                 let nextIndex = placeholderIndex + 1;
-                                                if (nextIndex >= CAR_PLACEHOLDERS.length) nextIndex = -1;
+                                                if (nextIndex >= CAR_PLACEHOLDERS.length) nextIndex = 0;
                                                 setPlaceholderIndex(nextIndex);
                                                 sendMessage('sync-overlay', { placeholderIndex: nextIndex });
                                             }}
-                                            className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                                            className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all cursor-pointer"
                                             title={t('videoCall.nextPlaceholder')}
                                         >
-                                            <ChevronRight size={18} />
+                                            <ChevronRight size={16} />
                                         </button>
                                     </div>
                                 )}
 
-                                <div className={clsx("flex items-center gap-3 transition-opacity", !overlayVisible && "opacity-30 pointer-events-none")}>
+                                {isGuest && (
+                                    <div className="flex items-center gap-1.5 border-l border-white/10 pl-2">
+                                        <span className="text-[11px] font-semibold text-white/90">
+                                            {t(CAR_GUIDES[placeholderIndex]?.labelKey || '', { defaultValue: CAR_GUIDES[placeholderIndex]?.defaultLabel || `Guide ${placeholderIndex + 1}` })}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className={clsx("flex items-center gap-2 transition-opacity border-l border-white/10 pl-2", !overlayVisible && "opacity-30 pointer-events-none")}>
                                     <input
                                         type="range"
                                         min="0"
@@ -2396,19 +2505,21 @@ export const VideoCall = () => {
                                             setOverlayOpacity(val);
                                             sendMessage('sync-overlay', { opacity: val });
                                         }}
-                                        className="w-24 lg:w-32 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        className="w-16 sm:w-24 lg:w-28 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary"
                                     />
-                                    <span className="text-[10px] font-mono text-white/70 w-8">{overlayOpacity}%</span>
+                                    <span className="text-[10px] font-mono text-white/70 w-7">{overlayOpacity}%</span>
                                 </div>
+
                                 <button
                                     onClick={() => {
                                         setPlaceholderIndex(-1);
+                                        setShowGuideOverview(false);
                                         sendMessage('sync-overlay', { placeholderIndex: -1 });
                                     }}
-                                    className="ml-1 p-1.5 rounded-full bg-white/10 text-white/70 hover:bg-red-500 hover:text-white transition-all"
+                                    className="ml-0.5 p-1 rounded-full bg-white/10 text-white/70 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
                                     title={t('videoCall.clearOverlay')}
                                 >
-                                    <X size={14} />
+                                    <X size={13} />
                                 </button>
                             </div>
                         )}
@@ -2535,7 +2646,18 @@ export const VideoCall = () => {
                                     order={order}
                                     roomId={roomId}
                                     savedScreenshots={savedScreenshots}
+                                    onSelectGuide={(guideIndex) => {
+                                        setPlaceholderIndex(guideIndex);
+                                        setOverlayVisible(true);
+                                        sendMessage('sync-overlay', { placeholderIndex: guideIndex, visible: true });
+                                    }}
                                     onCapture={(slotId) => {
+                                        const matchingGuide = (SLOT_TO_GUIDE_INDEX as Record<string, number>)[slotId];
+                                        if (matchingGuide !== undefined && placeholderIndex !== matchingGuide) {
+                                            setPlaceholderIndex(matchingGuide);
+                                            setOverlayVisible(true);
+                                            sendMessage('sync-overlay', { placeholderIndex: matchingGuide, visible: true });
+                                        }
                                         if (remoteStreams.size > 1) {
                                             setPendingCapturePart(slotId);
                                         } else if (remoteStreams.size > 0) {
