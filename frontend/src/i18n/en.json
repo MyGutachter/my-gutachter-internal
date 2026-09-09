@@ -1721,7 +1721,19 @@
         "reportTitle": "myGutachter (Vehicle Report)",
         "reportDesc": "Create and manage vehicle damage reports and appraisals.",
         "videoTitle": "VideoXpert",
-        "videoDesc": "Run live video inspections, scans and UVV checks."
+        "videoDesc": "Run live video inspections, scans and UVV checks.",
+        "selectWorkspace": "Select Workspace",
+        "reportBadge": "Appraisals & Documentation",
+        "videoBadge": "Live Inspection & Remote",
+        "openNow": "Open now",
+        "tags": {
+            "vehicleDamage": "Vehicle Damage",
+            "appraisal": "Appraisals",
+            "pdfExport": "PDF Export",
+            "liveVideo": "Live Video",
+            "scansUvv": "Scans & UVV",
+            "realTimeHd": "Real-Time HD"
+        }
     },
     "twoTab": {
         "openVideoCall": "Open Video Call",

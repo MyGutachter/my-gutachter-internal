@@ -1747,7 +1747,19 @@
         "reportTitle": "myGutachter (Fahrzeuggutachten)",
         "reportDesc": "Fahrzeugschäden und Gutachten erstellen und verwalten.",
         "videoTitle": "VideoXpert",
-        "videoDesc": "Live-Videoinspektionen, Scans und UVV-Prüfungen durchführen."
+        "videoDesc": "Live-Videoinspektionen, Scans und UVV-Prüfungen durchführen.",
+        "selectWorkspace": "Arbeitsbereich Wählen",
+        "reportBadge": "Gutachten & Dokumentation",
+        "videoBadge": "Live-Inspektion & Fernzugriff",
+        "openNow": "Jetzt öffnen",
+        "tags": {
+            "vehicleDamage": "Fahrzeugschäden",
+            "appraisal": "Gutachten",
+            "pdfExport": "PDF-Export",
+            "liveVideo": "Live Video",
+            "scansUvv": "Scans & UVV",
+            "realTimeHd": "Echtzeit HD"
+        }
     },
     "twoTab": {
         "openVideoCall": "Videoanruf öffnen",

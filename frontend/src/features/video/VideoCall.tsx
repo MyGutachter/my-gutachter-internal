@@ -69,7 +69,8 @@ const RemoteVideo = ({
     capabilities,
     onZoomChange,
     currentZoom,
-    muted
+    muted,
+    children
 }: {
     stream: MediaStream,
     userId: string,
@@ -79,15 +80,68 @@ const RemoteVideo = ({
     capabilities?: { min: number, max: number, step: number },
     onZoomChange?: (newZoom: number) => void,
     currentZoom?: number,
-    muted?: boolean
+    muted?: boolean,
+    children?: React.ReactNode
 }) => {
     const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [videoBox, setVideoBox] = useState<{ width: number; height: number } | null>(null);
 
     useEffect(() => {
         if (videoRef.current && stream) {
             videoRef.current.srcObject = stream;
         }
+    }, [stream]);
+
+    useEffect(() => {
+        const updateBox = () => {
+            const video = videoRef.current;
+            const container = containerRef.current;
+            if (!video || !container) return;
+
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+
+            if (vw > 0 && vh > 0 && cw > 0 && ch > 0) {
+                const videoRatio = vw / vh;
+                const containerRatio = cw / ch;
+                let renderedW = cw;
+                let renderedH = ch;
+
+                if (containerRatio > videoRatio) {
+                    renderedH = ch;
+                    renderedW = ch * videoRatio;
+                } else {
+                    renderedW = cw;
+                    renderedH = cw / videoRatio;
+                }
+                setVideoBox({ width: Math.round(renderedW), height: Math.round(renderedH) });
+            }
+        };
+
+        const container = containerRef.current;
+        const video = videoRef.current;
+        if (!container || !video) return;
+
+        const ro = new ResizeObserver(updateBox);
+        ro.observe(container);
+
+        video.addEventListener('loadedmetadata', updateBox);
+        video.addEventListener('resize', updateBox);
+        video.addEventListener('playing', updateBox);
+        video.addEventListener('timeupdate', updateBox, { once: true });
+
+        updateBox();
+
+        return () => {
+            ro.disconnect();
+            video.removeEventListener('loadedmetadata', updateBox);
+            video.removeEventListener('resize', updateBox);
+            video.removeEventListener('playing', updateBox);
+        };
     }, [stream]);
 
     const handleZoomChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -105,15 +159,21 @@ const RemoteVideo = ({
             )}
             onClick={onClick}
         >
-            <div className="w-full h-full flex items-center justify-center">
-                <video
-                    id={`video-${userId}`}
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted={muted}
-                    className="w-full h-full object-contain pointer-events-none"
-                />
+            <div ref={containerRef} className="w-full h-full flex items-center justify-center overflow-hidden">
+                <div
+                    className="relative flex items-center justify-center max-w-full max-h-full"
+                    style={videoBox ? { width: `${videoBox.width}px`, height: `${videoBox.height}px` } : { width: '100%', height: '100%' }}
+                >
+                    <video
+                        id={`video-${userId}`}
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted={muted}
+                        className="w-full h-full object-contain pointer-events-none"
+                    />
+                    {children}
+                </div>
             </div>
 
             {/* User badge — top-left of video */}
@@ -322,6 +382,7 @@ export const VideoCall = () => {
     // Camera Overlay / Watermark State
     const [overlayVisible, setOverlayVisible] = useState(true);
     const [overlayOpacity, setOverlayOpacity] = useState(50);
+    const [overlayScale, setOverlayScale] = useState(100);
     const [placeholderIndex, setPlaceholderIndex] = useState<number>(-1);
     const [showGuideOverview, setShowGuideOverview] = useState(false);
 
@@ -840,6 +901,7 @@ export const VideoCall = () => {
                     sendMessage('sync-overlay', {
                         visible: overlayVisible,
                         opacity: overlayOpacity,
+                        scale: overlayScale,
                         placeholderIndex: placeholderIndex
                     }, data);
                 }
@@ -1056,14 +1118,15 @@ export const VideoCall = () => {
                     }));
                 }
             } else if (type === 'sync-overlay') {
-                const { visible, opacity, placeholderIndex: pIdx } = data || {};
+                const { visible, opacity, placeholderIndex: pIdx, scale } = data || {};
                 console.log('[Overlay] Received sync-overlay:', data);
                 if (visible !== undefined) setOverlayVisible(visible);
                 if (opacity !== undefined) setOverlayOpacity(opacity);
                 if (pIdx !== undefined) setPlaceholderIndex(pIdx);
+                if (scale !== undefined) setOverlayScale(scale);
             }
         };
-    }, [selectedParts, savedScreenshots, sendMessage, zoomCapabilities, zoomLevel, localStream, localStreamQuality, localDeviceInfo, localSpeedMbps, isGuest, hasFlashlight, isFlashlightOn, switchCamera, overlayVisible, overlayOpacity, placeholderIndex]);
+    }, [selectedParts, savedScreenshots, sendMessage, zoomCapabilities, zoomLevel, localStream, localStreamQuality, localDeviceInfo, localSpeedMbps, isGuest, hasFlashlight, isFlashlightOn, switchCamera, overlayVisible, overlayOpacity, overlayScale, placeholderIndex]);
 
     const parseUserAgent = useMemo(() => {
         const ua = navigator.userAgent || '';
@@ -2276,7 +2339,23 @@ export const VideoCall = () => {
                                         }));
                                     }}
                                     muted={false}
-                                />
+                                >
+                                    {placeholderIndex !== -1 && overlayVisible && (
+                                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-2 sm:p-4 landscape:p-1 z-20 overflow-hidden">
+                                            <img
+                                                src={CAR_PLACEHOLDERS[placeholderIndex]}
+                                                alt={CAR_GUIDES[placeholderIndex]?.defaultLabel || "car placeholder guide"}
+                                                className="w-full h-full max-h-[92%] max-w-[96%] object-contain select-none opacity-transition pointer-events-none transition-transform duration-150"
+                                                style={{
+                                                    opacity: overlayOpacity / 100,
+                                                    transform: `scale(${overlayScale / 100})`,
+                                                    filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.75)) drop-shadow(0 0 2px rgba(255,255,255,0.4))',
+                                                }}
+                                                draggable={false}
+                                            />
+                                        </div>
+                                    )}
+                                </RemoteVideo>
 
                                 {/* Downgraded Resolution Warning Notice for Expert */}
                                 {remoteUserStreamQuality[primaryRemoteId]?.isDowngraded && (
@@ -2295,21 +2374,6 @@ export const VideoCall = () => {
                                         </div>
                                     </div>
                                 )}
-
-                                {placeholderIndex !== -1 && overlayVisible && (
-                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-2 sm:p-4 landscape:p-1 z-20 overflow-hidden">
-                                        <img
-                                            src={CAR_PLACEHOLDERS[placeholderIndex]}
-                                            alt={CAR_GUIDES[placeholderIndex]?.defaultLabel || "car placeholder guide"}
-                                            className="w-full h-full max-h-[92%] max-w-[96%] object-contain select-none opacity-transition pointer-events-none"
-                                            style={{
-                                                opacity: overlayOpacity / 100,
-                                                filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.75)) drop-shadow(0 0 2px rgba(255,255,255,0.4))',
-                                            }}
-                                            draggable={false}
-                                        />
-                                    </div>
-                                )}
                             </div>
                         )}
 
@@ -2320,21 +2384,25 @@ export const VideoCall = () => {
                                     stream={localStream}
                                     isHost={false}
                                     muted={true}
-                                />
-                                {placeholderIndex !== -1 && overlayVisible && (
-                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-2 sm:p-4 landscape:p-1 z-20 overflow-hidden">
-                                        <img
-                                            src={CAR_PLACEHOLDERS[placeholderIndex]}
-                                            alt={CAR_GUIDES[placeholderIndex]?.defaultLabel || "car placeholder guide"}
-                                            className="w-full h-full max-h-[92%] max-w-[96%] object-contain select-none pointer-events-none"
-                                            style={{
-                                                opacity: overlayOpacity / 100,
-                                                filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.75)) drop-shadow(0 0 2px rgba(255,255,255,0.4))',
-                                            }}
-                                            draggable={false}
-                                        />
-                                    </div>
-                                )}
+                                >
+                                    {placeholderIndex !== -1 && overlayVisible && (
+                                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-2 sm:p-4 landscape:p-1 z-20 overflow-hidden">
+                                            <img
+                                                src={CAR_PLACEHOLDERS[placeholderIndex]}
+                                                alt={CAR_GUIDES[placeholderIndex]?.defaultLabel || "car placeholder guide"}
+                                                className="w-full h-full max-h-[92%] max-w-[96%] object-contain select-none pointer-events-none transition-transform duration-150"
+                                                style={{
+                                                    opacity: overlayOpacity / 100,
+                                                    transform: `scale(${overlayScale / 100})`,
+                                                    filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.75)) drop-shadow(0 0 2px rgba(255,255,255,0.4))',
+                                                }}
+                                                draggable={false}
+                                            />
+                                        </div>
+                                    )}
+                                </RemoteVideo>
+                            </div>
+                        )}
 
                                 {/* Waiting for Organizer Overlay */}
                                 {remoteStreams.size === 0 && (
@@ -2356,8 +2424,6 @@ export const VideoCall = () => {
                                         </div>
                                     </div>
                                 )}
-                            </div>
-                        )}
 
                         {/* Guide Overview Modal / Drawer */}
                         {showGuideOverview && !isGuest && (
@@ -2495,6 +2561,7 @@ export const VideoCall = () => {
                                 )}
 
                                 <div className={clsx("flex items-center gap-2 transition-opacity border-l border-white/10 pl-2", !overlayVisible && "opacity-30 pointer-events-none")}>
+                                    <span className="text-[10px] text-white/60 font-medium hidden sm:inline">{t('videoCall.opacity', { defaultValue: 'Deckkraft' })}:</span>
                                     <input
                                         type="range"
                                         min="0"
@@ -2505,10 +2572,41 @@ export const VideoCall = () => {
                                             setOverlayOpacity(val);
                                             sendMessage('sync-overlay', { opacity: val });
                                         }}
-                                        className="w-16 sm:w-24 lg:w-28 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        title={`${t('videoCall.opacity', { defaultValue: 'Deckkraft' })}: ${overlayOpacity}%`}
+                                        className="w-14 sm:w-20 lg:w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary"
                                     />
                                     <span className="text-[10px] font-mono text-white/70 w-7">{overlayOpacity}%</span>
                                 </div>
+
+                                {!isGuest && (
+                                    <div className={clsx("flex items-center gap-1.5 transition-opacity border-l border-white/10 pl-2", !overlayVisible && "opacity-30 pointer-events-none")}>
+                                        <span className="text-[10px] text-white/60 font-medium hidden sm:inline">{t('videoCall.size', { defaultValue: 'Größe' })}:</span>
+                                        <input
+                                            type="range"
+                                            min="40"
+                                            max="160"
+                                            step="2"
+                                            value={overlayScale}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                setOverlayScale(val);
+                                                sendMessage('sync-overlay', { scale: val });
+                                            }}
+                                            title={`${t('videoCall.size', { defaultValue: 'Größe' })}: ${overlayScale}%`}
+                                            className="w-14 sm:w-20 lg:w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                setOverlayScale(100);
+                                                sendMessage('sync-overlay', { scale: 100 });
+                                            }}
+                                            title="100% Reset"
+                                            className="text-[10px] font-mono text-white/70 hover:text-white transition-colors cursor-pointer w-7"
+                                        >
+                                            {overlayScale}%
+                                        </button>
+                                    </div>
+                                )}
 
                                 <button
                                     onClick={() => {
