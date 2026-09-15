@@ -207,154 +207,166 @@ const Step5_Summary: React.FC<Step5Props> = ({ onSave, adminMode, onToggleRequir
             const ep = store.globalConfig?.equipmentPrices || {};
 
             // Breakdown Kit (Pannenset)
-            const isBreakdownKitMissing = isNotAvailable(store.breakdownKit?.status);
-            const isBreakdownKitExpired = isAvailable(store.breakdownKit?.status) && store.breakdownKit?.expirationDate && new Date(store.breakdownKit.expirationDate) < new Date();
-            if (isBreakdownKitMissing || isBreakdownKitExpired) {
-                const cost = store.breakdownKit.price || (isBreakdownKitMissing ? (ep['breakdown_kit_missing'] ?? ep['breakdownKit_missing'] ?? 50) : (ep['breakdown_kit_expired'] ?? ep['breakdownKit_expired'] ?? 30));
-                rows.push({
-                    id: 'equipment-breakdown',
-                    type: 'equipment',
-                    label: isBreakdownKitMissing
-                        ? `${t('step3.breakdownKit')} - ${t('common.notAvailable')}`
-                        : `${t('step3.breakdownKit')} - ${t('step3.expired')} (${store.breakdownKit.expirationDate})`,
-                    minderwertBrutto: cost,
-                    minderwertNetto: calcNetto(cost),
-                    repairCostBrutto: cost,
-                    anrechnung: 'voll',
-                    repairCostNetto: calcNetto(cost),
-                    isInfo: false,
-                });
+            if (!isHidden('breakdownKit')) {
+                const isBreakdownKitMissing = isNotAvailable(store.breakdownKit?.status);
+                const isBreakdownKitExpired = isAvailable(store.breakdownKit?.status) && store.breakdownKit?.expirationDate && new Date(store.breakdownKit.expirationDate) < new Date();
+                if (isBreakdownKitMissing || isBreakdownKitExpired) {
+                    const cost = store.breakdownKit.price || (isBreakdownKitMissing ? (ep['breakdown_kit_missing'] ?? ep['breakdownKit_missing'] ?? 50) : (ep['breakdown_kit_expired'] ?? ep['breakdownKit_expired'] ?? 30));
+                    rows.push({
+                        id: 'equipment-breakdown',
+                        type: 'equipment',
+                        label: isBreakdownKitMissing
+                            ? `${t('step3.breakdownKit')} - ${t('common.notAvailable')}`
+                            : `${t('step3.breakdownKit')} - ${t('step3.expired')} (${store.breakdownKit.expirationDate})`,
+                        minderwertBrutto: cost,
+                        minderwertNetto: calcNetto(cost),
+                        repairCostBrutto: cost,
+                        anrechnung: 'voll',
+                        repairCostNetto: calcNetto(cost),
+                        isInfo: false,
+                    });
+                }
             }
 
             // First Aid Kit (Verbandskasten)
-            const isFirstAidKitMissing = isNotAvailable(store.firstAidKit?.status);
-            const isFirstAidKitExpired = isAvailable(store.firstAidKit?.status) && store.firstAidKit?.expirationDate && new Date(store.firstAidKit.expirationDate) < new Date();
-            if (isFirstAidKitMissing || isFirstAidKitExpired) {
-                const cost = store.firstAidKit.price || (isFirstAidKitMissing ? (ep['first_aid_kit_missing'] ?? ep['firstAidKit_missing'] ?? 25) : (ep['first_aid_kit_expired'] ?? ep['firstAidKit_expired'] ?? 20));
-                rows.push({
-                    id: 'equipment-firstaid',
-                    type: 'equipment',
-                    label: isFirstAidKitMissing
-                        ? `${t('step3.firstAidKit')} - ${t('common.notAvailable')}`
-                        : `${t('step3.firstAidKit')} - ${t('step3.expired')} (${store.firstAidKit.expirationDate})`,
-                    minderwertBrutto: cost,
-                    minderwertNetto: calcNetto(cost),
-                    repairCostBrutto: cost,
-                    anrechnung: 'voll',
-                    repairCostNetto: calcNetto(cost),
-                    isInfo: false,
-                });
+            if (!isHidden('firstAidKit')) {
+                const isFirstAidKitMissing = isNotAvailable(store.firstAidKit?.status);
+                const isFirstAidKitExpired = isAvailable(store.firstAidKit?.status) && store.firstAidKit?.expirationDate && new Date(store.firstAidKit.expirationDate) < new Date();
+                if (isFirstAidKitMissing || isFirstAidKitExpired) {
+                    const cost = store.firstAidKit.price || (isFirstAidKitMissing ? (ep['first_aid_kit_missing'] ?? ep['firstAidKit_missing'] ?? 25) : (ep['first_aid_kit_expired'] ?? ep['firstAidKit_expired'] ?? 20));
+                    rows.push({
+                        id: 'equipment-firstaid',
+                        type: 'equipment',
+                        label: isFirstAidKitMissing
+                            ? `${t('step3.firstAidKit')} - ${t('common.notAvailable')}`
+                            : `${t('step3.firstAidKit')} - ${t('step3.expired')} (${store.firstAidKit.expirationDate})`,
+                        minderwertBrutto: cost,
+                        minderwertNetto: calcNetto(cost),
+                        repairCostBrutto: cost,
+                        anrechnung: 'voll',
+                        repairCostNetto: calcNetto(cost),
+                        isInfo: false,
+                    });
+                }
             }
 
             // Safety Vest (Warnweste)
-            const isSafetyVestMissing = isNotAvailable(store.safetyVest?.status);
-            if (isSafetyVestMissing) {
-                const cost = store.safetyVest.price || (ep['safety_vest_missing'] ?? ep['safetyVest_missing'] ?? 10);
-                rows.push({
-                    id: 'equipment-safetyvest',
-                    type: 'equipment',
-                    label: `${t('step3.safetyVest')} - ${t('common.notAvailable')}`,
-                    minderwertBrutto: cost,
-                    minderwertNetto: calcNetto(cost),
-                    repairCostBrutto: cost,
-                    anrechnung: 'voll',
-                    repairCostNetto: calcNetto(cost),
-                    isInfo: false,
-                });
+            if (!isHidden('safetyVest')) {
+                const isSafetyVestMissing = isNotAvailable(store.safetyVest?.status);
+                if (isSafetyVestMissing) {
+                    const cost = store.safetyVest.price || (ep['safety_vest_missing'] ?? ep['safetyVest_missing'] ?? 10);
+                    rows.push({
+                        id: 'equipment-safetyvest',
+                        type: 'equipment',
+                        label: `${t('step3.safetyVest')} - ${t('common.notAvailable')}`,
+                        minderwertBrutto: cost,
+                        minderwertNetto: calcNetto(cost),
+                        repairCostBrutto: cost,
+                        anrechnung: 'voll',
+                        repairCostNetto: calcNetto(cost),
+                        isInfo: false,
+                    });
+                }
             }
 
             // Warning Triangle (Warndreieck)
-            const isWarningTriangleMissing = isNotAvailable(store.warningTriangle?.status);
-            if (isWarningTriangleMissing) {
-                const cost = store.warningTriangle.price || (ep['warning_triangle_missing'] ?? ep['warningTriangle_missing'] ?? 15);
-                rows.push({
-                    id: 'equipment-warningtriangle',
-                    type: 'equipment',
-                    label: `${t('step3.warningTriangle')} - ${t('common.notAvailable')}`,
-                    minderwertBrutto: cost,
-                    minderwertNetto: calcNetto(cost),
-                    repairCostBrutto: cost,
-                    anrechnung: 'voll',
-                    repairCostNetto: calcNetto(cost),
-                    isInfo: false,
-                });
+            if (!isHidden('warningTriangle')) {
+                const isWarningTriangleMissing = isNotAvailable(store.warningTriangle?.status);
+                if (isWarningTriangleMissing) {
+                    const cost = store.warningTriangle.price || (ep['warning_triangle_missing'] ?? ep['warningTriangle_missing'] ?? 15);
+                    rows.push({
+                        id: 'equipment-warningtriangle',
+                        type: 'equipment',
+                        label: `${t('step3.warningTriangle')} - ${t('common.notAvailable')}`,
+                        minderwertBrutto: cost,
+                        minderwertNetto: calcNetto(cost),
+                        repairCostBrutto: cost,
+                        anrechnung: 'voll',
+                        repairCostNetto: calcNetto(cost),
+                        isInfo: false,
+                    });
+                }
             }
 
             // 6. Maintenance
-            if (store.maintenancePrice > 0) {
-                let maintenanceDesc = t('step3.maintenanceRecord');
-                const mType = store.nextMaintenanceType;
-                const mVal = store.nextMaintenanceIntervalValue;
-                if (mType === 'days' && mVal != null) {
-                    const dLabel = lang === 'de' ? 'Tage' : 'days';
-                    maintenanceDesc = `${t('step3.maintenanceRecord')} (${Math.abs(mVal)} ${dLabel})`;
-                } else if (mType === 'months' && mVal != null) {
-                    const mLabel = lang === 'de' ? 'Monate' : 'months';
-                    maintenanceDesc = `${t('step3.maintenanceRecord')} (${Math.abs(mVal)} ${mLabel})`;
-                } else if (mType === 'mileage' && mVal != null) {
-                    maintenanceDesc = `${t('step3.maintenanceRecord')} (${Math.abs(mVal)} km)`;
-                }
+            if (!isHidden('nextMaintenanceType') && !isHidden('nextMaintenanceIntervalValue') && !isHidden('maintenancePrice') && !isHidden('nextMaintenanceMileage') && !isHidden('nextMaintenanceDate')) {
+                if (store.maintenancePrice > 0) {
+                    let maintenanceDesc = t('step3.maintenanceRecord');
+                    const mType = store.nextMaintenanceType;
+                    const mVal = store.nextMaintenanceIntervalValue;
+                    if (mType === 'days' && mVal != null) {
+                        const dLabel = lang === 'de' ? 'Tage' : 'days';
+                        maintenanceDesc = `${t('step3.maintenanceRecord')} (${Math.abs(mVal)} ${dLabel})`;
+                    } else if (mType === 'months' && mVal != null) {
+                        const mLabel = lang === 'de' ? 'Monate' : 'months';
+                        maintenanceDesc = `${t('step3.maintenanceRecord')} (${Math.abs(mVal)} ${mLabel})`;
+                    } else if (mType === 'mileage' && mVal != null) {
+                        maintenanceDesc = `${t('step3.maintenanceRecord')} (${Math.abs(mVal)} km)`;
+                    }
 
-                rows.push({
-                    id: 'maintenance-price',
-                    type: 'maintenance',
-                    label: maintenanceDesc,
-                    minderwertBrutto: store.maintenancePrice,
-                    minderwertNetto: calcNetto(store.maintenancePrice),
-                    repairCostBrutto: store.maintenancePrice,
-                    anrechnung: 'keine',
-                    repairCostNetto: calcNetto(store.maintenancePrice),
-                    isInfo: false,
-                });
-            } else {
-                // Fallback to legacy fields if type is 'date' or not set
-                if (store.nextMaintenanceMileage && store.mileage && store.nextMaintenanceMileage < store.mileage) {
-                    const cost = (store.mileage - store.nextMaintenanceMileage) * 0.05;
                     rows.push({
-                        id: 'maintenance-mileage-legacy',
+                        id: 'maintenance-price',
                         type: 'maintenance',
-                        label: `${t('step3.maintenanceRecord')} - ${t('step5.mileageOverdue')} (${store.mileage - store.nextMaintenanceMileage} km)`,
-                        minderwertBrutto: cost,
-                        minderwertNetto: calcNetto(cost),
-                        repairCostBrutto: cost,
+                        label: maintenanceDesc,
+                        minderwertBrutto: store.maintenancePrice,
+                        minderwertNetto: calcNetto(store.maintenancePrice),
+                        repairCostBrutto: store.maintenancePrice,
                         anrechnung: 'keine',
-                        repairCostNetto: calcNetto(cost),
+                        repairCostNetto: calcNetto(store.maintenancePrice),
                         isInfo: false,
                     });
-                }
-                if (store.nextMaintenanceDate && new Date(store.nextMaintenanceDate) < new Date()) {
-                    const cost = Math.floor((new Date().getTime() - new Date(store.nextMaintenanceDate).getTime()) / (1000 * 3600 * 24)) * 1;
-                    rows.push({
-                        id: 'maintenance-date-legacy',
-                        type: 'maintenance',
-                        label: `${t('step3.maintenanceRecord')} - ${t('step5.dateOverdue')} (${store.nextMaintenanceDate})`,
-                        minderwertBrutto: cost,
-                        minderwertNetto: calcNetto(cost),
-                        repairCostBrutto: cost,
-                        anrechnung: 'keine',
-                        repairCostNetto: calcNetto(cost),
-                        isInfo: false,
-                    });
+                } else {
+                    // Fallback to legacy fields if type is 'date' or not set
+                    if (store.nextMaintenanceMileage && store.mileage && store.nextMaintenanceMileage < store.mileage) {
+                        const cost = (store.mileage - store.nextMaintenanceMileage) * 0.05;
+                        rows.push({
+                            id: 'maintenance-mileage-legacy',
+                            type: 'maintenance',
+                            label: `${t('step3.maintenanceRecord')} - ${t('step5.mileageOverdue')} (${store.mileage - store.nextMaintenanceMileage} km)`,
+                            minderwertBrutto: cost,
+                            minderwertNetto: calcNetto(cost),
+                            repairCostBrutto: cost,
+                            anrechnung: 'keine',
+                            repairCostNetto: calcNetto(cost),
+                            isInfo: false,
+                        });
+                    }
+                    if (store.nextMaintenanceDate && new Date(store.nextMaintenanceDate) < new Date()) {
+                        const cost = Math.floor((new Date().getTime() - new Date(store.nextMaintenanceDate).getTime()) / (1000 * 3600 * 24)) * 1;
+                        rows.push({
+                            id: 'maintenance-date-legacy',
+                            type: 'maintenance',
+                            label: `${t('step3.maintenanceRecord')} - ${t('step5.dateOverdue')} (${store.nextMaintenanceDate})`,
+                            minderwertBrutto: cost,
+                            minderwertNetto: calcNetto(cost),
+                            repairCostBrutto: cost,
+                            anrechnung: 'keine',
+                            repairCostNetto: calcNetto(cost),
+                            isInfo: false,
+                        });
+                    }
                 }
             }
 
             // 7. Paint Measurements
-            sortPaintMeasurements(store.paintMeasurements).forEach(pm => {
-                if (pm.damageKnown || pm.damageUnknown) {
-                    const detailSuffix = pm.repairDamage ? ` (${pm.repairDamage})` : '';
-                    rows.push({
-                        id: pm.id,
-                        type: 'paint',
-                        label: `${t('step3.paintPart')}: ${getBodyPartLabel(pm.bodyPart, lang)}${detailSuffix} - ${pm.damageKnown ? `${t('step3.damageKnown')} (Info)` : t('step3.damageUnknown')}`,
-                        minderwertBrutto: pm.depreciationValue || 0,
-                        minderwertNetto: calcNetto(pm.depreciationValue || 0),
-                        repairCostBrutto: pm.depreciationValue || 0,
-                        anrechnung: pm.damageKnown ? 'informational' : 'voll',
-                        repairCostNetto: calcNetto(pm.depreciationValue || 0),
-                        isInfo: pm.damageKnown,
-                    });
-                }
-            });
+            if (!isHidden('paintMeasurements') && !isHidden('noPaintIssuesDetected')) {
+                sortPaintMeasurements(store.paintMeasurements).forEach(pm => {
+                    if (pm.damageKnown || pm.damageUnknown) {
+                        const detailSuffix = pm.repairDamage ? ` (${pm.repairDamage})` : '';
+                        rows.push({
+                            id: pm.id,
+                            type: 'paint',
+                            label: `${t('step3.paintPart')}: ${getBodyPartLabel(pm.bodyPart, lang)}${detailSuffix} - ${pm.damageKnown ? `${t('step3.damageKnown')} (Info)` : t('step3.damageUnknown')}`,
+                            minderwertBrutto: pm.depreciationValue || 0,
+                            minderwertNetto: calcNetto(pm.depreciationValue || 0),
+                            repairCostBrutto: pm.depreciationValue || 0,
+                            anrechnung: pm.damageKnown ? 'informational' : 'voll',
+                            repairCostNetto: calcNetto(pm.depreciationValue || 0),
+                            isInfo: pm.damageKnown,
+                        });
+                    }
+                });
+            }
 
             // 8. Tires (Manual Depreciation)
             store.tires.forEach((tire, i) => {

@@ -465,89 +465,103 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
         if (!config) return 0;
 
         const ep = config.equipmentPrices || {};
+        const isFieldHidden = (...fieldNames: string[]): boolean => {
+            return fieldNames.some(fn => s.fieldConfigs?.find((c: any) => c.fieldName === fn)?.hidden === true);
+        };
 
         // Breakdown Kit
-        if (s.breakdownKit?.price) {
-            equipmentDepreciation += s.breakdownKit.price;
-        } else if (s.breakdownKit?.status === 'Not available') {
-            equipmentDepreciation += ep['breakdown_kit_missing'] ?? ep['breakdownKit_missing'] ?? 50;
-        } else if (s.breakdownKit?.status === 'Available' && s.breakdownKit.expirationDate) {
-            const exp = new Date(s.breakdownKit.expirationDate);
-            const now = new Date();
-            if (exp < now) equipmentDepreciation += ep['breakdown_kit_expired'] ?? ep['breakdownKit_expired'] ?? 30;
+        if (!isFieldHidden('breakdownKit')) {
+            if (s.breakdownKit?.price) {
+                equipmentDepreciation += s.breakdownKit.price;
+            } else if (s.breakdownKit?.status === 'Not available') {
+                equipmentDepreciation += ep['breakdown_kit_missing'] ?? ep['breakdownKit_missing'] ?? 50;
+            } else if (s.breakdownKit?.status === 'Available' && s.breakdownKit.expirationDate) {
+                const exp = new Date(s.breakdownKit.expirationDate);
+                const now = new Date();
+                if (exp < now) equipmentDepreciation += ep['breakdown_kit_expired'] ?? ep['breakdownKit_expired'] ?? 30;
+            }
         }
 
         // First Aid Kit
-        if (s.firstAidKit?.price) {
-            equipmentDepreciation += s.firstAidKit.price;
-        } else if (s.firstAidKit?.status === 'Not available') {
-            equipmentDepreciation += ep['first_aid_kit_missing'] ?? ep['firstAidKit_missing'] ?? 25;
-        } else if (s.firstAidKit?.status === 'Available' && s.firstAidKit.expirationDate) {
-            const exp = new Date(s.firstAidKit.expirationDate);
-            const now = new Date();
-            if (exp < now) equipmentDepreciation += ep['first_aid_kit_expired'] ?? ep['firstAidKit_expired'] ?? 20;
+        if (!isFieldHidden('firstAidKit')) {
+            if (s.firstAidKit?.price) {
+                equipmentDepreciation += s.firstAidKit.price;
+            } else if (s.firstAidKit?.status === 'Not available') {
+                equipmentDepreciation += ep['first_aid_kit_missing'] ?? ep['firstAidKit_missing'] ?? 25;
+            } else if (s.firstAidKit?.status === 'Available' && s.firstAidKit.expirationDate) {
+                const exp = new Date(s.firstAidKit.expirationDate);
+                const now = new Date();
+                if (exp < now) equipmentDepreciation += ep['first_aid_kit_expired'] ?? ep['firstAidKit_expired'] ?? 20;
+            }
         }
 
         // Safety Vest
-        if (s.safetyVest?.price) {
-            equipmentDepreciation += s.safetyVest.price;
-        } else if (s.safetyVest?.status === 'Not available') {
-            equipmentDepreciation += ep['safety_vest_missing'] ?? ep['safetyVest_missing'] ?? 10;
+        if (!isFieldHidden('safetyVest')) {
+            if (s.safetyVest?.price) {
+                equipmentDepreciation += s.safetyVest.price;
+            } else if (s.safetyVest?.status === 'Not available') {
+                equipmentDepreciation += ep['safety_vest_missing'] ?? ep['safetyVest_missing'] ?? 10;
+            }
         }
 
         // Warning Triangle
-        if (s.warningTriangle?.price) {
-            equipmentDepreciation += s.warningTriangle.price;
-        } else if (s.warningTriangle?.status === 'Not available') {
-            equipmentDepreciation += ep['warning_triangle_missing'] ?? ep['warningTriangle_missing'] ?? 15;
+        if (!isFieldHidden('warningTriangle')) {
+            if (s.warningTriangle?.price) {
+                equipmentDepreciation += s.warningTriangle.price;
+            } else if (s.warningTriangle?.status === 'Not available') {
+                equipmentDepreciation += ep['warning_triangle_missing'] ?? ep['warningTriangle_missing'] ?? 15;
+            }
         }
 
-        let maintenanceDepreciation = s.maintenancePrice || 0;
-        const mr = config.maintenanceRules || {};
+        let maintenanceDepreciation = 0;
+        if (!isFieldHidden('nextMaintenanceType', 'nextMaintenanceIntervalValue', 'maintenancePrice', 'nextMaintenanceMileage', 'nextMaintenanceDate')) {
+            maintenanceDepreciation = s.maintenancePrice || 0;
+            const mr = config.maintenanceRules || {};
 
-        // Handle new flexible maintenance types
-        if (s.nextMaintenanceType === 'mileage' && s.nextMaintenanceIntervalValue !== null) {
-            if (s.nextMaintenanceIntervalValue < 0) {
-                maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * (mr['overdueKmFactor'] ?? 0.05);
-            }
-        } else if (s.nextMaintenanceType === 'days' && s.nextMaintenanceIntervalValue !== null) {
-            if (s.nextMaintenanceIntervalValue < 0) {
-                maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * (mr['overdueDayFactor'] ?? 1);
-            }
-        } else if (s.nextMaintenanceType === 'months' && s.nextMaintenanceIntervalValue !== null) {
-            if (s.nextMaintenanceIntervalValue < 0) {
-                maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * 30 * (mr['overdueDayFactor'] ?? 1);
-            }
-        } else {
-            // Fallback to legacy date/mileage fields if type is 'date' or not set
-            if (s.nextMaintenanceMileage && s.mileage && s.nextMaintenanceMileage < s.mileage) {
-                maintenanceDepreciation += (s.mileage - s.nextMaintenanceMileage) * (mr['overdueKmFactor'] ?? 0.05);
-            }
-            if (s.nextMaintenanceDate) {
-                const nextDate = new Date(s.nextMaintenanceDate);
-                const now = new Date();
-                if (nextDate < now) {
-                    const daysOverdue = Math.floor((now.getTime() - nextDate.getTime()) / (1000 * 3600 * 24));
-                    maintenanceDepreciation += daysOverdue * (mr['overdueDayFactor'] ?? 1);
+            // Handle new flexible maintenance types
+            if (s.nextMaintenanceType === 'mileage' && s.nextMaintenanceIntervalValue !== null) {
+                if (s.nextMaintenanceIntervalValue < 0) {
+                    maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * (mr['overdueKmFactor'] ?? 0.05);
+                }
+            } else if (s.nextMaintenanceType === 'days' && s.nextMaintenanceIntervalValue !== null) {
+                if (s.nextMaintenanceIntervalValue < 0) {
+                    maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * (mr['overdueDayFactor'] ?? 1);
+                }
+            } else if (s.nextMaintenanceType === 'months' && s.nextMaintenanceIntervalValue !== null) {
+                if (s.nextMaintenanceIntervalValue < 0) {
+                    maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * 30 * (mr['overdueDayFactor'] ?? 1);
+                }
+            } else {
+                // Fallback to legacy date/mileage fields if type is 'date' or not set
+                if (s.nextMaintenanceMileage && s.mileage && s.nextMaintenanceMileage < s.mileage) {
+                    maintenanceDepreciation += (s.mileage - s.nextMaintenanceMileage) * (mr['overdueKmFactor'] ?? 0.05);
+                }
+                if (s.nextMaintenanceDate) {
+                    const nextDate = new Date(s.nextMaintenanceDate);
+                    const now = new Date();
+                    if (nextDate < now) {
+                        const daysOverdue = Math.floor((now.getTime() - nextDate.getTime()) / (1000 * 3600 * 24));
+                        maintenanceDepreciation += daysOverdue * (mr['overdueDayFactor'] ?? 1);
+                    }
                 }
             }
         }
 
         let paintDepreciation = 0;
-        if (!s.noPaintIssuesDetected && s.paintMeasurements) {
+        if (!isFieldHidden('paintMeasurements', 'noPaintIssuesDetected') && !s.noPaintIssuesDetected && s.paintMeasurements) {
             paintDepreciation = s.paintMeasurements
                 .filter(p => p.damageUnknown)
                 .reduce((acc, p) => acc + (p.depreciationValue || 0), 0);
         }
 
         let tireDepreciation = 0;
-        if (s.tires) {
+        if (!isFieldHidden('tireConfiguration', 'tires') && s.tires) {
             tireDepreciation += s.tires.reduce((acc, t) => acc + (t.depreciationValue || 0) + (t.hubCapDepreciation || 0), 0);
         }
-        if (s.spareTire && s.spareTire.present) {
+        if (!isFieldHidden('spareTire') && s.spareTire && s.spareTire.present) {
             tireDepreciation += (s.spareTire.depreciationValue || 0) + (s.spareTire.hubCapDepreciation || 0);
         }
-        if (s.hasSecondTireSet && s.secondTires) {
+        if (!isFieldHidden('hasSecondTireSet', 'secondTires', 'tireConfiguration') && s.hasSecondTireSet && s.secondTires) {
             tireDepreciation += s.secondTires.reduce((acc, t) => acc + (t.depreciationValue || 0) + (t.hubCapDepreciation || 0), 0);
         }
 
@@ -610,89 +624,103 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
         if (!config) return 0;
 
         const ep = config.equipmentPrices || {};
+        const isFieldHidden = (...fieldNames: string[]): boolean => {
+            return fieldNames.some(fn => s.fieldConfigs?.find((c: any) => c.fieldName === fn)?.hidden === true);
+        };
 
         // Breakdown Kit
-        if (s.breakdownKit?.price) {
-            equipmentDepreciation += s.breakdownKit.price;
-        } else if (s.breakdownKit?.status === 'Not available') {
-            equipmentDepreciation += ep['breakdown_kit_missing'] ?? ep['breakdownKit_missing'] ?? 50;
-        } else if (s.breakdownKit?.status === 'Available' && s.breakdownKit.expirationDate) {
-            const exp = new Date(s.breakdownKit.expirationDate);
-            const now = new Date();
-            if (exp < now) equipmentDepreciation += ep['breakdown_kit_expired'] ?? ep['breakdownKit_expired'] ?? 30;
+        if (!isFieldHidden('breakdownKit')) {
+            if (s.breakdownKit?.price) {
+                equipmentDepreciation += s.breakdownKit.price;
+            } else if (s.breakdownKit?.status === 'Not available') {
+                equipmentDepreciation += ep['breakdown_kit_missing'] ?? ep['breakdownKit_missing'] ?? 50;
+            } else if (s.breakdownKit?.status === 'Available' && s.breakdownKit.expirationDate) {
+                const exp = new Date(s.breakdownKit.expirationDate);
+                const now = new Date();
+                if (exp < now) equipmentDepreciation += ep['breakdown_kit_expired'] ?? ep['breakdownKit_expired'] ?? 30;
+            }
         }
 
         // First Aid Kit
-        if (s.firstAidKit?.price) {
-            equipmentDepreciation += s.firstAidKit.price;
-        } else if (s.firstAidKit?.status === 'Not available') {
-            equipmentDepreciation += ep['first_aid_kit_missing'] ?? ep['firstAidKit_missing'] ?? 25;
-        } else if (s.firstAidKit?.status === 'Available' && s.firstAidKit.expirationDate) {
-            const exp = new Date(s.firstAidKit.expirationDate);
-            const now = new Date();
-            if (exp < now) equipmentDepreciation += ep['first_aid_kit_expired'] ?? ep['firstAidKit_expired'] ?? 20;
+        if (!isFieldHidden('firstAidKit')) {
+            if (s.firstAidKit?.price) {
+                equipmentDepreciation += s.firstAidKit.price;
+            } else if (s.firstAidKit?.status === 'Not available') {
+                equipmentDepreciation += ep['first_aid_kit_missing'] ?? ep['firstAidKit_missing'] ?? 25;
+            } else if (s.firstAidKit?.status === 'Available' && s.firstAidKit.expirationDate) {
+                const exp = new Date(s.firstAidKit.expirationDate);
+                const now = new Date();
+                if (exp < now) equipmentDepreciation += ep['first_aid_kit_expired'] ?? ep['firstAidKit_expired'] ?? 20;
+            }
         }
 
         // Safety Vest
-        if (s.safetyVest?.price) {
-            equipmentDepreciation += s.safetyVest.price;
-        } else if (s.safetyVest?.status === 'Not available') {
-            equipmentDepreciation += ep['safety_vest_missing'] ?? ep['safetyVest_missing'] ?? 10;
+        if (!isFieldHidden('safetyVest')) {
+            if (s.safetyVest?.price) {
+                equipmentDepreciation += s.safetyVest.price;
+            } else if (s.safetyVest?.status === 'Not available') {
+                equipmentDepreciation += ep['safety_vest_missing'] ?? ep['safetyVest_missing'] ?? 10;
+            }
         }
 
         // Warning Triangle
-        if (s.warningTriangle?.price) {
-            equipmentDepreciation += s.warningTriangle.price;
-        } else if (s.warningTriangle?.status === 'Not available') {
-            equipmentDepreciation += ep['warning_triangle_missing'] ?? ep['warningTriangle_missing'] ?? 15;
+        if (!isFieldHidden('warningTriangle')) {
+            if (s.warningTriangle?.price) {
+                equipmentDepreciation += s.warningTriangle.price;
+            } else if (s.warningTriangle?.status === 'Not available') {
+                equipmentDepreciation += ep['warning_triangle_missing'] ?? ep['warningTriangle_missing'] ?? 15;
+            }
         }
 
-        let maintenanceDepreciation = s.maintenancePrice || 0;
-        const mr = config.maintenanceRules || {};
+        let maintenanceDepreciation = 0;
+        if (!isFieldHidden('nextMaintenanceType', 'nextMaintenanceIntervalValue', 'maintenancePrice', 'nextMaintenanceMileage', 'nextMaintenanceDate')) {
+            maintenanceDepreciation = s.maintenancePrice || 0;
+            const mr = config.maintenanceRules || {};
 
-        // Handle new flexible maintenance types
-        if (s.nextMaintenanceType === 'mileage' && s.nextMaintenanceIntervalValue !== null) {
-            if (s.nextMaintenanceIntervalValue < 0) {
-                maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * (mr['overdueKmFactor'] ?? 0.05);
-            }
-        } else if (s.nextMaintenanceType === 'days' && s.nextMaintenanceIntervalValue !== null) {
-            if (s.nextMaintenanceIntervalValue < 0) {
-                maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * (mr['overdueDayFactor'] ?? 1);
-            }
-        } else if (s.nextMaintenanceType === 'months' && s.nextMaintenanceIntervalValue !== null) {
-            if (s.nextMaintenanceIntervalValue < 0) {
-                maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * 30 * (mr['overdueDayFactor'] ?? 1);
-            }
-        } else {
-            // Fallback to legacy date/mileage fields if type is 'date' or not set
-            if (s.nextMaintenanceMileage && s.mileage && s.nextMaintenanceMileage < s.mileage) {
-                maintenanceDepreciation += (s.mileage - s.nextMaintenanceMileage) * (mr['overdueKmFactor'] ?? 0.05);
-            }
-            if (s.nextMaintenanceDate) {
-                const nextDate = new Date(s.nextMaintenanceDate);
-                const now = new Date();
-                if (nextDate < now) {
-                    const daysOverdue = Math.floor((now.getTime() - nextDate.getTime()) / (1000 * 3600 * 24));
-                    maintenanceDepreciation += daysOverdue * (mr['overdueDayFactor'] ?? 1);
+            // Handle new flexible maintenance types
+            if (s.nextMaintenanceType === 'mileage' && s.nextMaintenanceIntervalValue !== null) {
+                if (s.nextMaintenanceIntervalValue < 0) {
+                    maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * (mr['overdueKmFactor'] ?? 0.05);
+                }
+            } else if (s.nextMaintenanceType === 'days' && s.nextMaintenanceIntervalValue !== null) {
+                if (s.nextMaintenanceIntervalValue < 0) {
+                    maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * (mr['overdueDayFactor'] ?? 1);
+                }
+            } else if (s.nextMaintenanceType === 'months' && s.nextMaintenanceIntervalValue !== null) {
+                if (s.nextMaintenanceIntervalValue < 0) {
+                    maintenanceDepreciation += Math.abs(s.nextMaintenanceIntervalValue) * 30 * (mr['overdueDayFactor'] ?? 1);
+                }
+            } else {
+                // Fallback to legacy date/mileage fields if type is 'date' or not set
+                if (s.nextMaintenanceMileage && s.mileage && s.nextMaintenanceMileage < s.mileage) {
+                    maintenanceDepreciation += (s.mileage - s.nextMaintenanceMileage) * (mr['overdueKmFactor'] ?? 0.05);
+                }
+                if (s.nextMaintenanceDate) {
+                    const nextDate = new Date(s.nextMaintenanceDate);
+                    const now = new Date();
+                    if (nextDate < now) {
+                        const daysOverdue = Math.floor((now.getTime() - nextDate.getTime()) / (1000 * 3600 * 24));
+                        maintenanceDepreciation += daysOverdue * (mr['overdueDayFactor'] ?? 1);
+                    }
                 }
             }
         }
 
         let paintDepreciation = 0;
-        if (!s.noPaintIssuesDetected && s.paintMeasurements) {
+        if (!isFieldHidden('paintMeasurements', 'noPaintIssuesDetected') && !s.noPaintIssuesDetected && s.paintMeasurements) {
             paintDepreciation = s.paintMeasurements
                 .filter(p => p.damageUnknown)
                 .reduce((acc, p) => acc + (p.depreciationValue || 0), 0);
         }
 
         let tireDepreciation = 0;
-        if (s.tires) {
+        if (!isFieldHidden('tireConfiguration', 'tires') && s.tires) {
             tireDepreciation += s.tires.reduce((acc, t) => acc + (t.depreciationValue || 0) + (t.hubCapDepreciation || 0), 0);
         }
-        if (s.spareTire && s.spareTire.present) {
+        if (!isFieldHidden('spareTire') && s.spareTire && s.spareTire.present) {
             tireDepreciation += (s.spareTire.depreciationValue || 0) + (s.spareTire.hubCapDepreciation || 0);
         }
-        if (s.hasSecondTireSet && s.secondTires) {
+        if (!isFieldHidden('hasSecondTireSet', 'secondTires', 'tireConfiguration') && s.hasSecondTireSet && s.secondTires) {
             tireDepreciation += s.secondTires.reduce((acc, t) => acc + (t.depreciationValue || 0) + (t.hubCapDepreciation || 0), 0);
         }
 

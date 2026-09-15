@@ -131,6 +131,7 @@ interface PDFReportData {
   customerPresent?: boolean;
   vehicleCategory?: string | null;
   globalConfig?: any;
+  fieldConfigs?: any[];
 }
 
 const PART_TRANSLATIONS: Record<'de' | 'en', Record<string, string>> = {
@@ -808,9 +809,11 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       .map((c: any) => c.fieldName)
   );
 
-  const isFieldHidden = (fieldName?: string): boolean => {
-    if (!fieldName) return false;
-    return hiddenFieldNames.has(fieldName);
+  const isFieldHidden = (...fieldNames: (string | undefined)[]): boolean => {
+    return fieldNames.some(fn => {
+      if (!fn) return false;
+      return hiddenFieldNames.has(fn);
+    });
   };
 
   // Sort paint measurements in a logical "around the vehicle" order
@@ -888,9 +891,9 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   const fmtDate = (d: string) => formatDate(d);
   const fmtDateTime = (d: string) => formatDateTime(d);
   const fmtCur = (n: number) => formatCurrency(n);
-  const p3ShowStd = !!(r.standardEquipment && r.standardEquipment.length > 0);
-  const p3ShowOpt = !!(r.optionalEquipment && r.optionalEquipment.length > 0);
-  const p3ShowTires = !!(r.tires && r.tires.length > 0);
+  const p3ShowStd = !isFieldHidden('standardEquipment') && !!(r.standardEquipment && r.standardEquipment.length > 0);
+  const p3ShowOpt = !isFieldHidden('optionalEquipment') && !!(r.optionalEquipment && r.optionalEquipment.length > 0);
+  const p3ShowTires = !isFieldHidden('tires', 'tireConfiguration') && !!(r.tires && r.tires.length > 0);
 
   // Paint analysis helpers
 
@@ -1018,19 +1021,19 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
   const translateDocs = () => {
     const docs = [];
-    if (r.registrationCertificateStatus) {
+    if (!isFieldHidden('registrationCertificateStatus', 'fzScheinImages', 'lastRegistrationImages') && r.registrationCertificateStatus) {
       const statusKey = 'docStatus' + r.registrationCertificateStatus.replace(/\s+/g, '');
       docs.push(`${L.docFzSchein}: ${L[statusKey] || L['docStatus' + r.registrationCertificateStatus] || r.registrationCertificateStatus}${r.registrationCertificateSubmittedLater ? ' (' + L.willBeSubmittedLater + ')' : ''}`);
     }
-    if (r.serviceBookletStatus) {
+    if (!isFieldHidden('serviceBookletStatus', 'serviceheftImages') && r.serviceBookletStatus) {
       const statusKey = 'docStatus' + r.serviceBookletStatus.replace(/\s+/g, '');
       docs.push(`${L.docServiceBook}: ${L[statusKey] || L['docStatus' + r.serviceBookletStatus] || r.serviceBookletStatus}${r.serviceBookletSubmittedLater ? ' (' + L.willBeSubmittedLater + ')' : ''}`);
     }
-    if (r.operatingManualStatus) {
+    if (!isFieldHidden('operatingManualStatus', 'bordliteraturImages') && r.operatingManualStatus) {
       const statusKey = 'docStatus' + r.operatingManualStatus.replace(/\s+/g, '');
       docs.push(`${L.docBedienungsanleitung}: ${L[statusKey] || L['docStatus' + r.operatingManualStatus] || r.operatingManualStatus}${r.operatingManualSubmittedLater ? ' (' + L.willBeSubmittedLater + ')' : ''}`);
     }
-    if (r.environmentalBadgeStatus) {
+    if (!isFieldHidden('environmentalBadgeStatus', 'environmentalBadgeImages') && r.environmentalBadgeStatus) {
       const statusKey = 'docStatus' + r.environmentalBadgeStatus.replace(/\s+/g, '');
       docs.push(`${L.docBadge}: ${L[statusKey] || L['docStatus' + r.environmentalBadgeStatus] || r.environmentalBadgeStatus}${r.environmentalBadgeSubmittedLater ? ' (' + L.willBeSubmittedLater + ')' : ''}`);
     }
@@ -1063,30 +1066,32 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
     }
 
     // 2. Paint Measurements
-    const paintWithValues = r.paintMeasurements.filter(p => p.measuredMicrons > 0 || p.damageKnown || p.damageUnknown);
-    if (paintWithValues.length > 0) {
-      const paintParts = paintWithValues.map(p => {
-        const partLabel = getBodyPartLabel(p.bodyPart, safeLang);
-        const details = [];
-        if (p.measuredMicrons > 0) details.push(`${p.measuredMicrons} µm`);
-        if (p.damageKnown) {
-          if (p.depreciationValue && p.depreciationValue > 0) {
-            details.push(safeLang === 'de'
-              ? `Bekannter Vorschaden: ${fmtCur(p.depreciationValue)} (Nur Information)`
-              : `Previous known damage: ${fmtCur(p.depreciationValue)} (Informational only)`
-            );
-          } else {
-            details.push(L.damageKnown);
+    if (!isFieldHidden('paintMeasurements', 'noPaintIssuesDetected')) {
+      const paintWithValues = r.paintMeasurements.filter(p => p.measuredMicrons > 0 || p.damageKnown || p.damageUnknown);
+      if (paintWithValues.length > 0) {
+        const paintParts = paintWithValues.map(p => {
+          const partLabel = getBodyPartLabel(p.bodyPart, safeLang);
+          const details = [];
+          if (p.measuredMicrons > 0) details.push(`${p.measuredMicrons} µm`);
+          if (p.damageKnown) {
+            if (p.depreciationValue && p.depreciationValue > 0) {
+              details.push(safeLang === 'de'
+                ? `Bekannter Vorschaden: ${fmtCur(p.depreciationValue)} (Nur Information)`
+                : `Previous known damage: ${fmtCur(p.depreciationValue)} (Informational only)`
+              );
+            } else {
+              details.push(L.damageKnown);
+            }
           }
-        }
-        if (p.damageUnknown) details.push(L.damageUnknown);
-        if (p.repairDamage) details.push(p.repairDamage);
+          if (p.damageUnknown) details.push(L.damageUnknown);
+          if (p.repairDamage) details.push(p.repairDamage);
 
-        return `${partLabel} (${details.join(', ')})`;
-      }).join(', ');
-      sentences.push(`${L.paintMeasurementsLabel}: ${paintParts}.`);
-    } else if (r.paintMeasurements && r.paintMeasurements.length > 0) {
-      sentences.push(L.noRepaintsFound);
+          return `${partLabel} (${details.join(', ')})`;
+        }).join(', ');
+        sentences.push(`${L.paintMeasurementsLabel}: ${paintParts}.`);
+      } else if (r.paintMeasurements && r.paintMeasurements.length > 0) {
+        sentences.push(L.noRepaintsFound);
+      }
     }
 
     // 3. Diminished Value Note
@@ -1094,129 +1099,159 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
     // 4. Technical Checks & Inspection Details (Conflict Resolution)
     // Inspection scope coverage (Priority: Performed > Not Possible)
-    if (!r.inspectionFromAbove && !r.inspectionFromBelow) {
+    const aboveHidden = isFieldHidden('inspectionFromAbove', 'inspectionFromAboveImages');
+    const belowHidden = isFieldHidden('inspectionFromBelow', 'inspectionFromBelowImages');
+
+    if (!aboveHidden && !belowHidden && !r.inspectionFromAbove && !r.inspectionFromBelow) {
       sentences.push(L.remarksBlock5);
     } else {
-      if (r.inspectionFromAbove) sentences.push(`${L.inspectionFromAbove}.`);
-      if (r.inspectionFromBelow && r.liftingPlatformStatus !== 'available_used') {
+      if (!aboveHidden && r.inspectionFromAbove) sentences.push(`${L.inspectionFromAbove}.`);
+      if (!belowHidden && r.inspectionFromBelow && r.liftingPlatformStatus !== 'available_used') {
         sentences.push(`${L.inspectionFromBelow}.`);
       }
     }
 
     // Test Drive (Deduplicate)
-    if (r.testDriveDone === 'carried_out') {
-      sentences.push(L.testDriveYes);
-    } else if (r.testDriveDone === 'not_occurred') {
-      sentences.push(L.testDriveNo);
-    } else if (r.testDriveDone === 'not_possible') {
-      sentences.push(L.testDriveNotPossible);
+    if (!isFieldHidden('testDriveDone', 'testRunCarriedOutImages')) {
+      if (r.testDriveDone === 'carried_out') {
+        sentences.push(L.testDriveYes);
+      } else if (r.testDriveDone === 'not_occurred') {
+        sentences.push(L.testDriveNo);
+      } else if (r.testDriveDone === 'not_possible') {
+        sentences.push(L.testDriveNotPossible);
+      }
     }
 
     // Engine Run
-    if (r.engineRunPerformed === 'carried_out') {
-      if (r.engineRunStatus === 'no_issues') {
-        sentences.push(L.engineRunNoIssues);
-      } else if (r.engineRunStatus === 'issues') {
-        const issuesList: string[] = [];
-        if (r.engineRunNoise && r.engineRunNoise !== 'none') {
-          const noiseLbl = r.engineRunNoise === 'knocking' ? (L.engineRunNoiseKnocking || 'Klopfen')
-            : r.engineRunNoise === 'rattling' ? (L.engineRunNoiseRattling || 'Rasseln')
-              : r.engineRunNoise === 'whistling' ? (L.engineRunNoiseWhistling || 'Pfeifen')
-                : r.engineRunNoise === 'squeaking' ? (L.engineRunNoiseSqueaking || 'Quietschen')
-                  : r.engineRunNoise === 'grinding' ? (L.engineRunNoiseGrinding || 'Schleifen')
-                    : r.engineRunNoise === 'vibrations' ? (L.engineRunNoiseVibrations || 'Vibrationen / Dröhnen')
-                      : r.engineRunNoise === 'irregular' ? (L.engineRunNoiseIrregular || 'Unregelmäßige Geräusche')
-                        : r.engineRunNoise;
-          issuesList.push(`${safeLang === 'de' ? 'Geräusche' : 'Noise'}: ${noiseLbl}`);
-        }
-        if (r.engineRunRoughRunning && r.engineRunRoughRunning !== 'normal') {
-          const roughRunningLbl = r.engineRunRoughRunning === 'rough' ? (L.engineRunRoughRunningRough || 'Unruhiger Lauf') : r.engineRunRoughRunning;
-          issuesList.push(`${safeLang === 'de' ? 'Motorlauf' : 'Engine behavior'}: ${roughRunningLbl}`);
-        }
-        if (r.engineRunWarningLightsActive && r.engineRunWarningLightsActive !== 'no') {
-          const warningLightsLbl = safeLang === 'de' ? 'aktiv' : 'active';
-          const warningDetails = r.engineRunWarningLightsDetails && r.engineRunWarningLightsDetails.trim()
-            ? ` (${r.engineRunWarningLightsDetails.trim()})` : '';
-          issuesList.push(`${safeLang === 'de' ? 'Warnleuchten' : 'Warning lights'}: ${warningLightsLbl}${warningDetails}`);
-        }
-        if (r.engineRunOtherIssues && r.engineRunOtherIssues.trim()) {
-          issuesList.push(`${safeLang === 'de' ? 'Sonstiges' : 'Other'}: ${r.engineRunOtherIssues.trim()}`);
-        }
+    if (!isFieldHidden('engineRunPerformed', 'engineRunPerformedImages')) {
+      if (r.engineRunPerformed === 'carried_out') {
+        if (r.engineRunStatus === 'no_issues') {
+          sentences.push(L.engineRunNoIssues);
+        } else if (r.engineRunStatus === 'issues') {
+          const issuesList: string[] = [];
+          if (!isFieldHidden('engineRunNoise') && r.engineRunNoise && r.engineRunNoise !== 'none') {
+            const noiseLbl = r.engineRunNoise === 'knocking' ? (L.engineRunNoiseKnocking || 'Klopfen')
+              : r.engineRunNoise === 'rattling' ? (L.engineRunNoiseRattling || 'Rasseln')
+                : r.engineRunNoise === 'whistling' ? (L.engineRunNoiseWhistling || 'Pfeifen')
+                  : r.engineRunNoise === 'squeaking' ? (L.engineRunNoiseSqueaking || 'Quietschen')
+                    : r.engineRunNoise === 'grinding' ? (L.engineRunNoiseGrinding || 'Schleifen')
+                      : r.engineRunNoise === 'vibrations' ? (L.engineRunNoiseVibrations || 'Vibrationen / Dröhnen')
+                        : r.engineRunNoise === 'irregular' ? (L.engineRunNoiseIrregular || 'Unregelmäßige Geräusche')
+                          : r.engineRunNoise;
+            issuesList.push(`${safeLang === 'de' ? 'Geräusche' : 'Noise'}: ${noiseLbl}`);
+          }
+          if (!isFieldHidden('engineRunRoughRunning') && r.engineRunRoughRunning && r.engineRunRoughRunning !== 'normal') {
+            const roughRunningLbl = r.engineRunRoughRunning === 'rough' ? (L.engineRunRoughRunningRough || 'Unruhiger Lauf') : r.engineRunRoughRunning;
+            issuesList.push(`${safeLang === 'de' ? 'Motorlauf' : 'Engine behavior'}: ${roughRunningLbl}`);
+          }
+          if (!isFieldHidden('engineRunWarningLightsActive') && r.engineRunWarningLightsActive && r.engineRunWarningLightsActive !== 'no') {
+            const warningLightsLbl = safeLang === 'de' ? 'aktiv' : 'active';
+            const warningDetails = !isFieldHidden('engineRunWarningLightsDetails') && r.engineRunWarningLightsDetails && r.engineRunWarningLightsDetails.trim()
+              ? ` (${r.engineRunWarningLightsDetails.trim()})` : '';
+            issuesList.push(`${safeLang === 'de' ? 'Warnleuchten' : 'Warning lights'}: ${warningLightsLbl}${warningDetails}`);
+          }
+          if (!isFieldHidden('engineRunOtherIssues') && r.engineRunOtherIssues && r.engineRunOtherIssues.trim()) {
+            issuesList.push(`${safeLang === 'de' ? 'Sonstiges' : 'Other'}: ${r.engineRunOtherIssues.trim()}`);
+          }
 
-        if (issuesList.length > 0) {
-          const intro = L.engineRunIssues || (safeLang === 'de' ? 'Ein Motorlauf wurde durchgeführt. Folgende Auffälligkeiten wurden festgestellt:' : 'Engine run was performed. The following abnormalities were detected:');
-          const joinedIssues = issuesList.join(', ');
-          sentences.push(`${intro} ${joinedIssues}.`);
+          if (issuesList.length > 0) {
+            const intro = L.engineRunIssues || (safeLang === 'de' ? 'Ein Motorlauf wurde durchgeführt. Folgende Auffälligkeiten wurden festgestellt:' : 'Engine run was performed. The following abnormalities were detected:');
+            const joinedIssues = issuesList.join(', ');
+            sentences.push(`${intro} ${joinedIssues}.`);
+          } else {
+            sentences.push(L.engineRunYes);
+          }
         } else {
           sentences.push(L.engineRunYes);
         }
-      } else {
-        sentences.push(L.engineRunYes);
+      } else if (r.engineRunPerformed === 'not_occurred') {
+        sentences.push(L.engineRunNo);
+      } else if (r.engineRunPerformed === 'not_possible') {
+        sentences.push(L.engineRunNotPossible);
+      } else if (r.engineRunPerformed === 'not_specified') {
+        sentences.push(L.engineRunNotSpecified || 'Keine Angabe zum Motorlauf.');
       }
-    } else if (r.engineRunPerformed === 'not_occurred') {
-      sentences.push(L.engineRunNo);
-    } else if (r.engineRunPerformed === 'not_possible') {
-      sentences.push(L.engineRunNotPossible);
-    } else if (r.engineRunPerformed === 'not_specified') {
-      sentences.push(L.engineRunNotSpecified || 'Keine Angabe zum Motorlauf.');
     }
 
     // Lift
-    if (r.liftingPlatformStatus === 'available_used') {
-      sentences.push(L.liftInspected);
-    } else if (r.liftingPlatformStatus === 'not_available') {
-      sentences.push(L.liftNotAvailable);
-    } else if (r.liftingPlatformStatus === 'not_possible') {
-      sentences.push(L.liftNotPossible);
+    if (!isFieldHidden('liftingPlatformStatus', 'inspectedOnLiftImages', 'noLiftingPlatformAvailableImages')) {
+      if (r.liftingPlatformStatus === 'available_used') {
+        sentences.push(L.liftInspected);
+      } else if (r.liftingPlatformStatus === 'not_available') {
+        sentences.push(L.liftNotAvailable);
+      } else if (r.liftingPlatformStatus === 'not_possible') {
+        sentences.push(L.liftNotPossible);
+      }
     }
 
     // Hybrid Battery
-    if (r.hybridBatteryChecked) {
-      sentences.push(L.hybridCheckedYes);
-    } else {
-      sentences.push(L.hybridCheckedNo);
+    if (!isFieldHidden('hybridBatteryChecked', 'hybridBatteryCheckedImages')) {
+      if (r.hybridBatteryChecked) {
+        sentences.push(L.hybridCheckedYes);
+      } else {
+        sentences.push(L.hybridCheckedNo);
+      }
     }
 
     // Vehicle Condition
-    if (r.vehicleConditionStatus === 'dirty') {
-      sentences.push(L.vehicleDirtyRemark);
-    } else if (r.vehicleConditionStatus === 'wet') {
-      sentences.push(L.vehicleWetRemark);
-    } else if (r.vehicleConditionStatus === 'restricted') {
-      sentences.push(L.vehicleRestricted);
-    } else if (r.vehicleConditionStatus === 'ausreichend') {
-      sentences.push(L.vehicleConditionAusreichend || (safeLang === 'de' ? 'Sichtprüfung: ausreichend.' : 'Visual inspection: sufficient.'));
-    } else if (r.vehicleConditionStatus === 'other') {
-      sentences.push(`${L.vehicleConditionOther || (safeLang === 'de' ? 'Sonstiger Fahrzeugzustand' : 'Other vehicle condition')}: ${r.vehicleConditionOther || ''}.`);
+    if (!isFieldHidden('vehicleConditionStatus', 'vehicleConditionImages', 'vehicleWetImages', 'vehicleDirtyImages')) {
+      if (r.vehicleConditionStatus === 'dirty') {
+        sentences.push(L.vehicleDirtyRemark);
+      } else if (r.vehicleConditionStatus === 'wet') {
+        sentences.push(L.vehicleWetRemark);
+      } else if (r.vehicleConditionStatus === 'restricted') {
+        sentences.push(L.vehicleRestricted);
+      } else if (r.vehicleConditionStatus === 'ausreichend') {
+        sentences.push(L.vehicleConditionAusreichend || (safeLang === 'de' ? 'Sichtprüfung: ausreichend.' : 'Visual inspection: sufficient.'));
+      } else if (r.vehicleConditionStatus === 'other') {
+        if (!isFieldHidden('vehicleConditionOther')) {
+          sentences.push(`${L.vehicleConditionOther || (safeLang === 'de' ? 'Sonstiger Fahrzeugzustand' : 'Other vehicle condition')}: ${r.vehicleConditionOther || ''}.`);
+        }
+      }
     }
 
     // Misc Flags
-    if (r.equipmentListAvailable === true) {
-      sentences.push(`${L.equipmentListAvailable}.`);
-    } else if (r.equipmentListAvailable === 'dat') {
-      const datSuffix = safeLang === 'de' ? ' (laut DAT)' : ' (according to DAT)';
-      sentences.push(`${L.equipmentListAvailable}${datSuffix}.`);
+    if (!isFieldHidden('equipmentListAvailable', 'equipmentListAvailableImages')) {
+      if (r.equipmentListAvailable === true) {
+        sentences.push(`${L.equipmentListAvailable}.`);
+      } else if (r.equipmentListAvailable === 'dat') {
+        const datSuffix = safeLang === 'de' ? ' (laut DAT)' : ' (according to DAT)';
+        sentences.push(`${L.equipmentListAvailable}${datSuffix}.`);
+      }
     }
-    if (r.deliveryConfirmationAvailable) sentences.push(`${L.deliveryConfirmationAvailable}.`);
+    if (!isFieldHidden('deliveryConfirmationAvailable', 'deliveryConfirmationAvailableImages') && r.deliveryConfirmationAvailable) {
+      sentences.push(`${L.deliveryConfirmationAvailable}.`);
+    }
 
     // 5. Documents
-    const docs = translateDocs();
-    sentences.push(`${L.documentsPresent}: ${docs || L.noDocuments}.`);
+    const areAllDocFieldsHidden = isFieldHidden('documentsPresent') || (
+      isFieldHidden('registrationCertificateStatus') &&
+      isFieldHidden('serviceBookletStatus') &&
+      isFieldHidden('operatingManualStatus') &&
+      isFieldHidden('environmentalBadgeStatus')
+    );
+    if (!areAllDocFieldsHidden) {
+      const docs = translateDocs();
+      sentences.push(`${L.documentsPresent}: ${docs || L.noDocuments}.`);
+    }
 
     // 6. Keys
-    sentences.push(`${r.keysPresent} ${L.keysPresented}.`);
+    const areKeysHidden = isFieldHidden('keysPresent', 'actualKeysCount', 'targetKeysCount', 'keysImages');
+    if (!areKeysHidden && r.keysPresent !== undefined && r.keysPresent !== null && (r.keysPresent as any) !== '') {
+      sentences.push(`${r.keysPresent} ${L.keysPresented}.`);
+    }
 
     // 7. Additional Notes
-    if (r.additionalNotes) {
+    if (!isFieldHidden('additionalNotes') && r.additionalNotes) {
       const notesLabel = L.additionalNotes.endsWith(':') ? L.additionalNotes : `${L.additionalNotes}:`;
       sentences.push(`${notesLabel} ${r.additionalNotes}`);
     }
 
     // 8. Authorized Person & Presence
-    if (r.isAuthorizedPerson) {
+    if (!isFieldHidden('isAuthorizedPerson') && r.isAuthorizedPerson) {
       sentences.push(`${L.authorizedPerson}: ${r.authorizedPersonName || '-'}.`);
     }
-    if (r.customerPresent) {
+    if (!isFieldHidden('customerPresent') && r.customerPresent) {
       sentences.push(L.customerPresent + '.');
     }
 
@@ -1324,7 +1359,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
           reparaturweg: row.reparaturweg || ''
         };
       }),
-    ...(r.tires || []).filter(t => (t as any).depreciationValue > 0).map(t => ({
+    ...(!isFieldHidden('tires', 'tireConfiguration') ? (r.tires || []).filter(t => (t as any).depreciationValue > 0).map(t => ({
       description: L.tireAxleSummary.replace('{{axle}}', t.axle.toString()).replace('{{side}}', t.side === 'links' ? L.tireSideLinks : L.tireSideRechts),
       repairCostBrutto: (t as any).depreciationValue || 0,
       anrechnung: 'voll',
@@ -1333,8 +1368,8 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       bodyPart: getAxleSideLabel(t.axle, t.side),
       repairMethod: L.repairMethods.Wertminderung || 'Wertminderung',
       reparaturweg: ''
-    })),
-    ...(r.spareTire && (r.spareTire as any).depreciationValue > 0 ? [{
+    })) : []),
+    ...(!isFieldHidden('spareTire') && r.spareTire && (r.spareTire as any).depreciationValue > 0 ? [{
       description: L.tireSpareTire || 'Notrad / Reserverad',
       repairCostBrutto: (r.spareTire as any).depreciationValue || 0,
       anrechnung: 'voll',
@@ -1344,7 +1379,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       repairMethod: L.repairMethods.Wertminderung || 'Wertminderung',
       reparaturweg: ''
     }] : []),
-    ...(r.secondTires || []).filter((t: any) => t.depreciationValue > 0).map((t: any) => ({
+    ...(!isFieldHidden('hasSecondTireSet', 'secondTires') ? (r.secondTires || []).filter((t: any) => t.depreciationValue > 0).map((t: any) => ({
       description: L.secondTireSetSummary.replace('{{axle}}', t.axle.toString()).replace('{{side}}', t.side === 'links' ? L.tireSideLinks : L.tireSideRechts),
       repairCostBrutto: t.depreciationValue || 0,
       anrechnung: 'voll',
@@ -1353,8 +1388,8 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       bodyPart: `2. Satz ${getAxleSideLabel(t.axle, t.side)}`,
       repairMethod: L.repairMethods.Wertminderung || 'Wertminderung',
       reparaturweg: ''
-    })),
-    ...(r.paintMeasurements || []).filter(pm => pm.damageUnknown && (pm.depreciationValue || 0) > 0).map(pm => ({
+    })) : []),
+    ...(!isFieldHidden('paintMeasurements', 'noPaintIssuesDetected') ? (r.paintMeasurements || []).filter(pm => pm.damageUnknown && (pm.depreciationValue || 0) > 0).map(pm => ({
       description: `${L.paintMeasurementsLabel || 'Lackschichtdickenmessung'}: ${L.damageUnknown || 'Schaden unbekannt'}`,
       repairCostBrutto: pm.depreciationValue || 0,
       anrechnung: 'voll',
@@ -1363,7 +1398,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       bodyPart: getBodyPartLabel(pm.bodyPart, safeLang),
       repairMethod: L.repairMethods.Wertminderung || 'Wertminderung',
       reparaturweg: ''
-    }))
+    })) : [])
   ];
 
   // 2. Incorporate Equipment Costs (formerly extraRows)
@@ -1372,69 +1407,79 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   const ep = r.globalConfig?.equipmentPrices || {};
 
   // Breakdown Kit
-  const isBreakdownKitMissing = isNotAvailable(r.breakdownKit?.status);
-  const isBreakdownKitExpired = isAvailable(r.breakdownKit?.status) && r.breakdownKit?.expirationDate && new Date(r.breakdownKit.expirationDate) < new Date();
-  if (isBreakdownKitMissing || isBreakdownKitExpired) {
-    const cost = r.breakdownKit.price || (isBreakdownKitMissing ? (ep['breakdown_kit_missing'] ?? ep['breakdownKit_missing'] ?? 50) : (ep['breakdown_kit_expired'] ?? ep['breakdownKit_expired'] ?? 30));
-    rawDamages.push({
-      description: isBreakdownKitMissing
-        ? `${L.breakdownKit} – ${L.notAvailable}`
-        : `${L.breakdownKit} – ${safeLang === 'de' ? 'Abgelaufen' : 'Expired'} (${r.breakdownKit.expirationDate})`,
-      repairCostBrutto: cost,
-      anrechnung: 'voll',
-      minderwertBrutto: cost,
-      imageRef: '',
-      bodyPart: '', repairMethod: '', reparaturweg: ''
-    });
+  if (!isFieldHidden('breakdownKit')) {
+    const isBreakdownKitMissing = isNotAvailable(r.breakdownKit?.status);
+    const isBreakdownKitExpired = isAvailable(r.breakdownKit?.status) && r.breakdownKit?.expirationDate && new Date(r.breakdownKit.expirationDate) < new Date();
+    if (isBreakdownKitMissing || isBreakdownKitExpired) {
+      const cost = r.breakdownKit.price || (isBreakdownKitMissing ? (ep['breakdown_kit_missing'] ?? ep['breakdownKit_missing'] ?? 50) : (ep['breakdown_kit_expired'] ?? ep['breakdownKit_expired'] ?? 30));
+      rawDamages.push({
+        description: isBreakdownKitMissing
+          ? `${L.breakdownKit} – ${L.notAvailable}`
+          : `${L.breakdownKit} – ${safeLang === 'de' ? 'Abgelaufen' : 'Expired'} (${r.breakdownKit.expirationDate})`,
+        repairCostBrutto: cost,
+        anrechnung: 'voll',
+        minderwertBrutto: cost,
+        imageRef: '',
+        bodyPart: '', repairMethod: '', reparaturweg: ''
+      });
+    }
   }
 
   // First Aid Kit
-  const isFirstAidKitMissing = isNotAvailable(r.firstAidKit?.status);
-  const isFirstAidKitExpired = isAvailable(r.firstAidKit?.status) && r.firstAidKit?.expirationDate && new Date(r.firstAidKit.expirationDate) < new Date();
-  if (isFirstAidKitMissing || isFirstAidKitExpired) {
-    const cost = r.firstAidKit.price || (isFirstAidKitMissing ? (ep['first_aid_kit_missing'] ?? ep['firstAidKit_missing'] ?? 25) : (ep['first_aid_kit_expired'] ?? ep['firstAidKit_expired'] ?? 20));
-    rawDamages.push({
-      description: isFirstAidKitMissing
-        ? `${L.firstAidKitLabel || 'Erste-Hilfe-Set'} – ${L.notAvailable}`
-        : `${L.firstAidKitLabel || 'Erste-Hilfe-Set'} – ${safeLang === 'de' ? 'Abgelaufen' : 'Expired'} (${r.firstAidKit.expirationDate})`,
-      repairCostBrutto: cost,
-      anrechnung: 'voll',
-      minderwertBrutto: cost,
-      imageRef: '',
-      bodyPart: '', repairMethod: '', reparaturweg: ''
-    });
+  if (!isFieldHidden('firstAidKit')) {
+    const isFirstAidKitMissing = isNotAvailable(r.firstAidKit?.status);
+    const isFirstAidKitExpired = isAvailable(r.firstAidKit?.status) && r.firstAidKit?.expirationDate && new Date(r.firstAidKit.expirationDate) < new Date();
+    if (isFirstAidKitMissing || isFirstAidKitExpired) {
+      const cost = r.firstAidKit.price || (isFirstAidKitMissing ? (ep['first_aid_kit_missing'] ?? ep['firstAidKit_missing'] ?? 25) : (ep['first_aid_kit_expired'] ?? ep['firstAidKit_expired'] ?? 20));
+      rawDamages.push({
+        description: isFirstAidKitMissing
+          ? `${L.firstAidKitLabel || 'Erste-Hilfe-Set'} – ${L.notAvailable}`
+          : `${L.firstAidKitLabel || 'Erste-Hilfe-Set'} – ${safeLang === 'de' ? 'Abgelaufen' : 'Expired'} (${r.firstAidKit.expirationDate})`,
+        repairCostBrutto: cost,
+        anrechnung: 'voll',
+        minderwertBrutto: cost,
+        imageRef: '',
+        bodyPart: '', repairMethod: '', reparaturweg: ''
+      });
+    }
   }
 
   // Safety Vest
-  const isSafetyVestMissing = isNotAvailable(r.safetyVest?.status);
-  if (isSafetyVestMissing) {
-    const cost = r.safetyVest.price || (ep['safety_vest_missing'] ?? ep['safetyVest_missing'] ?? 10);
-    rawDamages.push({
-      description: `${L.safetyVestLabel || 'Warnweste'} – ${L.notAvailable}`,
-      repairCostBrutto: cost,
-      anrechnung: 'voll',
-      minderwertBrutto: cost,
-      imageRef: '',
-      bodyPart: '', repairMethod: '', reparaturweg: ''
-    });
+  if (!isFieldHidden('safetyVest')) {
+    const isSafetyVestMissing = isNotAvailable(r.safetyVest?.status);
+    if (isSafetyVestMissing) {
+      const cost = r.safetyVest.price || (ep['safety_vest_missing'] ?? ep['safetyVest_missing'] ?? 10);
+      rawDamages.push({
+        description: `${L.safetyVestLabel || 'Warnweste'} – ${L.notAvailable}`,
+        repairCostBrutto: cost,
+        anrechnung: 'voll',
+        minderwertBrutto: cost,
+        imageRef: '',
+        bodyPart: '', repairMethod: '', reparaturweg: ''
+      });
+    }
   }
 
   // Warning Triangle
-  const isWarningTriangleMissing = isNotAvailable(r.warningTriangle?.status);
-  if (isWarningTriangleMissing) {
-    const cost = r.warningTriangle.price || (ep['warning_triangle_missing'] ?? ep['warningTriangle_missing'] ?? 15);
-    rawDamages.push({
-      description: `${L.warningTriangleLabel || 'Warndreieck'} – ${L.notAvailable}`,
-      repairCostBrutto: cost,
-      anrechnung: 'voll',
-      minderwertBrutto: cost,
-      imageRef: '',
-      bodyPart: '', repairMethod: '', reparaturweg: ''
-    });
+  if (!isFieldHidden('warningTriangle')) {
+    const isWarningTriangleMissing = isNotAvailable(r.warningTriangle?.status);
+    if (isWarningTriangleMissing) {
+      const cost = r.warningTriangle.price || (ep['warning_triangle_missing'] ?? ep['warningTriangle_missing'] ?? 15);
+      rawDamages.push({
+        description: `${L.warningTriangleLabel || 'Warndreieck'} – ${L.notAvailable}`,
+        repairCostBrutto: cost,
+        anrechnung: 'voll',
+        minderwertBrutto: cost,
+        imageRef: '',
+        bodyPart: '', repairMethod: '', reparaturweg: ''
+      });
+    }
   }
+
   // Maintenance price — always add if set
   const hasSysMaint = (r.systemMinderwertRows || []).some(row => row.id === 'sys-maint');
-  if (!hasSysMaint) {
+  const isMaintHidden = isFieldHidden('nextMaintenanceType', 'nextMaintenanceIntervalValue', 'maintenancePrice', 'nextMaintenanceMileage', 'nextMaintenanceDate');
+  if (!hasSysMaint && !isMaintHidden) {
     if (r.maintenancePrice > 0) {
       // Build a description that includes the duration if available
       let maintenanceDesc = L.maintenanceRecord as string;
@@ -1576,21 +1621,29 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
     });
   });
 
-  r.tires?.forEach(t => {
-    const sideLbl = getAxleSideLabel(t.axle, t.side);
-    t.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.tiresWheels} - ${sideLbl} (${L.photoLabel} ${i + 1})` }));
-  });
-  r.secondTires?.forEach(t => {
-    const sideLbl = getAxleSideLabel(t.axle, t.side);
-    t.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.secondTireSet || 'Zweiter Rädersatz'} - ${sideLbl} (${L.photoLabel} ${i + 1})` }));
-  });
-  r.spareTire?.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.tireSpareTire || 'Notrad / Reserverad'} (${L.photoLabel} ${i + 1})` }));
+  if (!isFieldHidden('tires', 'tireConfiguration')) {
+    r.tires?.forEach(t => {
+      const sideLbl = getAxleSideLabel(t.axle, t.side);
+      t.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.tiresWheels} - ${sideLbl} (${L.photoLabel} ${i + 1})` }));
+    });
+  }
+  if (!isFieldHidden('hasSecondTireSet', 'secondTires', 'tireConfiguration')) {
+    r.secondTires?.forEach(t => {
+      const sideLbl = getAxleSideLabel(t.axle, t.side);
+      t.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.secondTireSet || 'Zweiter Rädersatz'} - ${sideLbl} (${L.photoLabel} ${i + 1})` }));
+    });
+  }
+  if (!isFieldHidden('spareTire')) {
+    r.spareTire?.images?.filter(img => isIncluded(img)).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.tireSpareTire || 'Notrad / Reserverad'} (${L.photoLabel} ${i + 1})` }));
+  }
 
   // Collect images from paint measurements
-  r.paintMeasurements?.forEach(pm => {
-    const partLabel = getBodyPartLabel(pm.bodyPart, safeLang);
-    pm.images?.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.paintMeasurementsLabel || 'Lackschichtdicke'} - ${partLabel} (${L.photoLabel} ${i + 1})` }));
-  });
+  if (!isFieldHidden('paintMeasurements', 'noPaintIssuesDetected')) {
+    r.paintMeasurements?.forEach(pm => {
+      const partLabel = getBodyPartLabel(pm.bodyPart, safeLang);
+      pm.images?.filter((img: string) => isIncluded(img)).forEach((img: string, i: number) => sortedPhotos.push({ data: img, label: `${L.paintMeasurementsLabel || 'Lackschichtdicke'} - ${partLabel} (${L.photoLabel} ${i + 1})` }));
+    });
+  }
 
   // Common condition images
   if (!isFieldHidden('lastRegistrationImages') && !isFieldHidden('registrationCertificateStatus') && !isFieldHidden('fzScheinImages')) {
@@ -1607,7 +1660,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   if (!isFieldHidden('bordliteraturImages') && !isFieldHidden('operatingManualStatus')) {
     r.bordliteraturImages?.filter(img => isIncluded(img, undefined, 'bordliteraturImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.docBedienungsanleitung || 'Bordliteratur'} (${L.photoLabel} ${i + 1})` }));
   }
-  if (!isFieldHidden('keysImages') && !isFieldHidden('keysPresent') && !isFieldHidden('targetKeysCount')) {
+  if (!isFieldHidden('keysImages', 'keysPresent', 'targetKeysCount', 'actualKeysCount')) {
     r.keysImages?.filter(img => isIncluded(img, undefined, 'keysImages')).forEach((img, i) => sortedPhotos.push({ data: img, label: `${L.keys || 'Schlüssel'} (${L.photoLabel} ${i + 1})` }));
   }
   if (!isFieldHidden('maintenanceImages') && !isFieldHidden('nextMaintenanceType')) {
@@ -1751,8 +1804,8 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
           <table style="border-collapse:collapse">
             <tr>
               <td style="border-left:3px solid ${BLUE};padding-left:10px">
-                <div style="font-size:10pt;font-weight:bold;color:${THEME};margin-bottom:2px">${displayOrderNumber}</div>
-                <div style="font-size:8pt;color:#666">${L.photoFrom} ${fmtDate(r.inspectionDate)} &nbsp;&bull;&nbsp; <span style="color:${ORANGE};font-weight:600">${L.page} ${pageNo} ${L.of} ${totalPages}</span></div>
+                ${!isFieldHidden('caseNumber') ? `<div style="font-size:10pt;font-weight:bold;color:${THEME};margin-bottom:2px">${displayOrderNumber}</div>` : ''}
+                <div style="font-size:8pt;color:#666">${!isFieldHidden('inspectionDate') && r.inspectionDate ? `${L.photoFrom} ${fmtDate(r.inspectionDate)} &nbsp;&bull;&nbsp; ` : ''}<span style="color:${ORANGE};font-weight:600">${L.page} ${pageNo} ${L.of} ${totalPages}</span></div>
               </td>
             </tr>
           </table>
@@ -1777,29 +1830,150 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       <h3 style="font-size:11pt;color:${THEME};background:rgba(0,0,0,0.04);padding:4px 8px;margin-bottom:8px;font-weight:700">${title}</h3>`;
 
   // ─────────────────────────────────────────────────────────────────────
-  // VEHICLE DATA TABLE ROW helper
+  // VEHICLE DATA TABLE DYNAMIC PACKING
   // ─────────────────────────────────────────────────────────────────────
-  const vRow = (l1: string, v1: string | number, l2: string, v2: string | number, fieldName1?: string, fieldName2?: string) => {
-    const hide1 = fieldName1 ? isFieldHidden(fieldName1) : false;
-    const hide2 = fieldName2 ? isFieldHidden(fieldName2) : false;
-    if (hide1 && hide2) return '';
-    return `
-    <tr>
-      <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${hide1 ? '' : l1}</td>
-      <td style="font-weight:500;padding:2px 6px;width:30%">${hide1 ? '' : cleanup(v1)}</td>
-      <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${hide2 ? '' : l2}</td>
-      <td style="font-weight:500;padding:2px 6px;width:30%">${hide2 ? '' : cleanup(v2)}</td>
-    </tr>`;
-  };
+  const vehicleItems: Array<{ label: string; value: string | number; isFullWidth?: boolean }> = [];
 
-  // Single-value row helper (for odd fields)
-  const vRowSingle = (l1: string, v1: string | number, fieldName1?: string) => {
-    if (fieldName1 && isFieldHidden(fieldName1)) return '';
-    return `
-    <tr>
-      <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${l1}</td>
-      <td colspan="3" style="font-weight:500;padding:2px 6px">${cleanup(v1)}</td>
-    </tr>`;
+  if (!isFieldHidden('firstRegistration')) {
+    vehicleItems.push({ label: L.firstRegistration, value: fmtDate(r.firstRegistration) || '-' });
+  }
+  if (!isFieldHidden('lastRegistration')) {
+    vehicleItems.push({ label: L.lastRegistration, value: fmtDate(r.lastRegistration) || '-' });
+  }
+  if (!isFieldHidden('licensePlate') && r.licensePlate) {
+    vehicleItems.push({ label: L.licensePlate, value: r.licensePlate });
+  }
+  if (!isFieldHidden('manufacturer')) {
+    vehicleItems.push({ label: L.manufacturer, value: r.manufacturer || '-' });
+  }
+
+  // Model & Submodel
+  const showBaseModel = !isFieldHidden('baseModel') && !!r.baseModel;
+  const showSubModel = !isFieldHidden('subModel') && !!r.subModel;
+  if (showBaseModel || showSubModel) {
+    const modelVal = [showBaseModel ? r.baseModel : '', showSubModel ? r.subModel : ''].filter(Boolean).join(' ');
+    vehicleItems.push({ label: L.typeSales, value: modelVal || '-' });
+  } else if (!isFieldHidden('baseModel') || !isFieldHidden('subModel')) {
+    vehicleItems.push({ label: L.typeSales, value: '-' });
+  }
+
+  if (!isFieldHidden('bodyType')) {
+    vehicleItems.push({ label: L.bodyType, value: r.bodyType || '-' });
+  }
+  if (!isFieldHidden('doors')) {
+    vehicleItems.push({ label: L.doors, value: r.doors ?? '-' });
+  }
+  if (!isFieldHidden('seats')) {
+    vehicleItems.push({ label: L.seats, value: r.seats ?? '-' });
+  }
+  if (!isFieldHidden('vehicleCategory')) {
+    vehicleItems.push({ label: L.vehicleCategory, value: r.vehicleCategory || '-' });
+  }
+  if (!isFieldHidden('vin')) {
+    vehicleItems.push({ label: L.vinFull, value: r.vin || '-', isFullWidth: true });
+  }
+  if (!isFieldHidden('kbaNumbers')) {
+    vehicleItems.push({ label: L.hsnTsn, value: r.kbaNumbers || '-' });
+  }
+  if (!isFieldHidden('keyNumber')) {
+    vehicleItems.push({ label: L.keyNo, value: r.keyNumber || '-' });
+  }
+  if (!isFieldHidden('mileage')) {
+    vehicleItems.push({ label: L.mileageRead, value: r.mileage != null ? `${new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(r.mileage)} km` : '-' });
+  }
+  if (!isFieldHidden('nextHU')) {
+    vehicleItems.push({ label: L.nextInspection, value: formatMonthYear(r.nextHU) || '-' });
+  }
+  if (!isFieldHidden('fuelType')) {
+    vehicleItems.push({ label: L.fuel, value: r.fuelType || '-' });
+  }
+  if (!isFieldHidden('cylinders')) {
+    vehicleItems.push({ label: L.cylinders, value: r.cylinders ?? '-' });
+  }
+  if (!isFieldHidden('powerKw')) {
+    vehicleItems.push({ label: L.power, value: r.powerKw ?? '-' });
+  }
+  if (!isFieldHidden('displacement')) {
+    vehicleItems.push({ label: L.displacement, value: r.displacement ?? '-' });
+  }
+  if (!isFieldHidden('emissionClass')) {
+    vehicleItems.push({ label: L.emissionClass, value: r.emissionClass || '-' });
+  }
+  if (!isFieldHidden('driveType')) {
+    vehicleItems.push({ label: L.driveType, value: r.driveType || '-' });
+  }
+  if (!isFieldHidden('transmission')) {
+    vehicleItems.push({ label: L.transmission, value: r.transmission || '-' });
+  }
+  if (!isFieldHidden('wheels')) {
+    vehicleItems.push({ label: L.wheels, value: r.wheels || '-' });
+  }
+  if (!isFieldHidden('colorDescription')) {
+    vehicleItems.push({ label: L.color, value: r.colorDescription || '-' });
+  }
+  if (!isFieldHidden('upholsteryDescription')) {
+    vehicleItems.push({ label: L.upholstery, value: r.upholsteryDescription || '-' });
+  }
+
+  // Equipment items
+  if (!isFieldHidden('breakdownKit') && r.breakdownKit) {
+    const bkVal = (typeof r.breakdownKit === 'string' ? r.breakdownKit : (isAvailable(r.breakdownKit.status) ? L.available : isNotAvailable(r.breakdownKit.status) ? L.notAvailable : r.breakdownKit.status)) + (r.breakdownKit.price ? ` (${fmtCur(r.breakdownKit.price)})` : '');
+    vehicleItems.push({ label: L.breakdownKit, value: bkVal, isFullWidth: true });
+  }
+  if (!isFieldHidden('firstAidKit') && r.firstAidKit?.status) {
+    const fakVal = isAvailable(r.firstAidKit.status) ? L.available : isNotAvailable(r.firstAidKit.status) ? L.notAvailable : r.firstAidKit.status;
+    vehicleItems.push({ label: L.firstAidKitLabel || 'Erste-Hilfe-Set', value: fakVal, isFullWidth: true });
+  }
+  if (!isFieldHidden('safetyVest') && r.safetyVest?.status) {
+    const svVal = isAvailable(r.safetyVest.status) ? L.available : isNotAvailable(r.safetyVest.status) ? L.notAvailable : r.safetyVest.status;
+    vehicleItems.push({ label: L.safetyVestLabel || 'Warnweste', value: svVal, isFullWidth: true });
+  }
+  if (!isFieldHidden('warningTriangle') && r.warningTriangle?.status) {
+    const wtVal = isAvailable(r.warningTriangle.status) ? L.available : isNotAvailable(r.warningTriangle.status) ? L.notAvailable : r.warningTriangle.status;
+    vehicleItems.push({ label: L.warningTriangleLabel || 'Warndreieck', value: wtVal, isFullWidth: true });
+  }
+
+  const renderVehicleTable = () => {
+    const rowsHtml: string[] = [];
+    let pendingItem: { label: string; value: string | number } | null = null;
+
+    const flushPending = () => {
+      if (pendingItem) {
+        rowsHtml.push(`
+          <tr>
+            <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${pendingItem.label}</td>
+            <td colspan="3" style="font-weight:500;padding:2px 6px">${cleanup(pendingItem.value)}</td>
+          </tr>`);
+        pendingItem = null;
+      }
+    };
+
+    vehicleItems.forEach(item => {
+      if (item.isFullWidth) {
+        flushPending();
+        rowsHtml.push(`
+          <tr>
+            <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${item.label}</td>
+            <td colspan="3" style="font-weight:500;padding:2px 6px">${cleanup(item.value)}</td>
+          </tr>`);
+      } else {
+        if (!pendingItem) {
+          pendingItem = item;
+        } else {
+          rowsHtml.push(`
+            <tr>
+              <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${pendingItem.label}</td>
+              <td style="font-weight:500;padding:2px 6px;width:30%">${cleanup(pendingItem.value)}</td>
+              <td style="color:#333;background:${THEME_BG};padding:2px 6px;white-space:nowrap;width:20%">${item.label}</td>
+              <td style="font-weight:500;padding:2px 6px;width:30%">${cleanup(item.value)}</td>
+            </tr>`);
+          pendingItem = null;
+        }
+      }
+    });
+
+    flushPending();
+    return rowsHtml.join('');
   };
 
   // ─────────────────────────────────────────────────────────────────────
@@ -1844,15 +2018,28 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   // ─────────────────────────────────────────────────────────────────────
   // DUAL ADDRESS BLOCK (Page 1 — between header and title)
   // ─────────────────────────────────────────────────────────────────────
-  const addressBlock = `
+  const isAddressBlockHidden = isFieldHidden('clientName') && isFieldHidden('clientStreet', 'clientAddress') && isFieldHidden('clientZip') && isFieldHidden('clientCity');
+  const addressLines: string[] = [];
+  if (!isFieldHidden('clientName') && r.clientName) {
+    addressLines.push(`<strong>${r.clientName}</strong>`);
+  }
+  if (!isFieldHidden('clientStreet', 'clientAddress') && r.clientAddress) {
+    addressLines.push(`${r.clientAddress}`);
+  }
+  const zipCityParts: string[] = [];
+  if (!isFieldHidden('clientZip') && r.clientZip) zipCityParts.push(r.clientZip);
+  if (!isFieldHidden('clientCity') && r.clientCity) zipCityParts.push(r.clientCity);
+  if (zipCityParts.length > 0) {
+    addressLines.push(zipCityParts.join(' '));
+  }
+
+  const addressBlock = isAddressBlockHidden || addressLines.length === 0 ? '' : `
   <table style="width:100%;border-collapse:collapse;font-size:8pt;margin:8px 0 8px 0">
     <tr>
       <td style="vertical-align:top;width:100%">
         <div style="font-size:7.5pt;color:#718096;border-bottom:1px solid #E2E8F0;padding-bottom:3px;margin-bottom:8px;width:fit-content;">${C.name} · ${C.fullAddress}</div>
         <div style="font-size:10pt;line-height:1.5;color:#1A202C">
-          <strong>${r.clientName || ''}</strong><br/>
-          ${r.clientAddress || ''}<br/>
-          ${r.clientZip || ''} ${r.clientCity || ''}
+          ${addressLines.join('<br/>')}
         </div>
       </td>
     </tr>
@@ -1923,20 +2110,35 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   ${secHead(L.caseSection)}
     <div style="font-size:9.5pt;line-height:1.6;margin-bottom:15px;color:#1A202C">
       <div style="display:flex;flex-wrap:wrap;row-gap:6px;">
-        <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.orderNo}:</span><span style="font-weight:600;">${displayOrderNumber}</span></div>
-        <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.customerNo}:</span><span style="font-weight:600;">${r.customerNumber}</span></div>
+        ${!isFieldHidden('caseNumber') ? `<div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.orderNo}:</span><span style="font-weight:600;">${displayOrderNumber}</span></div>` : ''}
+        ${!isFieldHidden('customerNumber') && r.customerNumber ? `<div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.customerNo}:</span><span style="font-weight:600;">${r.customerNumber}</span></div>` : ''}
 
-        <div style="width:100%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.client}:</span><span style="font-weight:600;">${r.clientName}, ${r.clientAddress}, ${r.clientZip} ${r.clientCity}</span></div>
+        ${(() => {
+          const clientParts = [
+            !isFieldHidden('clientName') ? r.clientName : null,
+            !isFieldHidden('clientStreet', 'clientAddress') ? r.clientAddress : null,
+            (!isFieldHidden('clientZip') || !isFieldHidden('clientCity')) ? [!isFieldHidden('clientZip') ? r.clientZip : null, !isFieldHidden('clientCity') ? r.clientCity : null].filter(Boolean).join(' ') : null
+          ].filter(Boolean);
+          if (clientParts.length === 0 || isFieldHidden('client')) return '';
+          return `<div style="width:100%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.client}:</span><span style="font-weight:600;">${clientParts.join(', ')}</span></div>`;
+        })()}
 
-        <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.orderFrom}:</span><span style="font-weight:600;">${fmtDate(r.orderDate)}</span></div>
-        <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.contactPerson}:</span><span style="font-weight:600;">${finalInspectorName}</span></div>
+        ${!isFieldHidden('orderDate') && r.orderDate ? `<div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.orderFrom}:</span><span style="font-weight:600;">${fmtDate(r.orderDate)}</span></div>` : ''}
+        ${!isFieldHidden('contactPersonName', 'inspectorName') && finalInspectorName ? `<div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.contactPerson}:</span><span style="font-weight:600;">${finalInspectorName}</span></div>` : ''}
 
-        <div style="width:100%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.inspection}:</span><span style="font-weight:600;">${fmtDate(r.inspectionDate)}, ${r.inspectionTime}${L.clock ? ` ${L.clock}` : ''}, ${r.inspectionLocation}</span></div>
+        ${(() => {
+          const inspParts: string[] = [];
+          if (!isFieldHidden('inspectionDate') && r.inspectionDate) inspParts.push(fmtDate(r.inspectionDate));
+          if (!isFieldHidden('inspectionTime') && r.inspectionTime) inspParts.push(`${r.inspectionTime}${L.clock ? ` ${L.clock}` : ''}`);
+          if (!isFieldHidden('inspectionLocation') && r.inspectionLocation) inspParts.push(r.inspectionLocation);
+          if (inspParts.length === 0) return '';
+          return `<div style="width:100%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.inspection}:</span><span style="font-weight:600;">${inspParts.join(', ')}</span></div>`;
+        })()}
 
-        <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.valuedOn}:</span><span style="font-weight:600;">${fmtDate(r.valuationDate)}</span></div>
-        <div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.contractNo}:</span><span style="font-weight:600;">${r.contractNumber}</span></div>
+        ${!isFieldHidden('valuationDate') && r.valuationDate ? `<div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.valuedOn}:</span><span style="font-weight:600;">${fmtDate(r.valuationDate)}</span></div>` : ''}
+        ${!isFieldHidden('contractNumber') && r.contractNumber ? `<div style="width:50%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.contractNo}:</span><span style="font-weight:600;">${r.contractNumber}</span></div>` : ''}
 
-        ${r.concernCompany ? `<div style="width:100%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.concerns}:</span><span style="font-weight:600;">${r.concernCompany}</span></div>` : ''}
+        ${!isFieldHidden('concernCompany', 'concernType') && r.concernCompany ? `<div style="width:100%;display:flex;"><span style="color:#4A5568;width:125px;flex-shrink:0;">${L.concerns}:</span><span style="font-weight:600;">${r.concernCompany}</span></div>` : ''}
       </div>
     </div>
   </div>
@@ -1991,22 +2193,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
 
   ${secHead(L.vehicleData)}
     <table class="premium-table" style="width:100%;border-collapse:collapse;font-size:9pt">
-      ${vRow(L.firstRegistration, fmtDate(r.firstRegistration), L.lastRegistration, fmtDate(r.lastRegistration), 'firstRegistration', 'lastRegistration')}
-      ${vRow(L.manufacturer, r.manufacturer, L.typeSales, `${r.baseModel} ${r.subModel}`, 'manufacturer', 'baseModel')}
-      ${vRow(L.bodyType, r.bodyType, L.doors, r.doors ?? '-', 'bodyType', 'doors')}
-      ${vRow(L.seats, r.seats ?? '-', L.vehicleCategory, r.vehicleCategory || '-', 'seats', 'vehicleCategory')}
-      ${vRowSingle(L.vinFull, r.vin, 'vin')}
-      ${vRow(L.hsnTsn, r.kbaNumbers, L.keyNo, r.keyNumber, 'kbaNumbers', 'keyNumber')}
-      ${vRow(L.mileageRead, `${new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(r.mileage)} km`, L.nextInspection, formatMonthYear(r.nextHU), 'mileage', 'nextHU')}
-      ${vRow(L.fuel, r.fuelType, L.cylinders, r.cylinders ?? '-', 'fuelType', 'cylinders')}
-      ${vRow(L.power, r.powerKw, L.displacement, r.displacement, 'powerKw', 'displacement')}
-      ${vRow(L.emissionClass, r.emissionClass, L.driveType, r.driveType, 'emissionClass', 'driveType')}
-      ${vRow(L.transmission, r.transmission, L.wheels, r.wheels, 'transmission', 'wheels')}
-      ${vRow(L.color, r.colorDescription, L.upholstery, r.upholsteryDescription, 'colorDescription', 'upholsteryDescription')}
-      ${r.breakdownKit ? vRowSingle(L.breakdownKit, (typeof r.breakdownKit === 'string' ? r.breakdownKit : (isAvailable(r.breakdownKit.status) ? L.available : isNotAvailable(r.breakdownKit.status) ? L.notAvailable : r.breakdownKit.status)) + (r.breakdownKit.price ? ` (${fmtCur(r.breakdownKit.price)})` : ''), 'breakdownKit') : ''}
-      ${r.firstAidKit?.status ? vRowSingle(L.firstAidKitLabel || 'Erste-Hilfe-Set', isAvailable(r.firstAidKit.status) ? L.available : isNotAvailable(r.firstAidKit.status) ? L.notAvailable : r.firstAidKit.status, 'firstAidKit') : ''}
-      ${r.safetyVest?.status ? vRowSingle(L.safetyVestLabel || 'Warnweste', isAvailable(r.safetyVest.status) ? L.available : isNotAvailable(r.safetyVest.status) ? L.notAvailable : r.safetyVest.status, 'safetyVest') : ''}
-      ${r.warningTriangle?.status ? vRowSingle(L.warningTriangleLabel || 'Warndreieck', isAvailable(r.warningTriangle.status) ? L.available : isNotAvailable(r.warningTriangle.status) ? L.notAvailable : r.warningTriangle.status, 'warningTriangle') : ''}
+      ${renderVehicleTable()}
     </table>
     <p style="font-size:8pt;font-style:italic;margin-top:8px;color:#666">${L.mileageDisclaimer}</p>
   </div>
@@ -2061,7 +2248,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       : L.no;
     return `<tr><td style="padding:4px;border:1px solid ${BORDER_COLOR}">${axleLabel}</td><td style="padding:4px;border:1px solid ${BORDER_COLOR}">${t.designation}</td><td style="padding:4px;border:1px solid ${BORDER_COLOR}">${manufacturerDisplay}</td><td style="padding:4px;border:1px solid ${BORDER_COLOR}">${t.type}</td><td style="padding:4px;border:1px solid ${BORDER_COLOR}">${t.treadDepth}</td><td style="padding:4px;border:1px solid ${BORDER_COLOR}">${rimDisplay || '-'}</td><td style="padding:4px;border:1px solid ${BORDER_COLOR}">${damagedHtml}</td></tr>`;
   }).join('')}
-      ${r.spareTire?.present ? `
+      ${(r.spareTire?.present && !isFieldHidden('spareTire')) ? `
         <tr>
           <td style="padding:4px;border:1px solid ${BORDER_COLOR};font-weight:600">${L.tireSpareTire || 'Notrad / Reserverad'}</td>
           <td style="padding:4px;border:1px solid ${BORDER_COLOR}">${r.spareTire?.designation}</td>
@@ -2082,7 +2269,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       </tbody>
     </table>
 
-    ${r.hasSecondTireSet ? `
+    ${(r.hasSecondTireSet && !isFieldHidden('hasSecondTireSet', 'secondTires', 'tireConfiguration')) ? `
       <div style="margin-top:10px">
         <h4 style="font-size:9pt;color:${THEME};font-weight:bold;margin-bottom:5px">${L.secondTireSet || 'Zweiter Rädersatz'} ${r.secondTireSetSelection ? `(${translateSecondTireSetSelection(r.secondTireSetSelection)})` : ''}</h4>
         <table class="premium-table" style="width:100%;border-collapse:collapse;font-size:8pt">
@@ -2120,6 +2307,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
   ${secHead(L.generalCondition, !p3ShowStd && !p3ShowOpt && !p3ShowTires)}
     <p style="font-size:9pt">${L.generalConditionText}</p>
     ${(() => {
+      if (isFieldHidden('nextMaintenanceType', 'nextMaintenanceDate', 'maintenanceImages')) return '';
       const mType = (r as any).nextMaintenanceType;
       const mVal = (r as any).nextMaintenanceIntervalValue;
       const mPrice = r.maintenancePrice;
@@ -2139,7 +2327,7 @@ export function generatePDFHTML(r: PDFReportData, lang: 'de' | 'en' = 'de'): str
       if (mPrice > 0) parts.push(fmtCur(mPrice));
       return parts.length > 0 ? `<p style="font-size:9pt;margin-top:4px"><strong>${L.maintenanceRecord}:</strong> ${parts.join(' – ')}</p>` : '';
     })()}
-    ${r.chargingCable ? `
+    ${(!isFieldHidden('chargingCable', 'chargingCableImages') && r.chargingCable) ? `
       <p style="font-size:9pt;margin-top:4px">
         <strong>${L.chargingCable}:</strong>
         ${r.chargingCable === 'YES' ? L.yes : r.chargingCable === 'NO' ? L.no : L.notAvailable}
@@ -2213,11 +2401,13 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
 
 
   <table style="width:100%;border-collapse:collapse;margin-top:16px;table-layout:fixed;">
+    ${!isFieldHidden('signatureDriver') ? `
     <tr>
       <td colspan="3" style="background:rgba(238,119,0,0.12);font-weight:600;padding:10px;color:${ORANGE};border:1px solid #333">
         <table style="width:100%;border-collapse:collapse;border:none;"><tr>
           <td style="padding:0;border:none;vertical-align:middle;text-align:left;">${L.sigDriver}</td>
           <td style="padding:0;border:none;vertical-align:middle;text-align:right;">
+            ${!isFieldHidden('expertAssessmentStatus') ? `
             <table style="width:auto;border-collapse:collapse;border:none;margin-left:auto;"><tr>
               <td style="padding:0 15px 0 0;border:none;vertical-align:middle;white-space:nowrap;">
                 <img src="${r.expertAssessmentStatus === 'accepted' ? checkedBoxSvg : uncheckedBoxSvg}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;" /><span style="font-size:9pt;font-weight:normal;color:#333;vertical-align:middle;">${L.gaAccepted}</span>
@@ -2225,7 +2415,7 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
               <td style="padding:0;border:none;vertical-align:middle;white-space:nowrap;">
                 <img src="${r.expertAssessmentStatus === 'not_accepted' ? checkedBoxSvg : uncheckedBoxSvg}" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;" /><span style="font-size:9pt;font-weight:normal;color:#333;vertical-align:middle;">${L.gaNotAccepted}</span>
               </td>
-            </tr></table>
+            </tr></table>` : ''}
           </td>
         </tr></table>
       </td>
@@ -2235,12 +2425,15 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
       <td style="width:35%;border:1px solid #333;padding:10px;height:80px;vertical-align:bottom;font-size:9pt">${r.signatureNames?.driver || ''}<br/><small>${L.sigName}</small></td>
       <td style="width:35%;border:1px solid #333;padding:4px 10px;height:80px;vertical-align:middle;text-align:center;font-size:9pt;">${r.signatures?.driver ? `<div style="width:100%;height:55px;text-align:center;line-height:55px;overflow:hidden;"><img src="${r.signatures.driver}" style="max-height:55px;max-width:100%;width:auto;height:auto;object-fit:contain;display:inline-block;vertical-align:middle;image-rendering:-webkit-optimize-contrast;" /></div>` : ''}<br/><small>${L.sigSignature}</small></td>
     </tr>
+    ` : ''}
+    ${!isFieldHidden('signatureReceiver') ? `
     <tr><td colspan="3" style="background:rgba(255,107,53,0.12);font-weight:600;padding:10px;color:${ORANGE};border:1px solid #333">${L.sigReceiver}</td></tr>
     <tr>
       <td style="width:30%;border:1px solid #333;padding:10px;height:80px;vertical-align:bottom;font-size:9pt">${fmtDate(r.inspectionDate)}${r.inspectionTime ? `, ${r.inspectionTime}` : ''}<br/><small>${L.sigDate}</small></td>
       <td style="width:35%;border:1px solid #333;padding:10px;height:80px;vertical-align:bottom;font-size:9pt">${r.signatureNames?.receiver || ''}<br/><small>${L.sigName}</small></td>
       <td style="width:35%;border:1px solid #333;padding:4px 10px;height:80px;vertical-align:middle;text-align:center;font-size:9pt;">${r.signatures?.receiver ? `<div style="width:100%;height:55px;text-align:center;line-height:55px;overflow:hidden;"><img src="${r.signatures.receiver}" style="max-height:55px;max-width:100%;width:auto;height:auto;object-fit:contain;display:inline-block;vertical-align:middle;image-rendering:-webkit-optimize-contrast;" /></div>` : ''}<br/><small>${L.sigSignature}</small></td>
     </tr>
+    ` : ''}
     <tr><td colspan="3" style="background:rgba(255,107,53,0.12);font-weight:600;padding:10px;color:${ORANGE};border:1px solid #333">${C.name} ${L.sigInspector}</td></tr>
     <tr>
       <td style="width:30%;border:1px solid #333;padding:10px;height:70px;vertical-align:bottom;font-size:9pt">${fmtDate(new Date().toISOString())}<br/><small>${L.sigDate}</small></td>
@@ -2252,9 +2445,11 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
   </table>
 
   <!-- Authorized Person & Customer Absence Section -->
+  ${(!isFieldHidden('isAuthorizedPerson') || !isFieldHidden('customerPresent')) ? `
   <div style="margin-top:14px;border:1px solid #333;background:#fafafa;padding:10px;">
     <table style="width:100%;border-collapse:collapse;border:none;">
       <tr>
+        ${!isFieldHidden('isAuthorizedPerson') ? `
         <td style="padding:0;border:none;vertical-align:middle;width:50%;">
           <table style="width:auto;border-collapse:collapse;border:none;"><tr>
             <td style="padding:0 6px 0 0;border:none;vertical-align:middle;">
@@ -2264,7 +2459,8 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
               <strong style="font-size:9pt;color:#333;vertical-align:middle;">${L.authorizedPerson}</strong>
             </td>
           </tr></table>
-        </td>
+        </td>` : ''}
+        ${!isFieldHidden('customerPresent') ? `
         <td style="padding:0;border:none;vertical-align:middle;width:50%;">
           <table style="width:auto;border-collapse:collapse;border:none;"><tr>
             <td style="padding:0 6px 0 0;border:none;vertical-align:middle;">
@@ -2274,9 +2470,9 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
               <span style="font-size:9pt;color:#333;vertical-align:middle;">${L.customerPresent}</span>
             </td>
           </tr></table>
-        </td>
+        </td>` : ''}
       </tr>
-      ${(r.isAuthorizedPerson || r.authorizedPersonName || r.authorizedPersonPhoto) ? `
+      ${(!isFieldHidden('isAuthorizedPerson') && (r.isAuthorizedPerson || r.authorizedPersonName || r.authorizedPersonPhoto)) ? `
       <tr>
         <td colspan="2" style="padding:8px 0 0 0;border-top:1px dashed #ccc;margin-top:6px;vertical-align:top;">
           <table style="width:100%;border-collapse:collapse;border:none;">
@@ -2299,7 +2495,7 @@ ${damageContPages.map((cp, ci) => `<div style="page-break-before:always;position
       </tr>
       ` : ''}
     </table>
-  </div>
+  </div>` : ''}
   </div>
 
 </div>

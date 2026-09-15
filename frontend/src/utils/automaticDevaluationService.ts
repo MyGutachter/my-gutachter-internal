@@ -45,26 +45,34 @@ function makeSystemRow(
 export const getAutomaticDevaluations = (storeData: Partial<ReportData>): MinderwertRow[] => {
     const rows: MinderwertRow[] = [];
 
-    // ── 1. Keys Mismatch — actual vs target ──────────────────────────────────
-    const target = storeData.targetKeysCount ?? 2;
-    const actual = storeData.actualKeysCount ?? 0;
+    const isFieldHidden = (...fieldNames: string[]): boolean => {
+        const configs = (storeData as any).fieldConfigs;
+        if (!configs || !Array.isArray(configs)) return false;
+        return fieldNames.some(fn => configs.some((c: any) => c.fieldName === fn && c.hidden === true));
+    };
 
-    if (actual > 0 && actual !== target) {
-        const missingKeys = Math.max(0, target - actual);
-        if (missingKeys > 0) {
-            const deduction = missingKeys * DEVALUATION_CONFIG.KEYS.DEDUCTION_AMOUNT;
-            rows.push(makeSystemRow(
-                'sys-keys-mismatch',
-                t('step3.keys'),
-                `${t('step2.actualKeysCount')}: ${actual} / ${t('step2.targetKeysCount')}: ${target}`,
-                t('step5.obtain'),
-                deduction
-            ));
+    // ── 1. Keys Mismatch — actual vs target ──────────────────────────────────
+    if (!isFieldHidden('targetKeysCount', 'actualKeysCount', 'keysPresent', 'keysTarget')) {
+        const target = storeData.targetKeysCount ?? 2;
+        const actual = storeData.actualKeysCount ?? 0;
+
+        if (actual > 0 && actual !== target) {
+            const missingKeys = Math.max(0, target - actual);
+            if (missingKeys > 0) {
+                const deduction = missingKeys * DEVALUATION_CONFIG.KEYS.DEDUCTION_AMOUNT;
+                rows.push(makeSystemRow(
+                    'sys-keys-mismatch',
+                    t('step3.keys'),
+                    `${t('step2.actualKeysCount')}: ${actual} / ${t('step2.targetKeysCount')}: ${target}`,
+                    t('step5.obtain'),
+                    deduction
+                ));
+            }
         }
     }
 
     // ── 2. TÜV Expired (nextHU format: MM.YYYY) ──────────────────────────────
-    if (storeData.nextHU) {
+    if (!isFieldHidden('nextHU') && storeData.nextHU) {
         const huDate = parseMonthYear(storeData.nextHU);
         if (huDate) {
             const now = new Date();
@@ -85,7 +93,7 @@ export const getAutomaticDevaluations = (storeData: Partial<ReportData>): Minder
     }
 
     // ── 3. Tires — tread depth < min or DOT age > max ────────────────────────
-    if (storeData.tires && storeData.tires.length > 0) {
+    if (!isFieldHidden('tireConfiguration', 'tires') && storeData.tires && storeData.tires.length > 0) {
         storeData.tires.forEach((tire, idx) => {
             let isExpired = false;
             const reasons: string[] = [];
@@ -130,7 +138,7 @@ export const getAutomaticDevaluations = (storeData: Partial<ReportData>): Minder
     }
 
     // ── 3.5 Second Tire Set ───────────────────────────────────────────────────
-    if (storeData.hasSecondTireSet && storeData.secondTires) {
+    if (!isFieldHidden('hasSecondTireSet', 'secondTires', 'tireConfiguration') && storeData.hasSecondTireSet && storeData.secondTires) {
         storeData.secondTires.forEach((tire, idx) => {
             const tireLocation = t('step5.secondTireSetAxle', {
                 axle: tire.axle,
@@ -176,8 +184,10 @@ export const getAutomaticDevaluations = (storeData: Partial<ReportData>): Minder
         label: string,
         status: string | undefined,
         submittedLater: boolean | undefined,
-        deduction: number
+        deduction: number,
+        fieldName: string
     ) => {
+        if (isFieldHidden(fieldName)) return;
         if (status === 'Not Available') {
             const damageLabel = submittedLater
                 ? `${t('common.notAvailable')} (${t('step3.willBeSubmittedLater')})`
@@ -193,10 +203,10 @@ export const getAutomaticDevaluations = (storeData: Partial<ReportData>): Minder
         }
     };
 
-    addDocRow('reg-cert',    t('step3.docRegistration'), storeData.registrationCertificateStatus, storeData.registrationCertificateSubmittedLater, DEVALUATION_CONFIG.DOCUMENTS.REGISTRATION_CERTIFICATE);
-    addDocRow('service-book', t('step3.docServiceBook'), storeData.serviceBookletStatus,          storeData.serviceBookletSubmittedLater,          DEVALUATION_CONFIG.DOCUMENTS.SERVICE_BOOKLET);
-    addDocRow('manual',      t('step3.docManual'),       storeData.operatingManualStatus,         storeData.operatingManualSubmittedLater,         DEVALUATION_CONFIG.DOCUMENTS.OPERATING_MANUAL);
-    addDocRow('env-badge',   t('step3.docBadge'),        storeData.environmentalBadgeStatus,      storeData.environmentalBadgeSubmittedLater,      DEVALUATION_CONFIG.DOCUMENTS.ENVIRONMENTAL_BADGE);
+    addDocRow('reg-cert',    t('step3.docRegistration'), storeData.registrationCertificateStatus, storeData.registrationCertificateSubmittedLater, DEVALUATION_CONFIG.DOCUMENTS.REGISTRATION_CERTIFICATE, 'registrationCertificateStatus');
+    addDocRow('service-book', t('step3.docServiceBook'), storeData.serviceBookletStatus,          storeData.serviceBookletSubmittedLater,          DEVALUATION_CONFIG.DOCUMENTS.SERVICE_BOOKLET,          'serviceBookletStatus');
+    addDocRow('manual',      t('step3.docManual'),       storeData.operatingManualStatus,         storeData.operatingManualSubmittedLater,         DEVALUATION_CONFIG.DOCUMENTS.OPERATING_MANUAL,         'operatingManualStatus');
+    addDocRow('env-badge',   t('step3.docBadge'),        storeData.environmentalBadgeStatus,      storeData.environmentalBadgeSubmittedLater,      DEVALUATION_CONFIG.DOCUMENTS.ENVIRONMENTAL_BADGE,      'environmentalBadgeStatus');
 
     return rows;
 };
