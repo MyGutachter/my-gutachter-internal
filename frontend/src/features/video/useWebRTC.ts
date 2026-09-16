@@ -2,29 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getWebSocketUrl } from './videoConfig';
 import { useAuthStore } from '../../store/authStore';
+import { fetchIceServers } from './videoApi';
 
 const SIGNALING_URL = getWebSocketUrl(); // Initial value
-// Enhanced ICE servers with STUN and TURN for reliable NAT traversal
-const ICE_SERVERS = {
+
+// Default STUN servers used while dynamic Cloudflare TURN servers are fetched or as fallback
+const DEFAULT_ICE_SERVERS: RTCConfiguration = {
     iceServers: [
+        { urls: 'stun:stun.cloudflare.com:3478' },
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        // Free TURN servers from Open Relay (reliable for testing/development)
-        {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'open',
-            credential: 'open'
-        },
-        {
-            urls: 'turn:openrelay.metered.ca:443',
-            username: 'open',
-            credential: 'open'
-        },
-        {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-            username: 'open',
-            credential: 'open'
-        }
+        { urls: 'stun:stun1.l.google.com:19302' }
     ],
     iceCandidatePoolSize: 10
 };
@@ -113,6 +100,29 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
     // Set by cleanup() so the resulting socket close is not reported to the UI as an
     // unexpected drop (the UI uses 'socket-closed' to flush an in-progress recording).
     const intentionalCloseRef = useRef(false);
+
+    // Cloudflare Realtime TURN servers (kept on standby as fallback for TCP-only / strict firewall networks)
+    const cloudflareTurnServersRef = useRef<RTCIceServer[]>([]);
+    // Track whether a peer connection has fallen back to Cloudflare TURN
+    const isTurnFallbackActive = useRef<Map<string, boolean>>(new Map());
+    // Connection timers to detect failed/stalled STUN connections and trigger TURN fallback
+    const connectionTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const triggerTurnFallbackRef = useRef<(userId: string, reason: string) => void>(() => {});
+
+    useEffect(() => {
+        let isMounted = true;
+        fetchIceServers().then((servers) => {
+            if (isMounted && Array.isArray(servers) && servers.length > 0) {
+                console.log('[WebRTC] Cloudflare TURN servers loaded on standby for fallback:', servers);
+                cloudflareTurnServersRef.current = servers;
+            }
+        }).catch((err) => {
+            console.warn('[WebRTC] Failed to pre-fetch Cloudflare TURN servers on standby:', err);
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     useEffect(() => {
         onMessageRef.current = onMessage;
@@ -338,7 +348,7 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
     }, [evaluateStreamQuality]);
 
     // 2. Create PC for a specific user
-    const createPeerConnection = useCallback((userId: string) => {
+    const createPeerConnection = useCallback((userId: string, forceTurn: boolean = false) => {
         const existingPc = peerConnections.current.get(userId);
         if (existingPc) {
             if (existingPc.connectionState === 'failed' || existingPc.connectionState === 'closed') {
@@ -351,8 +361,38 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
             }
         }
 
-        console.log(`Creating PeerConnection for ${userId}`);
-        const pc = new RTCPeerConnection(ICE_SERVERS);
+        const useTurn = forceTurn || isTurnFallbackActive.current.get(userId) === true;
+        let pcConfig: RTCConfiguration = DEFAULT_ICE_SERVERS;
+
+        if (useTurn) {
+            const turnServers = cloudflareTurnServersRef.current.length > 0
+                ? cloudflareTurnServersRef.current
+                : DEFAULT_ICE_SERVERS.iceServers;
+            pcConfig = {
+                iceServers: turnServers,
+                iceCandidatePoolSize: 10
+            };
+            console.log(`[WebRTC] Creating PeerConnection for ${userId} using CLOUDFLARE TURN FALLBACK (TCP/TLS/UDP):`, turnServers);
+        } else {
+            console.log(`[WebRTC] Creating PeerConnection for ${userId} using NORMAL STUN/UDP (Cloudflare TURN on standby)`);
+        }
+
+        const pc = new RTCPeerConnection(pcConfig);
+
+        // Start connection watchdog: if normal connection doesn't connect within 7 seconds, trigger Cloudflare TURN fallback
+        if (!useTurn) {
+            const existingTimer = connectionTimers.current.get(userId);
+            if (existingTimer) {
+                clearTimeout(existingTimer);
+            }
+            const timer = setTimeout(() => {
+                if (pc.connectionState !== 'connected' && pc.connectionState !== 'closed') {
+                    console.warn(`[WebRTC] Normal STUN connection timeout (7s) for ${userId} in state '${pc.connectionState}' (ICE: '${pc.iceConnectionState}'). Triggering Cloudflare TURN fallback...`);
+                    triggerTurnFallbackRef.current(userId, 'connection timeout (7s)');
+                }
+            }, 7000);
+            connectionTimers.current.set(userId, timer);
+        }
 
         pc.onicecandidate = (event) => {
             if (event.candidate) {
@@ -394,16 +434,33 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
                 newMap.set(userId, pc.connectionState);
                 return newMap;
             });
-            if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-                // Cleanup remote stream so stale/black video disappears from screen
+
+            if (pc.connectionState === 'connected') {
+                console.log(`[WebRTC] PC ${userId} connected successfully (fallback active: ${!!isTurnFallbackActive.current.get(userId)})`);
+                const timer = connectionTimers.current.get(userId);
+                if (timer) {
+                    clearTimeout(timer);
+                    connectionTimers.current.delete(userId);
+                }
+            } else if (pc.connectionState === 'failed') {
+                if (!isTurnFallbackActive.current.get(userId)) {
+                    console.warn(`[WebRTC] PC connection failed on normal STUN for ${userId}. Triggering Cloudflare TURN fallback...`);
+                    triggerTurnFallbackRef.current(userId, 'connectionState failed');
+                    return;
+                }
                 setRemoteStreams(prev => {
                     const newMap = new Map(prev);
                     newMap.delete(userId);
                     return newMap;
                 });
-                // Only delete from peerConnections ref on terminal states ('failed' / 'closed').
-                // 'disconnected' may recover on its own via ICE reconnection.
-                if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                peerConnections.current.delete(userId);
+            } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
+                setRemoteStreams(prev => {
+                    const newMap = new Map(prev);
+                    newMap.delete(userId);
+                    return newMap;
+                });
+                if (pc.connectionState === 'closed') {
                     peerConnections.current.delete(userId);
                 }
             }
@@ -412,7 +469,19 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
         // Handle ICE connection state for better debugging
         pc.oniceconnectionstatechange = () => {
             console.log(`PC ${userId} ICE state: ${pc.iceConnectionState}`);
-            // If remote description got set late, try draining candidates.
+            if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+                const timer = connectionTimers.current.get(userId);
+                if (timer) {
+                    clearTimeout(timer);
+                    connectionTimers.current.delete(userId);
+                }
+            } else if (pc.iceConnectionState === 'failed') {
+                if (!isTurnFallbackActive.current.get(userId)) {
+                    console.warn(`[WebRTC] ICE failed on normal STUN for ${userId}. Triggering Cloudflare TURN fallback...`);
+                    triggerTurnFallbackRef.current(userId, 'iceConnectionState failed');
+                    return;
+                }
+            }
             if (pc.remoteDescription) {
                 drainPendingIce();
             }
@@ -465,8 +534,8 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
     };
 
     // 3. Initiate Call to a specific User (Offer)
-    const callUser = useCallback(async (userId: string) => {
-        const pc = createPeerConnection(userId);
+    const callUser = useCallback(async (userId: string, forceTurn: boolean = false) => {
+        const pc = createPeerConnection(userId, forceTurn);
         if (!pc) return;
 
         try {
@@ -514,6 +583,41 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
             console.error(`Error processing offer for ${userId}`, err);
         }
     }, [createPeerConnection, sendSignal]);
+
+    // Fallback: Triggered when normal STUN/UDP fails to connect (e.g. TCP-only / strict firewall)
+    const triggerTurnFallback = useCallback((userId: string, reason: string) => {
+        if (isTurnFallbackActive.current.get(userId)) {
+            return;
+        }
+        console.warn(`[WebRTC] Activating Cloudflare Realtime TURN fallback for ${userId} (Reason: ${reason})`);
+        isTurnFallbackActive.current.set(userId, true);
+
+        const timer = connectionTimers.current.get(userId);
+        if (timer) {
+            clearTimeout(timer);
+            connectionTimers.current.delete(userId);
+        }
+
+        // Notify remote peer via signaling to switch to Cloudflare TURN
+        sendSignal('turn-fallback-needed', {}, userId);
+
+        const oldPc = peerConnections.current.get(userId);
+        if (oldPc) {
+            try { oldPc.close(); } catch { /* ignore */ }
+            peerConnections.current.delete(userId);
+        }
+        pendingIceCandidates.current.delete(userId);
+
+        if (shouldInitiateOffers()) {
+            callUser(userId, true);
+        } else {
+            createPeerConnection(userId, true);
+        }
+    }, [sendSignal, shouldInitiateOffers, callUser, createPeerConnection]);
+
+    useEffect(() => {
+        triggerTurnFallbackRef.current = triggerTurnFallback;
+    }, [triggerTurnFallback]);
 
     const handleOffer = useCallback(async (offer: RTCSessionDescriptionInit, senderId: string) => {
         console.log(`Handling offer from ${senderId}`);
@@ -691,6 +795,12 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
 
     const handleUserLeft = useCallback((userId: string) => {
         console.log(`User left: ${userId}`);
+        const timer = connectionTimers.current.get(userId);
+        if (timer) {
+            clearTimeout(timer);
+            connectionTimers.current.delete(userId);
+        }
+        isTurnFallbackActive.current.delete(userId);
         const pc = peerConnections.current.get(userId);
         if (pc) {
             pc.close();
@@ -720,6 +830,28 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
                 case 'error':
                     // Backend sends {type:'error', data:{code,message}}
                     if (onMessageRef.current) onMessageRef.current(message);
+                    break;
+                case 'turn-fallback-needed':
+                    if (sender) {
+                        console.warn(`[WebRTC] Remote peer ${sender} requested Cloudflare TURN fallback. Switching...`);
+                        isTurnFallbackActive.current.set(sender, true);
+                        const timer = connectionTimers.current.get(sender);
+                        if (timer) {
+                            clearTimeout(timer);
+                            connectionTimers.current.delete(sender);
+                        }
+                        const oldPc = peerConnections.current.get(sender);
+                        if (oldPc) {
+                            try { oldPc.close(); } catch { /* ignore */ }
+                            peerConnections.current.delete(sender);
+                        }
+                        pendingIceCandidates.current.delete(sender);
+                        if (shouldInitiateOffers()) {
+                            await callUser(sender, true);
+                        } else {
+                            createPeerConnection(sender, true);
+                        }
+                    }
                     break;
                 case 'user-joined':
                     // data is the new user's ID
@@ -799,6 +931,16 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
 
         console.log(`Initializing WebSocket connection to ${SIGNALING_URL} for room ${roomId}`);
         intentionalCloseRef.current = false;
+
+        // Ensure Cloudflare TURN standby servers are freshly loaded
+        fetchIceServers().then((servers) => {
+            if (Array.isArray(servers) && servers.length > 0) {
+                cloudflareTurnServersRef.current = servers;
+            }
+        }).catch((err) => {
+            console.warn('[WebRTC] Background Cloudflare TURN pre-fetch failed:', err);
+        });
+
         socket.current = new WebSocket(SIGNALING_URL);
 
         socket.current.onopen = () => {
@@ -857,6 +999,10 @@ export const useWebRTC = (onMessage?: (msg: SignalMessage) => void) => {
         peerConnections.current.forEach(pc => pc.close());
         peerConnections.current.clear();
         pendingIceCandidates.current.clear();
+
+        connectionTimers.current.forEach(timer => clearTimeout(timer));
+        connectionTimers.current.clear();
+        isTurnFallbackActive.current.clear();
 
         if (socket.current) {
             intentionalCloseRef.current = true;

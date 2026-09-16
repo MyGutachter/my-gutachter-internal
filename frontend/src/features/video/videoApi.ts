@@ -78,3 +78,22 @@ export const getRecordingUrls = async (meetingId: string): Promise<string[]> => 
         return [];
     }
 };
+
+export const fetchIceServers = async (): Promise<RTCIceServer[]> => {
+    try {
+        const response = await api.get('/video/ice-servers');
+        if (response.data && Array.isArray(response.data.iceServers)) {
+            return response.data.iceServers;
+        }
+        return [
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            { urls: 'stun:stun.l.google.com:19302' }
+        ];
+    } catch (error) {
+        console.warn('[WebRTC] Failed to fetch ICE servers from backend, using fallback STUN servers:', error);
+        return [
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            { urls: 'stun:stun.l.google.com:19302' }
+        ];
+    }
+};

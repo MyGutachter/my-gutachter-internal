@@ -69,6 +69,14 @@ mailgun:
 omt:
   api-key: ${OMT_API_KEY:}
 
+# Cloudflare Realtime / Calls TURN configuration for WebRTC media relay
+cloudflare:
+  turn:
+    enabled: ${CLOUDFLARE_TURN_ENABLED:true}
+    key-id: ${CLOUDFLARE_TURN_KEY_ID:1c368c9b323a558e5abd30b9f939b76a}
+    api-token: ${CLOUDFLARE_TURN_KEY_API_TOKEN:0a277aec3f96b4bc0b67f0ed7422b3a8304bae6f3b8131ebcf67762065da1a3d}
+    ttl: ${CLOUDFLARE_TURN_TTL:86400}
+
 
 # MongoDB collection names. The `orders` collection is the single unified order store
 # (Decision Q6, T3.1) — it replaces the former `reports` collection; report data lives as

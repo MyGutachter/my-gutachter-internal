@@ -54,9 +54,9 @@ public class SecurityConfig {
                     // Video module (T4.1): the per-order damages listing stays authenticated;
                     // it MUST be matched before the /api/screenshots/** permitAll below.
                     .requestMatchers(HttpMethod.GET, "/api/screenshots/order/**").authenticated()
-                    // WebRTC signaling (auth done in the join message), screenshot & recording
+                    // WebRTC signaling (auth done in the join message), ICE servers, screenshot & recording
                     // upload/serve are public — matching VideoExpert's contract.
-                    .requestMatchers("/signal", "/api/screenshots/**", "/api/reports/photos/**", "/api/recordings/**").permitAll()
+                    .requestMatchers("/signal", "/api/video/ice-servers", "/api/screenshots/**", "/api/reports/photos/**", "/api/recordings/**").permitAll()
                     // Everything else requires a valid JWT.
                     .anyRequest().authenticated())
             // Return 401 (not Spring's default 403) for unauthenticated requests, matching
