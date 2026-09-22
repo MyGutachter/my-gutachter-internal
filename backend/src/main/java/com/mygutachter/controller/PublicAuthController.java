@@ -296,6 +296,7 @@ public class PublicAuthController {
         boolean vehicleValuationViewOwn = false;
         boolean vehicleValuationViewAll = false;
         boolean vehicleValuationAdministrate = false;
+        boolean canViewAllOrders = false;
 
         if (request.getPermissions() != null) {
             videoXpertViewOwn = Boolean.TRUE.equals(request.getPermissions().get("videoXpertViewOwn"));
@@ -303,6 +304,10 @@ public class PublicAuthController {
             vehicleValuationViewOwn = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationViewOwn"));
             vehicleValuationViewAll = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationViewAll"));
             vehicleValuationAdministrate = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationAdministrate"));
+            // Legacy "see everything" flag: OMT now sends it explicitly so a re-sync also
+            // CLEARS it. Without this, experts kept seeing all cases from before the
+            // per-app permissions existed.
+            canViewAllOrders = Boolean.TRUE.equals(request.getPermissions().get("canViewAllOrders"));
         }
 
         if (existingUser != null) {
@@ -323,6 +328,7 @@ public class PublicAuthController {
             updates.add(Updates.set("vehicleValuationViewOwn", vehicleValuationViewOwn));
             updates.add(Updates.set("vehicleValuationViewAll", vehicleValuationViewAll));
             updates.add(Updates.set("vehicleValuationAdministrate", vehicleValuationAdministrate));
+            updates.add(Updates.set("canViewAllOrders", canViewAllOrders));
             updates.add(Updates.set("updatedDate", new Date()));
             if (request.getName() != null && !request.getName().trim().isEmpty()) {
                 updates.add(Updates.set("username", request.getName()));
@@ -351,6 +357,7 @@ public class PublicAuthController {
                 .append("vehicleValuationViewOwn", vehicleValuationViewOwn)
                 .append("vehicleValuationViewAll", vehicleValuationViewAll)
                 .append("vehicleValuationAdministrate", vehicleValuationAdministrate)
+                .append("canViewAllOrders", canViewAllOrders)
                 .append("twoFactorEnabled", false)
                 .append("connectedWithOmt", true)
                 .append("createdDate", new Date())
@@ -419,6 +426,7 @@ public class PublicAuthController {
             boolean vehicleValuationViewOwn = false;
             boolean vehicleValuationViewAll = false;
             boolean vehicleValuationAdministrate = false;
+            boolean canViewAllOrders = false;
 
             if (request.getPermissions() != null) {
                 videoXpertViewOwn = Boolean.TRUE.equals(request.getPermissions().get("videoXpertViewOwn"));
@@ -426,6 +434,8 @@ public class PublicAuthController {
                 vehicleValuationViewOwn = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationViewOwn"));
                 vehicleValuationViewAll = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationViewAll"));
                 vehicleValuationAdministrate = Boolean.TRUE.equals(request.getPermissions().get("vehicleValuationAdministrate"));
+                // Legacy "see everything" flag: synced (and cleared) explicitly, see single variant.
+                canViewAllOrders = Boolean.TRUE.equals(request.getPermissions().get("canViewAllOrders"));
             }
 
             if (existingUser != null) {
@@ -446,6 +456,7 @@ public class PublicAuthController {
                 updates.add(Updates.set("vehicleValuationViewOwn", vehicleValuationViewOwn));
                 updates.add(Updates.set("vehicleValuationViewAll", vehicleValuationViewAll));
                 updates.add(Updates.set("vehicleValuationAdministrate", vehicleValuationAdministrate));
+                updates.add(Updates.set("canViewAllOrders", canViewAllOrders));
                 updates.add(Updates.set("updatedDate", new Date()));
                 if (request.getName() != null && !request.getName().trim().isEmpty()) {
                     updates.add(Updates.set("username", request.getName()));
@@ -472,6 +483,7 @@ public class PublicAuthController {
                         .append("vehicleValuationViewOwn", vehicleValuationViewOwn)
                         .append("vehicleValuationViewAll", vehicleValuationViewAll)
                         .append("vehicleValuationAdministrate", vehicleValuationAdministrate)
+                        .append("canViewAllOrders", canViewAllOrders)
                         .append("twoFactorEnabled", false)
                         .append("connectedWithOmt", true)
                         .append("createdDate", new Date())
