@@ -52,6 +52,14 @@ public class RateConfig {
     private EstimateConfig estimateConfig;
     private List<DamageTypeOption> damageTypes;
 
+    // ── Hourly rates / surcharges edited in the admin UI ─────────────────────
+    private Double karosseriestundensatz;
+    private Double lackstundensatz;
+    private String lackberechnungsart;
+    private String vehicleCategory;
+    private Map<String, Double> repairSurcharges;
+    private Map<String, List<Map<String, Object>>> percentageTables;
+
     // ── Nested classes for EstimateConfig ────────────────────────────────────
 
     public static class EstimateConfig {
@@ -643,6 +651,54 @@ public class RateConfig {
 
     public void setAllowedRolesToViewAllOrders(List<String> allowedRolesToViewAllOrders) {
         this.allowedRolesToViewAllOrders = allowedRolesToViewAllOrders;
+    }
+
+    public Double getKarosseriestundensatz() {
+        return karosseriestundensatz;
+    }
+
+    public void setKarosseriestundensatz(Double karosseriestundensatz) {
+        this.karosseriestundensatz = karosseriestundensatz;
+    }
+
+    public Double getLackstundensatz() {
+        return lackstundensatz;
+    }
+
+    public void setLackstundensatz(Double lackstundensatz) {
+        this.lackstundensatz = lackstundensatz;
+    }
+
+    public String getLackberechnungsart() {
+        return lackberechnungsart;
+    }
+
+    public void setLackberechnungsart(String lackberechnungsart) {
+        this.lackberechnungsart = lackberechnungsart;
+    }
+
+    public String getVehicleCategory() {
+        return vehicleCategory;
+    }
+
+    public void setVehicleCategory(String vehicleCategory) {
+        this.vehicleCategory = vehicleCategory;
+    }
+
+    public Map<String, Double> getRepairSurcharges() {
+        return repairSurcharges;
+    }
+
+    public void setRepairSurcharges(Map<String, Double> repairSurcharges) {
+        this.repairSurcharges = repairSurcharges;
+    }
+
+    public Map<String, List<Map<String, Object>>> getPercentageTables() {
+        return percentageTables;
+    }
+
+    public void setPercentageTables(Map<String, List<Map<String, Object>>> percentageTables) {
+        this.percentageTables = percentageTables;
     }
 
 }

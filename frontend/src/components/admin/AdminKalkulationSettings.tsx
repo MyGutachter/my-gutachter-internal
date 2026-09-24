@@ -54,6 +54,10 @@ const AdminKalkulationSettings: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [localConfig, setLocalConfig] = useState<GlobalConfig>(DEFAULT_GLOBAL_CONFIG);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    // Saving is only allowed once the selected config was actually loaded from the server —
+    // otherwise we'd overwrite the stored config with cached/default values.
+    const [configLoadStatus, setConfigLoadStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+    const canSave = configLoadStatus === 'loaded' && !loading;
     const [matrixRows, setMatrixRows] = useState<{ id: string; vehicleType: string; mileageFrom: number; mileageTo: number }[]>([]);
     const [ageColumns, setAgeColumns] = useState<{ id: string; from: number; to: number }[]>([]);
 
@@ -84,8 +88,22 @@ const AdminKalkulationSettings: React.FC = () => {
         onConfirm: () => { }
     });
 
+    const loadSelectedConfig = async (num: string) => {
+        setConfigLoadStatus('loading');
+        const ok = num === 'global'
+            ? await store.fetchGlobalConfig()
+            : await store.fetchAndApplyCustomerRates(num);
+        setConfigLoadStatus(ok ? 'loaded' : 'error');
+        if (!ok) {
+            toast.error(t('admin.kalkulation.loadConfigError'));
+        }
+        return ok;
+    };
+
     useEffect(() => {
         loadCustomers();
+        // Always start from the server copy, never from the browser cache.
+        loadSelectedConfig('global');
     }, []);
 
     useEffect(() => {
@@ -256,6 +274,10 @@ const AdminKalkulationSettings: React.FC = () => {
     };
 
     const handleSaveChanges = async () => {
+        if (configLoadStatus !== 'loaded') {
+            toast.error(t('admin.kalkulation.saveBlockedNotLoaded'));
+            return;
+        }
         setLoading(true);
         try {
             if (selectedCustomerNum === 'global') {
@@ -283,11 +305,7 @@ const AdminKalkulationSettings: React.FC = () => {
             setLoading(true);
             setSelectedCustomerNum(num);
             try {
-                if (num === 'global') {
-                    await store.fetchGlobalConfig();
-                } else {
-                    await store.fetchAndApplyCustomerRates(num);
-                }
+                await loadSelectedConfig(num);
             } catch (err) {
                 console.error('Failed to switch customer', err);
             } finally {
@@ -887,9 +905,20 @@ const AdminKalkulationSettings: React.FC = () => {
                     </div>
                 </div>
 
-                {loading && (
+                {(loading || configLoadStatus === 'loading') && (
                     <div className="pt-2 animate-pulse flex items-center gap-2 text-xs font-black text-amber-600 uppercase tracking-widest">
                         <Zap className="w-3 h-3 animate-bounce" /> {t('admin.kalkulation.loadingConfig')}
+                    </div>
+                )}
+                {!loading && configLoadStatus === 'error' && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-red-50 border border-red-100">
+                        <p className="text-sm font-bold text-red-700">{t('admin.kalkulation.loadConfigErrorDetail')}</p>
+                        <button
+                            onClick={() => loadSelectedConfig(selectedCustomerNum)}
+                            className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-black hover:bg-red-700 transition-all"
+                        >
+                            {t('admin.kalkulation.retryLoad')}
+                        </button>
                     </div>
                 )}
             </div>
@@ -1669,13 +1698,26 @@ const AdminKalkulationSettings: React.FC = () => {
                 )}
             </div>
 
+            <div className="mt-10 flex justify-end">
+                <button
+                    onClick={handleSaveChanges}
+                    disabled={!canSave}
+                    className={`bg-amber-600 text-white flex items-center justify-center gap-3 px-10 py-3.5 rounded-2xl shadow-xl hover:bg-amber-700 hover:shadow-xl hover:translate-y-0 active:scale-100 ${!canSave ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                    <Save className={`w-5 h-5 ${loading ? 'animate-pulse' : ''}`} />
+                    <span className="font-black tracking-tight">
+                        {loading ? t('common.saving') : t('common.saveSettings')}
+                    </span>
+                </button>
+            </div>
+
             {/* Final Action Bar */}
             {hasUnsavedChanges && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <button
                         onClick={handleSaveChanges}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-amber-600 text-white rounded-xl font-black text-xs transition-all shadow-2xl shadow-amber-600/20 hover:scale-105 active:scale-95"
+                        disabled={!canSave}
+                        className={`flex items-center gap-2 px-6 py-2.5 bg-amber-600 text-white rounded-xl font-black text-xs transition-all shadow-2xl shadow-amber-600/20 hover:scale-105 active:scale-95 ${!canSave ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                         {loading ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {t('admin.saveAllChanges')}

@@ -86,6 +86,7 @@ mongodb:
     users: users
     orders: orders
     rateConfig: rateConfig
+    rateConfigHistory: rateConfigHistory
     fieldConfigs: fieldConfigs
 
 app:

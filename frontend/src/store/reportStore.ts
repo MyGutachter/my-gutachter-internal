@@ -308,7 +308,8 @@ interface ReportStore extends ReportData {
     saveCurrentRatesAsCustomerDefault: (customerNumber: string) => Promise<boolean>;
     getStepValidationErrors: (step: number) => Record<string, string>;
     isStepValid: (step: number) => boolean;
-    fetchGlobalConfig: () => Promise<void>;
+    /** Resolves true only when the config was actually loaded from the server. */
+    fetchGlobalConfig: () => Promise<boolean>;
     reSyncPhotosWithVideoXpert: () => Promise<boolean>;
     getEffectiveRepairTable: () => RepairTableEntry[];
     getEffectiveRepairPositions: () => RepairPosition[];
@@ -317,6 +318,8 @@ interface ReportStore extends ReportData {
     recalculateVehicleValue: () => void;
     fieldConfigs: FieldConfig[];
     globalConfig: GlobalConfig | null;
+    /** Whether globalConfig reflects the server ('loaded') or only a cached/default copy. Not persisted. */
+    globalConfigStatus: 'idle' | 'loading' | 'loaded' | 'error';
     _hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
 }
@@ -453,6 +456,7 @@ const recalculateMinderwertAndDamages = (
 const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
     ...initialState,
     globalConfig: initialState.globalConfig ?? null,
+    globalConfigStatus: 'idle',
     _hasHydrated: false,
     setHasHydrated: (state) => set({ _hasHydrated: state }),
 
@@ -2574,6 +2578,7 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
     },
 
     fetchGlobalConfig: async () => {
+        set({ globalConfigStatus: 'loading' });
         try {
             const api = (await import('../utils/api')).default;
             const res = await api.get('/config');
@@ -2581,8 +2586,12 @@ const reportStoreCreator: StateCreator<ReportStore> = (set, get) => ({
                 get().setGlobalConfig(res.data);
             }
             get().recalculateVehicleValue();
+            set({ globalConfigStatus: 'loaded' });
+            return true;
         } catch (err) {
             console.error('Failed to fetch global config', err);
+            set({ globalConfigStatus: 'error' });
+            return false;
         }
     },
 
@@ -2707,6 +2716,7 @@ export const globalReportStore = createStore<ReportStore>()(
                     getEffectiveRepairSurcharges,
                     recalculateVehicleValue,
                     setHasHydrated,
+                    globalConfigStatus,
                     ...persistableState
                 } = state;
                 return persistableState;

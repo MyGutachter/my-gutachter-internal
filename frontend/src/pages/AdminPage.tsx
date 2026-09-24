@@ -1,6 +1,5 @@
 import { ArrowRight, FileText, LayoutGrid, ListChecks, Receipt, Save, Settings, ShieldCheck, Users } from 'lucide-react';
 import React, { useState } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import AdminFieldRequirements from '../components/admin/AdminFieldRequirements';
@@ -9,40 +8,15 @@ import AdminReportList from '../components/admin/AdminReportList';
 import AdminUserManagement from '../components/admin/AdminUserManagement';
 import AppFooter from '../components/layout/AppFooter';
 import AppHeader from '../components/layout/AppHeader';
-import { useReportStore } from '../store/reportStore';
-import api from '../utils/api';
 
 export const AdminPage: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const [isSaving, setIsSaving] = useState(false);
     const [activeSection, setActiveSection] = useState<'kalkulation' | 'mandatory' | 'reports' | 'users' | 'access'>('users');
-    const store = useReportStore();
 
     React.useEffect(() => {
         window.scrollTo(0, 0);
     }, [activeSection]);
-
-    const handleSaveConfig = async () => {
-        setIsSaving(true);
-        try {
-            const config = {
-                ...store.globalConfig,
-                karosseriestundensatz: store.karosseriestundensatz,
-                lackstundensatz: store.lackstundensatz,
-                lackberechnungsart: store.lackberechnungsart,
-                vehicleCategory: store.vehicleCategory,
-            };
-            await api.post('/config', config);
-            toast.success(t('admin.saveSuccess'));
-            store.setGlobalConfig(config as any);
-        } catch (error) {
-            console.error('Failed to save config', error);
-            toast.error(t('admin.saveError'));
-        } finally {
-            setIsSaving(false);
-        }
-    };
 
     return (
         <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
@@ -107,18 +81,6 @@ export const AdminPage: React.FC = () => {
                         {activeSection === 'kalkulation' && (
                             <section className="bg-white rounded-3xl md:rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-200 p-4 md:p-8 lg:p-10">
                                 <AdminKalkulationSettings />
-                                <div className="mt-10 flex justify-end">
-                                    <button
-                                        onClick={handleSaveConfig}
-                                        disabled={isSaving}
-                                        className={`bg-amber-600 text-white flex items-center justify-center gap-3 px-10 py-3.5 rounded-2xl shadow-xl hover:bg-amber-700 hover:shadow-xl hover:translate-y-0 active:scale-100 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                    >
-                                        <Save className={`w-5 h-5 ${isSaving ? 'animate-pulse' : ''}`} />
-                                        <span className="font-black tracking-tight">
-                                            {isSaving ? t('common.saving') : t('common.saveSettings')}
-                                        </span>
-                                    </button>
-                                </div>
                             </section>
                         )}
 
