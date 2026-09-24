@@ -11,6 +11,12 @@ export const ESTIMATE_REPAIR_CODE_IDS: EstimateRepairCodeId[] = [
     'Inspect',
 ];
 
+/** Get active predefined estimate repair code IDs, filtering out any deleted ones */
+export function getActiveEstimateRepairCodeIds(estimateConfig?: EstimateConfig): EstimateRepairCodeId[] {
+    const deleted = estimateConfig?.deletedRepairCodes || [];
+    return ESTIMATE_REPAIR_CODE_IDS.filter(id => !deleted.includes(id));
+}
+
 /** Human-readable labels for each repair code */
 export const ESTIMATE_REPAIR_CODE_LABELS: Record<EstimateRepairCodeId, { de: string; en: string }> = {
     'Paint':           { de: 'Lackieren',               en: 'Paint' },

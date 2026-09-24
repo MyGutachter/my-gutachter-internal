@@ -62,9 +62,12 @@ public class RateConfig {
 
     // ── Nested classes for EstimateConfig ────────────────────────────────────
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class EstimateConfig {
         private List<EstimateComponentConfig> components;
         private List<CustomRepairCode> customRepairCodes;
+        private List<String> deletedRepairCodes;
 
         public EstimateConfig() {}
 
@@ -73,6 +76,9 @@ public class RateConfig {
 
         public List<CustomRepairCode> getCustomRepairCodes() { return customRepairCodes; }
         public void setCustomRepairCodes(List<CustomRepairCode> customRepairCodes) { this.customRepairCodes = customRepairCodes; }
+
+        public List<String> getDeletedRepairCodes() { return deletedRepairCodes; }
+        public void setDeletedRepairCodes(List<String> deletedRepairCodes) { this.deletedRepairCodes = deletedRepairCodes; }
     }
 
     public static class CustomRepairCode {

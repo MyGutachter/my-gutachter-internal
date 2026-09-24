@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { BODY_PARTS, INTERIOR_PARTS } from '../../constants/bodyParts';
 import { ANRECHNUNG_OPTIONS, DAMAGE_TYPES, REPAIR_METHODS } from '../../constants/damageTypes';
-import { ESTIMATE_REPAIR_CODE_IDS, ESTIMATE_REPAIR_CODE_LABELS, lookupEstimatePrice } from '../../constants/estimateRepairCodes';
+import { ESTIMATE_REPAIR_CODE_IDS, ESTIMATE_REPAIR_CODE_LABELS, getActiveEstimateRepairCodeIds, lookupEstimatePrice } from '../../constants/estimateRepairCodes';
 import { useReportStore } from '../../store/reportStore';
 import type { AnrechnungType } from '../../types/report.types';
 import { compressImage } from '../../utils/imageCompression';
@@ -228,7 +228,7 @@ const DamageEntryModal: React.FC<DamageEntryModalProps> = ({ isOpen, onClose, da
                             {lang === 'de' ? 'Reparaturcode (Pauschale)' : 'Repair Code (Flat Price)'}
                         </label>
                         <div className="flex flex-wrap gap-2">
-                            {ESTIMATE_REPAIR_CODE_IDS.map(codeId => {
+                            {getActiveEstimateRepairCodeIds(store.globalConfig?.estimateConfig).map(codeId => {
                                 const isSelected = damage.estimateRepairCodeId === codeId;
                                 const price = store.vehicleCategory
                                     ? lookupEstimatePrice(

@@ -78,6 +78,7 @@ export interface CustomRepairCode {
 export interface EstimateConfig {
     components: EstimateComponentConfig[];
     customRepairCodes?: CustomRepairCode[];
+    deletedRepairCodes?: string[];
 }
 
 export interface DepreciationEntry {

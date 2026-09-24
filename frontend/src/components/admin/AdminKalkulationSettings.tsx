@@ -173,16 +173,21 @@ const AdminKalkulationSettings: React.FC = () => {
         : DEFAULT_GLOBAL_CONFIG.vehicleCategories || [];
 
     const getEffectiveRepairCodes = () => {
-        const staticCodes = ESTIMATE_REPAIR_CODE_IDS.map(id => ({
-            id,
-            label: ESTIMATE_REPAIR_CODE_LABELS[id]?.en || id,
-            isCustom: false
-        }));
-        const customCodes = (config.estimateConfig?.customRepairCodes || []).map(c => ({
-            id: c.id,
-            label: c.labelEn || c.labelDe || c.id,
-            isCustom: true
-        }));
+        const deletedCodes = config.estimateConfig?.deletedRepairCodes || [];
+        const staticCodes = ESTIMATE_REPAIR_CODE_IDS
+            .filter(id => !deletedCodes.includes(id))
+            .map(id => ({
+                id,
+                label: ESTIMATE_REPAIR_CODE_LABELS[id]?.[lang] || ESTIMATE_REPAIR_CODE_LABELS[id]?.en || id,
+                isCustom: false
+            }));
+        const customCodes = (config.estimateConfig?.customRepairCodes || [])
+            .filter(c => !deletedCodes.includes(c.id))
+            .map(c => ({
+                id: c.id,
+                label: (lang === 'de' ? c.labelDe : c.labelEn) || c.labelEn || c.labelDe || c.id,
+                isCustom: true
+            }));
         return [...staticCodes, ...customCodes];
     };
 
@@ -691,24 +696,23 @@ const AdminKalkulationSettings: React.FC = () => {
                 const labelEn = values.labelEn?.trim() || id;
                 if (!id) return;
 
-                const staticCodes = ESTIMATE_REPAIR_CODE_IDS.map(codeId => ({
-                    id: codeId,
-                    labelDe: ESTIMATE_REPAIR_CODE_LABELS[codeId]?.de || codeId,
-                    labelEn: ESTIMATE_REPAIR_CODE_LABELS[codeId]?.en || codeId,
-                }));
-                const customCodes = config.estimateConfig?.customRepairCodes || [];
-                const effective = [...staticCodes, ...customCodes];
-
-                if (effective.some(c => c.id === id)) {
+                const effective = getEffectiveRepairCodes();
+                if (effective.some(c => c.id.toLowerCase() === id.toLowerCase())) {
                     toast.error(t('admin.kalkulation.repairCodeExists'));
                     return;
                 }
 
                 const baseConfig = config.estimateConfig || buildDefaultEstimateConfig(cats);
-                const updatedCustomCodes = [...(baseConfig.customRepairCodes || [])];
-                updatedCustomCodes.push({ id, labelDe, labelEn });
+                const isPredefined = ESTIMATE_REPAIR_CODE_IDS.includes(id as EstimateRepairCodeId);
+                const updatedDeleted = (baseConfig.deletedRepairCodes || []).filter(c => c.toLowerCase() !== id.toLowerCase());
 
-                // Update all components in estimateConfig to include this new repair code
+                let updatedCustomCodes = [...(baseConfig.customRepairCodes || [])];
+                if (!isPredefined) {
+                    updatedCustomCodes = updatedCustomCodes.filter(c => c.id.toLowerCase() !== id.toLowerCase());
+                    updatedCustomCodes.push({ id, labelDe, labelEn });
+                }
+
+                // Update all components in estimateConfig to include this repair code
                 const updatedComponents = baseConfig.components.map(comp => {
                     const hasCode = comp.repairCodes.some(rc => rc.repairCodeId === id);
                     if (hasCode) return comp;
@@ -718,7 +722,12 @@ const AdminKalkulationSettings: React.FC = () => {
                             ...comp.repairCodes,
                             {
                                 repairCodeId: id,
-                                priceByCategory: Object.fromEntries(cats.map(c => [c, 0]))
+                                priceByCategory: Object.fromEntries(cats.map(c => [
+                                    c,
+                                    isPredefined
+                                        ? ((DEFAULT_ESTIMATE_PRICES[id as EstimateRepairCodeId]?.[c]) ?? (DEFAULT_ESTIMATE_PRICES[id as EstimateRepairCodeId]?.['Compact'] ?? 0))
+                                        : 0
+                                ]))
                             }
                         ]
                     };
@@ -727,6 +736,7 @@ const AdminKalkulationSettings: React.FC = () => {
                 updateConfigLocal({
                     estimateConfig: {
                         ...baseConfig,
+                        deletedRepairCodes: updatedDeleted,
                         customRepairCodes: updatedCustomCodes,
                         components: updatedComponents as EstimateComponentConfig[]
                     }
@@ -738,17 +748,25 @@ const AdminKalkulationSettings: React.FC = () => {
     };
 
     const handleDeleteRepairCode = (codeId: string) => {
+        const isPredefined = ESTIMATE_REPAIR_CODE_IDS.includes(codeId as EstimateRepairCodeId);
+        const displayName = isPredefined
+            ? (ESTIMATE_REPAIR_CODE_LABELS[codeId as EstimateRepairCodeId]?.[lang] || codeId)
+            : codeId;
+
         setConfirmModal({
             isOpen: true,
-            title: t('admin.kalkulation.deleteRepairCodeConfirmTitle'),
-            message: t('admin.kalkulation.deleteRepairCodeConfirmMsg', { codeId }),
+            title: t('admin.kalkulation.deleteRepairCodeConfirmTitle', 'Reparaturcode löschen'),
+            message: t('admin.kalkulation.deleteRepairCodeConfirmMsg', { codeId: displayName }),
             type: 'danger',
             onConfirm: () => {
-                const baseConfig = config.estimateConfig;
-                if (!baseConfig) return;
+                const baseConfig = config.estimateConfig || buildDefaultEstimateConfig(cats);
 
+                const deletedRepairCodes = Array.from(new Set([
+                    ...(baseConfig.deletedRepairCodes || []),
+                    ...(isPredefined ? [codeId] : [])
+                ]));
                 const customCodes = (baseConfig.customRepairCodes || []).filter(c => c.id !== codeId);
-                const updatedComponents = baseConfig.components.map(comp => ({
+                const updatedComponents = (baseConfig.components || []).map(comp => ({
                     ...comp,
                     repairCodes: comp.repairCodes.filter(rc => rc.repairCodeId !== codeId)
                 }));
@@ -756,14 +774,17 @@ const AdminKalkulationSettings: React.FC = () => {
                 updateConfigLocal({
                     estimateConfig: {
                         ...baseConfig,
+                        deletedRepairCodes,
                         customRepairCodes: customCodes,
                         components: updatedComponents as EstimateComponentConfig[]
                     }
                 });
-                toast.success(t('admin.kalkulation.repairCodeDeleted', { codeId }));
+                toast.success(t('admin.kalkulation.repairCodeDeleted', { codeId: displayName }));
             }
         });
     };
+
+
 
     const handleAddDamageType = () => {
         setInputModal({
@@ -988,6 +1009,8 @@ const AdminKalkulationSettings: React.FC = () => {
                                     ))}
                                 </div>
                             )}
+
+
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -1193,15 +1216,13 @@ const AdminKalkulationSettings: React.FC = () => {
                                                                                 <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-black uppercase tracking-wide whitespace-nowrap">
                                                                                     {codeLabel}
                                                                                 </span>
-                                                                                {isCustom && (
-                                                                                    <button
-                                                                                        onClick={() => handleDeleteRepairCode(codeId)}
-                                                                                        className="p-1 text-slate-400 hover:text-red-500 transition-colors"
-                                                                                        title={t('admin.kalkulation.deleteCustomRepairCode')}
-                                                                                    >
-                                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                                    </button>
-                                                                                )}
+                                                                                <button
+                                                                                    onClick={() => handleDeleteRepairCode(codeId)}
+                                                                                    className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                                                                                    title={t('admin.kalkulation.deleteRepairCode', 'Reparaturcode löschen')}
+                                                                                >
+                                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                                </button>
                                                                             </div>
                                                                             {(() => {
                                                                                 const prices = cats.map(cat => {

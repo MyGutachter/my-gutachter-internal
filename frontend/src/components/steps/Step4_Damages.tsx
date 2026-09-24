@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { BODY_PARTS, INTERIOR_PARTS, getBodyPartLabel } from '../../constants/bodyParts';
 import { ANRECHNUNG_OPTIONS, DAMAGE_TYPES } from '../../constants/damageTypes';
-import { ESTIMATE_REPAIR_CODE_IDS, ESTIMATE_REPAIR_CODE_LABELS, lookupEstimatePrice } from '../../constants/estimateRepairCodes';
+import { ESTIMATE_REPAIR_CODE_IDS, ESTIMATE_REPAIR_CODE_LABELS, getActiveEstimateRepairCodeIds, lookupEstimatePrice } from '../../constants/estimateRepairCodes';
 import { useReportStore } from '../../store/reportStore';
 import { useUIStore } from '../../store/uiStore';
 import { formatCurrency } from '../../utils/currency';
@@ -1168,7 +1168,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                                 <option value="">{t('common.pleaseSelect')}</option>
 
                                                                 <optgroup label={t('minderwert.standardRepairCodes', 'Kalkulations-Codes')}>
-                                                                    {ESTIMATE_REPAIR_CODE_IDS.map(codeId => {
+                                                                    {getActiveEstimateRepairCodeIds(store.globalConfig?.estimateConfig).map(codeId => {
                                                                         const labels = ESTIMATE_REPAIR_CODE_LABELS[codeId];
                                                                         const label = lang === 'de' ? labels.de : labels.en;
                                                                         return (
@@ -1471,7 +1471,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                             >
                                                                 <option value="">{t('common.pleaseSelect')}</option>
                                                                 <optgroup label={lang === 'de' ? 'Reparaturcodes' : 'Repair Codes'}>
-                                                                    {ESTIMATE_REPAIR_CODE_IDS.map(codeId => (
+                                                                    {getActiveEstimateRepairCodeIds(store.globalConfig?.estimateConfig).map(codeId => (
                                                                         <option key={codeId} value={`custom:${codeId}`}>
                                                                             {ESTIMATE_REPAIR_CODE_LABELS[codeId][lang]}
                                                                         </option>
@@ -1790,7 +1790,7 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                                     <option value="">{t('common.pleaseSelect')}</option>
 
                                                                     <optgroup label={t('minderwert.standardRepairCodes', 'Kalkulations-Codes')}>
-                                                                        {ESTIMATE_REPAIR_CODE_IDS.map(codeId => {
+                                                                        {getActiveEstimateRepairCodeIds(store.globalConfig?.estimateConfig).map(codeId => {
                                                                             const labels = ESTIMATE_REPAIR_CODE_LABELS[codeId];
                                                                             const label = lang === 'de' ? labels.de : labels.en;
                                                                             return (
@@ -1846,12 +1846,21 @@ const Step4_Damages: React.FC<Props> = ({ adminMode, onToggleRequired, onToggleH
                                                                 >
                                                                     <option value="">{t('common.pleaseSelect')}</option>
                                                                     <optgroup label={lang === 'de' ? 'Reparaturcodes' : 'Repair Codes'}>
-                                                                        {ESTIMATE_REPAIR_CODE_IDS.map(codeId => (
+                                                                        {getActiveEstimateRepairCodeIds(store.globalConfig?.estimateConfig).map(codeId => (
                                                                             <option key={codeId} value={`custom:${codeId}`}>
                                                                                 {ESTIMATE_REPAIR_CODE_LABELS[codeId][lang]}
                                                                             </option>
                                                                         ))}
                                                                     </optgroup>
+                                                                    {store.globalConfig?.estimateConfig?.customRepairCodes && store.globalConfig.estimateConfig.customRepairCodes.length > 0 && (
+                                                                        <optgroup label={t('minderwert.customRepairCodes', 'Custom Repair Codes')}>
+                                                                            {store.globalConfig.estimateConfig.customRepairCodes.map(c => (
+                                                                                <option key={c.id} value={`custom:${c.id}`}>
+                                                                                    {lang === 'de' ? c.labelDe : c.labelEn}
+                                                                                </option>
+                                                                            ))}
+                                                                        </optgroup>
+                                                                    )}
 
                                                                 </select>
                                                             )}
